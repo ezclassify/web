@@ -1,3 +1,41 @@
+/* Categories with no explicit color take their hue from the theme primary.
+   Use the theme's foreground to give underlines weight and its background
+   to tint chip fills. Resolve in CSS so a theme switch updates both in place.
+   Without relative colors, the existing per-token and per-chip colors apply. */
+@supports (color: oklch(from red 0.62 clamp(0.08, c, 0.16) calc(h + 1))) and
+    (color: color(from red xyz-d65 max(0, sign(0.179 - y)) y z)) {
+    [data-ez-themed-category] {
+        --ez-theme-category-seed: oklch(
+            from var(--ez-color-primary, #fdb827) 0.62 clamp(0.08, c, 0.16)
+                calc(h + var(--ez-category-hue-offset))
+        );
+        --ez-theme-category-accent: color-mix(
+            in oklab,
+            var(--ez-theme-category-seed) 72%,
+            var(--ez-color-text, #0f172a)
+        );
+        --ez-theme-category-fill: color-mix(
+            in oklab,
+            var(--ez-theme-category-seed) 28%,
+            var(--ez-color-background, #fff)
+        );
+        --ez-contrast-fill: var(--ez-theme-category-fill);
+    }
+}
+
+@supports (color: color(from red xyz-d65 max(0, sign(0.179 - y)) y z)) {
+    [data-ez-themed-category],
+    .ez-choice-button--inferred {
+        /* XYZ Y is relative luminance. Use D65 white below the crossover
+           and black above it so tinted fills keep readable text. */
+        --ez-contrasting-text: color(
+            from var(--ez-contrast-fill) xyz-d65
+                calc(0.95047 * max(0, sign(0.179 - y))) max(0, sign(0.179 - y))
+                calc(1.08883 * max(0, sign(0.179 - y)))
+        );
+    }
+}
+
 /* ── Tag ──────────────────────────────────────────────── */
 /* A real pill: filled background in the concept's category color
    (--ez-tag-bg, set inline per chip by tag-factory.ts), with a
@@ -15,9 +53,18 @@
     border-radius: 999px;
     background: var(
         --ez-category-background,
-        var(--ez-tag-bg, var(--ez-color-surface-active, rgba(0, 0, 0, 0.08)))
+        var(
+            --ez-theme-category-fill,
+            var(
+                --ez-tag-bg,
+                var(--ez-color-surface-active, rgba(0, 0, 0, 0.08))
+            )
+        )
     );
-    color: var(--ez-category-text, var(--ez-tag-color, inherit));
+    color: var(
+        --ez-category-text,
+        var(--ez-contrasting-text, var(--ez-tag-color, inherit))
+    );
     border: none;
     cursor: default;
     user-select: none;
@@ -49,7 +96,10 @@
         in srgb,
         var(
                 --ez-category-background,
-                var(--ez-tag-bg, var(--ez-color-surface-active, #e5e7eb))
+                var(
+                    --ez-theme-category-fill,
+                    var(--ez-tag-bg, var(--ez-color-surface-active, #e5e7eb))
+                )
             )
             15%,
         var(--ez-color-surface, #f8fafc)

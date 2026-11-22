@@ -196,6 +196,7 @@ export class MarkingField extends ComposerFieldBase {
 
         this.wrap = document.createElement('div');
         this.wrap.className = 'marking-field-wrap';
+        this.applyThemeTo(this.wrap);
         native.parentNode?.insertBefore(this.wrap, native);
         this.wrap.appendChild(native);
         if (native instanceof HTMLInputElement) this.createInputEditor(native);
@@ -851,6 +852,14 @@ export class MarkingField extends ComposerFieldBase {
         }
     }
 
+    override setColorScheme(scheme: 'auto' | 'light' | 'dark'): void {
+        super.setColorScheme(scheme);
+        if (!this.wrap) return;
+        if (scheme === 'auto') this.wrap.removeAttribute('data-color-scheme');
+        else this.wrap.setAttribute('data-color-scheme', scheme);
+        this.captureAndMirrorStyles();
+    }
+
     /**
      * Watch the document root for theme attribute changes and re-sync the
      * display's color/background to match the re-themed (still-invisible) host.
@@ -1021,6 +1030,13 @@ export class MarkingField extends ComposerFieldBase {
             // category color, so this is the sole color property a token needs.
             // Set on the outer span (inherited down to the word runs
             // paintTokenLabel creates below) rather than duplicated per run.
+            const hue = colors
+                ? undefined
+                : this.categoryHueOffset(token.categoryId);
+            if (hue !== undefined) {
+                span.setAttribute('data-ez-themed-category', '');
+                span.style.setProperty('--ez-category-hue-offset', String(hue));
+            }
             span.style.setProperty(
                 '--ez-token-underline',
                 colors?.background ?? this.getCategoryColor(token.categoryId),

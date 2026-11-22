@@ -159,7 +159,10 @@
     text-decoration-line: underline;
     text-decoration-color: var(
         --ez-category-accent,
-        var(--ez-token-underline, var(--ez-color-primary, #fdb827))
+        var(
+            --ez-theme-category-accent,
+            var(--ez-token-underline, var(--ez-color-primary, #fdb827))
+        )
     );
     text-decoration-thickness: 0.1875rem;
     text-underline-offset: 0.125rem;

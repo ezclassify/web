@@ -297,6 +297,7 @@ export class TagInput extends ComposerFieldBase {
             filterInput: this.filterInput,
             getCategoryColor: (id) => this.getCategoryColor(id),
             getCategoryTextColor: (id) => this.getCategoryTextColor(id),
+            categoryHueOffset: (id) => this.categoryHueOffset(id),
             colorFrom: this.colorFrom,
             colorCoding: this.options.colorCoding,
             unprinted: this.unprinted,

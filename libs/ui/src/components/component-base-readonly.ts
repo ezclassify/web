@@ -431,6 +431,7 @@ export abstract class ReadOnlyComponentBase
     protected formatId!: string;
     protected categoryColorMap = new Map<string, string>();
     protected categoryTextColorMap = new Map<string, string>();
+    private readonly categoryHueOffsets = new Map<string, number>();
     /**
      * Category ID that drives the marking's scheme-default display color.
      * Undefined in rule mode and when the scheme declares no authored colors.
@@ -548,16 +549,7 @@ export abstract class ReadOnlyComponentBase
         // Mark container for scoped CSS variable inheritance
         container.setAttribute('data-ezclassify', '');
 
-        // Apply color scheme preference.
-        // "auto" (default): no attribute, inherits from the host via cascade.
-        //   Dark variants kick in only when an ancestor sets .dark /
-        //   [data-theme="dark"] / [data-bs-theme="dark"]. The library never
-        //   reaches around the host to query the OS prefers-color-scheme.
-        // "light"/"dark": forces a specific scheme via data-color-scheme attribute.
-        const scheme = this.options.colorScheme ?? 'auto';
-        if (scheme !== 'auto') {
-            container.setAttribute('data-color-scheme', scheme);
-        }
+        this.applyThemeTo(container);
 
         // Apply opt-in input styling
         if (this.options.styleInputs) {
@@ -566,10 +558,14 @@ export abstract class ReadOnlyComponentBase
 
         // Build category→color lookup (custom categoryColors override defaults)
         const customColors = this.options.categoryColors;
+        this.categoryHueOffsets.clear();
         this.scheme.categories.forEach((f, i) => {
             if (customColors && customColors[f.id]) {
                 this.categoryColorMap.set(f.id, customColors[f.id]);
             } else {
+                // Golden-angle spacing keeps adjacent indices apart and
+                // leaves existing colors stable as categories are appended.
+                this.categoryHueOffsets.set(f.id, (i * 137.508) % 360);
                 this.categoryColorMap.set(
                     f.id,
                     CATEGORY_COLORS[i % CATEGORY_COLORS.length],
@@ -580,13 +576,6 @@ export abstract class ReadOnlyComponentBase
                 CATEGORY_TEXT_COLORS[i % CATEGORY_TEXT_COLORS.length],
             );
         });
-
-        // Apply theme CSS variables on the container
-        if (this.options.theme && typeof this.options.theme === 'object') {
-            for (const [prop, value] of Object.entries(this.options.theme)) {
-                container.style.setProperty(prop, value);
-            }
-        }
 
         // Apply z-index overrides
         if (this.options.zIndex != null) {
@@ -1205,6 +1194,18 @@ export abstract class ReadOnlyComponentBase
         return null;
     }
 
+    /** Apply a component's theme to a surface that may sit beside its mount. */
+    protected applyThemeTo(surface: HTMLElement): void {
+        const scheme = this.options.colorScheme;
+        if (scheme && scheme !== 'auto')
+            surface.setAttribute('data-color-scheme', scheme);
+        const theme = this.options.theme;
+        if (theme && typeof theme === 'object') {
+            for (const [name, value] of Object.entries(theme))
+                surface.style.setProperty(name, value);
+        }
+    }
+
     /** Change the color scheme at runtime. */
     setColorScheme(scheme: 'auto' | 'light' | 'dark'): void {
         if (scheme === 'auto') {
@@ -1386,6 +1387,10 @@ export abstract class ReadOnlyComponentBase
      */
     protected changeWords(): ChangeWords {
         return schemeChangeWords(() => this.conceptWriting());
+    }
+
+    protected categoryHueOffset(categoryId: string): number | undefined {
+        return this.categoryHueOffsets.get(categoryId);
     }
 
     /** Get the color for a category */

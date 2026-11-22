@@ -814,8 +814,11 @@ override to that form.
 category choice buttons.
 `--ez-category-background` and `--ez-category-text` set the TagInput chip
 colors. Specify the chip colors together for readable contrast. Categories
-with no override keep their scheme or default palette. Category CSS affects
-display only. Runtime still supplies the marking, its rules, and whether
+with no override use their scheme colors when available. Other categories
+derive a shared palette from `--ez-color-primary`, `--ez-color-text`, and
+`--ez-color-background`. The same category uses a related underline and chip
+fill, and both update when those theme tokens change. Browsers without relative
+CSS colors use the stock palette. Category CSS affects display only. Runtime still supplies the marking, its rules, and whether
 a concept was inferred.
 
 ### Fonts
