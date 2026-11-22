@@ -905,61 +905,22 @@ describe('MarkedTextArea', () => {
         ).toMatch(/\.marked-textarea-wrap\s*\{[^}]*position:\s*relative/);
     });
 
-    it('shows a concept dwell tooltip on hover over a valid marking segment', async () => {
+    it('uses native help for the written classification in a valid segment', async () => {
         const engine = await createTestEngine();
         root.innerHTML = `<textarea id="body" data-ezclassify-controller="marked-textarea">(S) Para one.</textarea>`;
         const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(80);
 
-        const display = root.querySelector('.marked-textarea-display');
-        const chip = display?.querySelector(
-            '.marked-textarea-chip:not(.marked-textarea-chip--invalid)',
-        ) as HTMLElement;
-        expect(chip).toBeTruthy();
-
-        expect(document.body.querySelector('.ez-tooltip')).toBeNull();
-        chip.dispatchEvent(new Event('mouseenter'));
-        await wait(350);
-
-        const tip = document.body.querySelector(
-            '.ez-tooltip',
-        ) as HTMLElement | null;
-        expect(tip).not.toBeNull();
-        expect(tip!.hidden).toBe(false);
-
-        chip.dispatchEvent(new Event('mouseleave'));
-        // It stays a moment, so the pointer can reach it, then closes.
-        await wait(350);
-        expect(tip!.hidden).toBe(true);
-    });
-
-    it('removes a VISIBLE segment tooltip and its listeners on destroy (no leak)', async () => {
-        // Destroy must clean up a visible segment tooltip and its listeners,
-        // not only a pending dwell timer.
-        const engine = await createTestEngine();
-        root.innerHTML = `<textarea id="body" data-ezclassify-controller="marked-textarea">(S) Para one.</textarea>`;
-        const forms = new EzClassifyUI(asContext(engine as never), { root });
-        await wait(80);
-
-        const display = root.querySelector('.marked-textarea-display');
-        const chip = display?.querySelector(
-            '.marked-textarea-chip:not(.marked-textarea-chip--invalid)',
-        ) as HTMLElement;
-        expect(chip).toBeTruthy();
-
-        chip.dispatchEvent(new Event('mouseenter'));
-        await wait(350);
-        const tip = document.body.querySelector(
-            '.ez-tooltip',
-        ) as HTMLElement | null;
-        expect(tip).not.toBeNull();
-        expect(tip!.hidden).toBe(false);
-
-        forms.destroy();
-
-        expect(tip!.isConnected).toBe(false);
-        expect(document.body.querySelector('.ez-tooltip')).toBeNull();
+        const chip = root.querySelector('.marked-textarea-chip');
+        expect(chip?.textContent).toBe('(S)');
+        const concept = chip?.querySelector('[data-concept-id="S"]');
+        expect(concept?.textContent).toBe('S');
+        expect(concept?.getAttribute('title')).toBe('Level: Secret');
+        expect(concept?.getAttribute('aria-description')).toBe(
+            'Level: Secret.',
+        );
+        expect(chip?.hasAttribute('data-ez-segment-tooltip')).toBe(false);
     });
 
     it('honors the data-ezclassify-no-tooltips opt-out for marking segments', async () => {
@@ -975,10 +936,7 @@ describe('MarkedTextArea', () => {
         ) as HTMLElement;
         expect(chip).toBeTruthy();
 
-        chip.dispatchEvent(new Event('mouseenter'));
-        await wait(350);
-
-        expect(document.body.querySelector('.ez-tooltip')).toBeNull();
+        expect(chip.querySelector('[title]')).toBeNull();
     });
 });
 

@@ -2077,6 +2077,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
 
         if (!statusMarkFavoriteApplyOwner(this.toolsButton))
             hideTooltip(this.container);
+        this.clearSegmentHover();
         this.display.innerHTML = '';
 
         let cursor = 0;
@@ -2209,7 +2210,12 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                     document.createTextNode(chipText.slice(caretOffset)),
                 );
             } else {
-                chip.textContent = chipText;
+                this.paintSegmentConceptHints(
+                    chip,
+                    chipText,
+                    seg.assertions,
+                    seg.assessment,
+                );
             }
 
             // If the inline editor is active for this segment, mount it inline

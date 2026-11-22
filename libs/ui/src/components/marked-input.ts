@@ -1110,6 +1110,7 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
         const selEnd = this.hasFocus ? (this.input.selectionEnd ?? -1) : -1;
         const hasSelection = selStart >= 0 && selStart !== selEnd;
 
+        this.clearSegmentHover();
         this.display.innerHTML = '';
 
         // Append a text run, wrapping any part inside the active selection in
@@ -1170,7 +1171,6 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
                     valid: this.valid,
                     errors: this.errors,
                     warnings: this.warnings,
-                    assertions: this.assertions,
                 });
                 chip.dataset.start = '0';
                 chip.dataset.end = String(this.markEnd);
@@ -1194,7 +1194,12 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
                             document.createTextNode(mark.slice(overlapEnd)),
                         );
                 } else {
-                    chip.textContent = mark;
+                    this.paintSegmentConceptHints(
+                        chip,
+                        mark,
+                        this.assertions,
+                        this._fixesAssessment,
+                    );
                 }
                 this.display.appendChild(chip);
             }

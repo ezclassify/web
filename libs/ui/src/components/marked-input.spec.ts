@@ -986,7 +986,7 @@ describe('MarkedInput', () => {
         expect(chip?.textContent).toContain('(U)');
     });
 
-    it('shows a concept dwell tooltip on hover over the marking chip', async () => {
+    it('uses native help for the written classification in the marking chip', async () => {
         const engine = await createTestEngine();
         root.innerHTML = `
       <input type="text" id="field" data-ezclassify-controller="marked-input" value="(U) memo text">
@@ -995,57 +995,12 @@ describe('MarkedInput', () => {
         activeForms.push(forms);
         await wait(50);
 
-        const inputEl = editingField('field') as HTMLTextAreaElement;
-        const wrap = inputEl.closest('.marked-input-wrap')!;
-        const display = wrap.querySelector('.marked-input-display')!;
-        const chip = display.querySelector('.marked-input-chip') as HTMLElement;
-        expect(chip).toBeTruthy();
-
-        expect(document.body.querySelector('.ez-tooltip')).toBeNull();
-        chip.dispatchEvent(new Event('mouseenter'));
-        await wait(350);
-
-        const tip = document.body.querySelector(
-            '.ez-tooltip',
-        ) as HTMLElement | null;
-        expect(tip).not.toBeNull();
-        expect(tip!.hidden).toBe(false);
-
-        chip.dispatchEvent(new Event('mouseleave'));
-        // It stays a moment, so the pointer can reach it, then closes.
-        await wait(350);
-        expect(tip!.hidden).toBe(true);
-    });
-
-    it('removes a VISIBLE segment tooltip and its listeners on destroy (no leak)', async () => {
-        // Destroy must remove a visible segment tooltip and its Escape, scroll,
-        // and resize listeners, including destruction during hover.
-        const engine = await createTestEngine();
-        root.innerHTML = `
-      <input type="text" id="field" data-ezclassify-controller="marked-input" value="(U) memo text">
-    `;
-        const forms = new EzClassifyUI(asContext(engine as never), {});
-        await wait(50);
-
-        const inputEl = editingField('field') as HTMLTextAreaElement;
-        const wrap = inputEl.closest('.marked-input-wrap')!;
-        const display = wrap.querySelector('.marked-input-display')!;
-        const chip = display.querySelector('.marked-input-chip') as HTMLElement;
-
-        chip.dispatchEvent(new Event('mouseenter'));
-        await wait(350);
-        const tip = document.body.querySelector(
-            '.ez-tooltip',
-        ) as HTMLElement | null;
-        expect(tip).not.toBeNull();
-        expect(tip!.hidden).toBe(false);
-
-        forms.destroy();
-
-        // Gone from the DOM entirely, not merely hidden: a hidden orphan node
-        // still parented to body is the same leak with an extra step.
-        expect(tip!.isConnected).toBe(false);
-        expect(document.body.querySelector('.ez-tooltip')).toBeNull();
+        const chip = root.querySelector('.marked-input-chip');
+        expect(chip?.textContent).toBe('(U)');
+        const concept = chip?.querySelector('[data-concept-id="U"]');
+        expect(concept?.textContent).toBe('U');
+        expect(concept?.getAttribute('title')).toBe('Level: Unclassified');
+        expect(chip?.hasAttribute('data-ez-segment-tooltip')).toBe(false);
     });
 
     it('honors the data-ezclassify-no-tooltips opt-out for the marking chip', async () => {
@@ -1063,10 +1018,7 @@ describe('MarkedInput', () => {
         const chip = display.querySelector('.marked-input-chip') as HTMLElement;
         expect(chip).toBeTruthy();
 
-        chip.dispatchEvent(new Event('mouseenter'));
-        await wait(350);
-
-        expect(document.body.querySelector('.ez-tooltip')).toBeNull();
+        expect(chip.querySelector('[title]')).toBeNull();
     });
 
     it('clears assertions when the marking is removed from the value', async () => {
