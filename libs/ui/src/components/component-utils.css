@@ -1,12 +1,24 @@
-/* Categories with no explicit color take their hue from the theme primary.
+/* Categories without an explicit color stay within the primary hue family.
+   Vary lightness and chroma within that family to distinguish the categories.
    Use the theme's foreground to give underlines weight and its background
    to tint chip fills. Resolve in CSS so a theme switch updates both in place.
    Without relative colors, the existing per-token and per-chip colors apply. */
-@supports (color: oklch(from red 0.62 clamp(0.08, c, 0.16) calc(h + 1))) and
-    (color: color(from red xyz-d65 max(0, sign(0.179 - y)) y z)) {
+@supports (
+        color: oklch(
+                from red calc(0.65 + 1 / 100) clamp(0, calc(c * 0.9), 0.16)
+                    calc(h + 1)
+            )
+    )
+    and (color: color(from red xyz-d65 max(0, sign(0.179 - y)) y z)) {
     [data-ez-themed-category] {
         --ez-theme-category-seed: oklch(
-            from var(--ez-color-primary, #fdb827) 0.62 clamp(0.08, c, 0.16)
+            from var(--ez-color-primary, #fdb827)
+                calc(0.65 + var(--ez-category-hue-offset) / 100)
+                clamp(
+                    0,
+                    calc(c * (0.9 + var(--ez-category-hue-offset) / 80)),
+                    0.16
+                )
                 calc(h + var(--ez-category-hue-offset))
         );
         --ez-theme-category-accent: color-mix(
@@ -16,7 +28,7 @@
         );
         --ez-theme-category-fill: color-mix(
             in oklab,
-            var(--ez-theme-category-seed) 28%,
+            oklch(from var(--ez-theme-category-seed) calc(l + 0.09) c h) 34%,
             var(--ez-color-background, #fff)
         );
         --ez-contrast-fill: var(--ez-theme-category-fill);

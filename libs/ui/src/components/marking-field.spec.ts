@@ -1466,6 +1466,9 @@ describe('MarkingField', () => {
         );
         expect(palette[0]).toBe('0');
         expect(palette.every(Boolean)).toBe(true);
+        expect(palette.every((offset) => Math.abs(Number(offset)) <= 12)).toBe(
+            true,
+        );
         expect(new Set(palette).size).toBe(2);
         expect(openSurface()).toBeNull();
     });

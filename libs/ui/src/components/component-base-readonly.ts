@@ -563,9 +563,11 @@ export abstract class ReadOnlyComponentBase
             if (customColors && customColors[f.id]) {
                 this.categoryColorMap.set(f.id, customColors[f.id]);
             } else {
-                // Golden-angle spacing keeps adjacent indices apart and
-                // leaves existing colors stable as categories are appended.
-                this.categoryHueOffsets.set(f.id, (i * 137.508) % 360);
+                // Space categories within 12° of the theme hue. Fractional
+                // spacing keeps nearby indices apart without reshuffling them
+                // when new categories are appended.
+                const phase = ((0.5 + i * 0.61803398875) % 1) - 0.5;
+                this.categoryHueOffsets.set(f.id, phase * 24);
                 this.categoryColorMap.set(
                     f.id,
                     CATEGORY_COLORS[i % CATEGORY_COLORS.length],
