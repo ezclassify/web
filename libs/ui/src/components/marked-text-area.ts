@@ -2228,16 +2228,8 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                 seg.start === this.activeRange.start &&
                 seg.end === this.activeRange.end
             ) {
-                // Wrap the editor in a chip-styled span so the delimiters and
-                // border-radius match a resting chip's shape. The FILL does
-                // not carry over: marked-text-area.css's `--editing`
-                // modifier clears `.marked-textarea-chip`'s solid background,
-                // since that background reuses the same accent-tinted token
-                // the design system's own real selection/highlight states
-                // draw from (--ez-color-surface-active): painting it behind
-                // a still-empty, freshly-inserted template read as a stray
-                // selection sitting on the open delimiter, not as "you're
-                // editing this."
+                // Keep the resting chip's shape without giving an empty
+                // portion template a fill that looks like text selection.
                 const editorChip = document.createElement('span');
                 editorChip.className =
                     'marked-textarea-chip marked-textarea-chip--editing';

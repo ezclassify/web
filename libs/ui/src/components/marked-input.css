@@ -91,7 +91,6 @@
 .marked-input-chip {
     display: inline-block;
     max-inline-size: 100%;
-    background: var(--ez-color-surface-active, rgba(253, 184, 39, 0.25));
     border-radius: 0.125rem;
 }
 

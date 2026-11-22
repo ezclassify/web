@@ -147,17 +147,11 @@
 }
 
 .marked-textarea-chip {
-    background: var(--ez-color-surface-active, rgba(253, 184, 39, 0.25));
     border-radius: 0.125rem;
 }
 
-/* A chip with its picker open is mid-edit, not a committed marking: the
-   base rule's solid fill (the same accent-tinted background var used for
-   real text selection elsewhere in the design tokens, e.g. --ez-dropdown-
-   selected/highlight) painted behind the freshly-inserted, still-empty
-   "()" template read as a stray selection highlight sitting on the open
-   delimiter, not as "you're editing this." Clearing it here lets the
-   picker's own focus/caret carry that signal instead. */
+/* Leave the editor unfilled so an empty portion template does not look
+   selected. The editor's focus and caret show where the user is editing. */
 .marked-textarea-chip--editing {
     background: transparent;
     /* The display layer is otherwise click-through to the invisible textarea.

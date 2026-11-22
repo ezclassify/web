@@ -52,6 +52,16 @@
     }
 }
 
+/* MarkedInput and MarkedTextArea use one accent tint for a whole portion. */
+:where(.marked-input-chip, .marked-textarea-chip) {
+    background: var(--ez-color-surface-active, rgba(253, 184, 39, 0.25));
+    background: color-mix(
+        in oklab,
+        var(--ez-color-primary, #fdb827) 24%,
+        var(--ez-color-background, #fff)
+    );
+}
+
 /* ── Tag ──────────────────────────────────────────────── */
 /* A real pill: filled background in the concept's category color
    (--ez-tag-bg, set inline per chip by tag-factory.ts), with a
