@@ -1,3 +1,4 @@
+import { textareaEditor } from '../../../test-fixtures/textarea-editor';
 /**
  * The cross-component contract: TagInput, MarkingField, MarkedInput and
  * MarkedTextArea driven through the same keystrokes and presses, over the same
@@ -639,7 +640,10 @@ describe.each(['marked-input', 'marked-textarea'] as const)(
          */
         async function rewrite(field: Field, text: string): Promise<void> {
             field.host.value = text;
-            field.host.setSelectionRange(text.length, text.length);
+            textareaEditor(field.host as HTMLTextAreaElement).setSelectionRange(
+                text.length,
+                text.length,
+            );
             field.host.dispatchEvent(new Event('input', { bubbles: true }));
             await wait(450);
         }
@@ -647,7 +651,10 @@ describe.each(['marked-input', 'marked-textarea'] as const)(
         /** Open the editor on the leading mark again, the way mountField does. */
         async function reopen(field: Field): Promise<void> {
             field.host.focus();
-            field.host.setSelectionRange(0, 0);
+            textareaEditor(field.host as HTMLTextAreaElement).setSelectionRange(
+                0,
+                0,
+            );
             press(document.activeElement as HTMLElement, 'Enter', {
                 ctrlKey: true,
             });

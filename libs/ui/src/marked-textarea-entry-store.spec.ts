@@ -1,3 +1,4 @@
+import { textareaEditor } from '../test-fixtures/textarea-editor';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { EzClassifyUI } from './ezclassify-ui';
 import { markingTarget, markingEntry } from './components/marking-target';
@@ -67,11 +68,11 @@ describe('MarkedTextArea two-way entry bindings', () => {
         const start = selection
             ? textarea.value.indexOf('First body.')
             : textarea.value.length;
-        textarea.setSelectionRange(
+        textareaEditor(textarea).setSelectionRange(
             start,
             selection ? start + 'First'.length : start,
         );
-        press(textarea, 'Enter', { ctrlKey: true });
+        press(textareaEditor(textarea), 'Enter', { ctrlKey: true });
         await flush();
         const editor = document.querySelector<HTMLInputElement>(
             '.inline-editor-input',
@@ -174,8 +175,8 @@ describe('MarkedTextArea two-way entry bindings', () => {
             const { textarea, component, store } = await mount();
             const ids = store.getEntryIds!('document')!;
             textarea.focus();
-            textarea.setSelectionRange(1, 1);
-            press(textarea, 'Enter', { ctrlKey: true });
+            textareaEditor(textarea).setSelectionRange(1, 1);
+            press(textareaEditor(textarea), 'Enter', { ctrlKey: true });
             await flush();
             const done = document.querySelector<HTMLButtonElement>(
                 '.ez-composer__sheet-done',
@@ -372,7 +373,7 @@ describe('MarkedTextArea two-way entry bindings', () => {
         expect(releases.length).toBeGreaterThan(0);
         try {
             textarea.focus();
-            textarea.setSelectionRange(2, 2);
+            textareaEditor(textarea).setSelectionRange(2, 2);
             document.dispatchEvent(new Event('selectionchange'));
             await flush();
             const reopened = document.querySelector('.inline-editor-input');
@@ -386,7 +387,7 @@ describe('MarkedTextArea two-way entry bindings', () => {
             );
             expect(component.getEntryIds()).toEqual(ids);
             expect(store.get(ids[1]!)).toEqual(sibling);
-            expect(document.activeElement).toBe(textarea);
+            expect(document.activeElement).toBe(textareaEditor(textarea));
         } finally {
             holding = false;
             for (const release of releases) release();
@@ -398,7 +399,7 @@ describe('MarkedTextArea two-way entry bindings', () => {
         const ids = store.getEntryIds!('document')!;
         const before = textarea.value;
         textarea.focus();
-        textarea.setSelectionRange(2, 2);
+        textareaEditor(textarea).setSelectionRange(2, 2);
         document.dispatchEvent(new Event('selectionchange'));
         await flush();
         vi.spyOn(store, 'publishRendered').mockResolvedValueOnce(undefined);
@@ -414,7 +415,7 @@ describe('MarkedTextArea two-way entry bindings', () => {
         try {
             textarea.focus();
             const pos = textarea.value.indexOf('(DC)') + 2;
-            textarea.setSelectionRange(pos, pos);
+            textareaEditor(textarea).setSelectionRange(pos, pos);
             document.dispatchEvent(new Event('selectionchange'));
             await flush();
             expect(
@@ -430,7 +431,7 @@ describe('MarkedTextArea two-way entry bindings', () => {
         const { textarea, component, store } = await mount();
         const before = textarea.value;
         textarea.focus();
-        textarea.setSelectionRange(2, 2);
+        textareaEditor(textarea).setSelectionRange(2, 2);
         document.dispatchEvent(new Event('selectionchange'));
         await flush();
         vi.spyOn(store, 'publishRendered').mockRejectedValueOnce(
@@ -451,7 +452,7 @@ describe('MarkedTextArea two-way entry bindings', () => {
             .mockReturnValue(performance.now() + 1000);
         try {
             textarea.focus();
-            textarea.setSelectionRange(2, 2);
+            textareaEditor(textarea).setSelectionRange(2, 2);
             document.dispatchEvent(new Event('selectionchange'));
             await flush();
             expect(
@@ -467,15 +468,15 @@ describe('MarkedTextArea two-way entry bindings', () => {
         const { textarea, component } = await mount();
         const before = textarea.value;
         textarea.focus();
-        textarea.setSelectionRange(2, 2);
+        textareaEditor(textarea).setSelectionRange(2, 2);
         document.dispatchEvent(new Event('selectionchange'));
         await flush();
         const older = markingEntry(component)!.prepareApply();
         expect(older).toBeTypeOf('function');
         textarea.focus();
         const second = textarea.value.indexOf('(DC)') + 2;
-        textarea.setSelectionRange(second, second);
-        press(textarea, 'Enter', { ctrlKey: true });
+        textareaEditor(textarea).setSelectionRange(second, second);
+        press(textareaEditor(textarea), 'Enter', { ctrlKey: true });
         await flush();
         expect(document.querySelector('.inline-editor-input')).not.toBeNull();
         const newer = markingEntry(component)!.prepareApply();
@@ -485,7 +486,7 @@ describe('MarkedTextArea two-way entry bindings', () => {
         try {
             if (typeof older === 'function') older();
             textarea.focus();
-            textarea.setSelectionRange(2, 2);
+            textareaEditor(textarea).setSelectionRange(2, 2);
             document.dispatchEvent(new Event('selectionchange'));
             await flush();
             expect(document.querySelector('.inline-editor-input')).toBeNull();
@@ -564,7 +565,7 @@ describe('MarkedTextArea two-way entry bindings', () => {
             const before = textarea.value;
             const sibling = structuredClone(store.get(ids[1]!));
             textarea.focus();
-            textarea.setSelectionRange(2, 2);
+            textareaEditor(textarea).setSelectionRange(2, 2);
             document.dispatchEvent(new Event('selectionchange'));
             await flush();
             const brand = document.querySelector<HTMLButtonElement>(
@@ -613,7 +614,7 @@ describe('MarkedTextArea two-way entry bindings', () => {
                 else if (exit === 'new-session') {
                     press(favorite, 'Escape');
                     textarea.focus();
-                    textarea.setSelectionRange(
+                    textareaEditor(textarea).setSelectionRange(
                         textarea.value.length,
                         textarea.value.length,
                     );
@@ -640,7 +641,7 @@ describe('MarkedTextArea two-way entry bindings', () => {
                         ? outside
                         : exit === 'escape'
                           ? brand
-                          : textarea;
+                          : textareaEditor(textarea);
                 expect(
                     document.querySelector('.inline-editor-input'),
                 ).toBeNull();
@@ -707,7 +708,7 @@ describe('MarkedTextArea two-way entry bindings', () => {
             const sibling = structuredClone(store.get(ids[1]!));
             const original = textarea.value;
             textarea.focus();
-            textarea.setSelectionRange(2, 2);
+            textareaEditor(textarea).setSelectionRange(2, 2);
             document.dispatchEvent(new Event('selectionchange'));
             await flush();
             expect(
@@ -764,7 +765,7 @@ describe('MarkedTextArea two-way entry bindings', () => {
                     .spyOn(performance, 'now')
                     .mockReturnValue(performance.now() + 1000);
                 textarea.focus();
-                textarea.setSelectionRange(2, 2);
+                textareaEditor(textarea).setSelectionRange(2, 2);
                 document.dispatchEvent(new Event('selectionchange'));
                 await flush();
                 const reopened = document.querySelector('.inline-editor-input');
@@ -776,7 +777,7 @@ describe('MarkedTextArea two-way entry bindings', () => {
                 await flush();
                 await flush();
                 expect(reopened).toBeNull();
-                expect(focusWhilePending).toBe(textarea);
+                expect(focusWhilePending).toBe(textareaEditor(textarea));
                 expect(textarea.value).toBe(
                     '(ST) First body.\n(DC) Second body.  ',
                 );
@@ -789,7 +790,7 @@ describe('MarkedTextArea two-way entry bindings', () => {
                 });
                 document.dispatchEvent(new Event('selectionchange'));
                 await flush();
-                expect(document.activeElement).toBe(textarea);
+                expect(document.activeElement).toBe(textareaEditor(textarea));
                 expect(
                     document.querySelector('.inline-editor-input'),
                 ).toBeNull();
@@ -833,7 +834,7 @@ describe('MarkedTextArea two-way entry bindings', () => {
         expect(errors).toHaveLength(1);
         expect(component.getEntryIds()).toEqual(ids);
         textarea.focus();
-        textarea.setSelectionRange(2, 2);
+        textareaEditor(textarea).setSelectionRange(2, 2);
         document.dispatchEvent(new Event('selectionchange'));
         await flush();
         expect(document.activeElement).toBe(

@@ -8,6 +8,7 @@
  * The engine is a stand-in: a marking that names LOW gains STD, and one that
  * names HIGH gains STD and ANCHOR, each by a rule the text then writes.
  */
+import { textareaEditor } from '../../test-fixtures/textarea-editor';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Assertion, Change, ScanResult } from '@ezclassify/types';
 import { schemeOnlyContext } from '../../test-fixtures/context-doubles';
@@ -296,8 +297,8 @@ describe("a MarkedTextArea's status mark", () => {
     async function draftAtEnd(value: string): Promise<HTMLInputElement> {
         textarea.focus();
         const end = textarea.value.length;
-        textarea.setSelectionRange(end, end);
-        textarea.dispatchEvent(
+        textareaEditor(textarea).setSelectionRange(end, end);
+        textareaEditor(textarea).dispatchEvent(
             new KeyboardEvent('keydown', {
                 key: 'Enter',
                 ctrlKey: true,

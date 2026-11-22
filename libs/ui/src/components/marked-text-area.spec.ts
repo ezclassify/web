@@ -1,3 +1,4 @@
+import { textareaEditor } from '../../test-fixtures/textarea-editor';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { asContext } from '../../test-fixtures/as-context';
 import { expectInlineChrome } from '../../test-fixtures/field-chrome';
@@ -327,7 +328,7 @@ afterEach(() => {
 });
 
 describe('masked host theme paint', () => {
-    it('samples authored paint without a reduced-motion transition retaining the transparent mask', async () => {
+    it('samples authored paint from the hidden native textarea on theme change', async () => {
         const root = document.createElement('div');
         root.innerHTML = `<textarea id="theme-body" data-ezclassify-controller="marked-textarea" style="transition-property: opacity !important; color: rgb(12, 34, 56)">(U) Body text.</textarea>`;
         document.body.append(root);
@@ -341,12 +342,6 @@ describe('masked host theme paint', () => {
                 const computed = realGetComputedStyle(element);
                 if (element !== host || !themeRead) return computed;
                 sampled++;
-                // A nonzero global transition-duration (including reduced-motion's
-                // 0.01ms) keeps the old transparent color during immediate unmasking.
-                const maskStillPaints =
-                    host.classList.contains('marked-textarea-input') ||
-                    host.style.getPropertyValue('transition-property') !==
-                        'none';
                 return new Proxy(computed, {
                     get(target, key) {
                         const authored = {
@@ -355,9 +350,7 @@ describe('masked host theme paint', () => {
                             borderColor: 'rgb(100, 110, 120)',
                         };
                         if (key in authored)
-                            return maskStillPaints
-                                ? 'rgba(0, 0, 0, 0)'
-                                : authored[key as keyof typeof authored];
+                            return authored[key as keyof typeof authored];
                         const value = Reflect.get(target, key, target);
                         return typeof value === 'function'
                             ? value.bind(target)
@@ -384,7 +377,8 @@ describe('masked host theme paint', () => {
             expect(display.style.color).toBe('rgb(210, 220, 230)');
             expect(display.style.backgroundColor).toBe('rgb(20, 30, 40)');
             expect(display.style.borderColor).toBe('rgb(100, 110, 120)');
-            expect(host.classList.contains('marked-textarea-input')).toBe(true);
+            expect(host.hidden).toBe(true);
+            expect(textareaEditor(host)).not.toBe(host);
             expect(host.style.getPropertyValue('transition-property')).toBe(
                 'opacity',
             );
@@ -684,7 +678,7 @@ describe('MarkedTextArea', () => {
 
         // Open the picker via Cmd+Enter with an empty textarea.
         ta.focus();
-        ta.dispatchEvent(
+        textareaEditor(ta).dispatchEvent(
             new KeyboardEvent('keydown', {
                 key: 'Enter',
                 ctrlKey: true,
@@ -715,7 +709,7 @@ describe('MarkedTextArea', () => {
         await wait(150);
 
         // Escape to close the picker and commit to the textarea.
-        ta.dispatchEvent(
+        textareaEditor(ta).dispatchEvent(
             new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
         );
         await wait(300);
@@ -780,7 +774,7 @@ describe('MarkedTextArea', () => {
 
         // Open picker on empty textarea
         ta.focus();
-        ta.dispatchEvent(
+        textareaEditor(ta).dispatchEvent(
             new KeyboardEvent('keydown', {
                 key: 'Enter',
                 ctrlKey: true,
@@ -791,7 +785,7 @@ describe('MarkedTextArea', () => {
         await wait(80);
 
         // Close picker via Escape without selecting anything
-        ta.dispatchEvent(
+        textareaEditor(ta).dispatchEvent(
             new KeyboardEvent('keydown', {
                 key: 'Escape',
                 bubbles: true,
@@ -822,13 +816,13 @@ describe('MarkedTextArea', () => {
         const ta = document.getElementById('body') as HTMLTextAreaElement;
         const wrap = ta.closest('.marked-textarea-wrap') as HTMLElement;
         const chrome = expectInlineChrome(wrap, [
-            ta,
+            textareaEditor(ta),
             wrap.querySelector(':scope > .marked-textarea-display')!,
         ]);
         const mark = chrome.querySelector('.ez-status-mark');
 
         ta.focus();
-        ta.dispatchEvent(
+        textareaEditor(ta).dispatchEvent(
             new KeyboardEvent('keydown', {
                 key: 'Enter',
                 ctrlKey: true,
@@ -857,7 +851,7 @@ describe('MarkedTextArea', () => {
 
         const ta = document.getElementById('body') as HTMLTextAreaElement;
         ta.focus();
-        ta.dispatchEvent(
+        textareaEditor(ta).dispatchEvent(
             new KeyboardEvent('keydown', {
                 key: 'Enter',
                 ctrlKey: true,
@@ -1257,8 +1251,8 @@ describe('MarkedTextArea favorites', () => {
         const { ta } = await mountDirect('', { favorites: { load } });
 
         ta.focus();
-        ta.setSelectionRange(0, 0);
-        ta.dispatchEvent(
+        textareaEditor(ta).setSelectionRange(0, 0);
+        textareaEditor(ta).dispatchEvent(
             new KeyboardEvent('keydown', {
                 key: 'Enter',
                 ctrlKey: true,
@@ -1289,8 +1283,8 @@ describe('MarkedTextArea favorites', () => {
 
         // Open the inline editor on the existing "(U)" segment.
         ta.focus();
-        ta.setSelectionRange(1, 1);
-        ta.dispatchEvent(
+        textareaEditor(ta).setSelectionRange(1, 1);
+        textareaEditor(ta).dispatchEvent(
             new KeyboardEvent('keydown', {
                 key: 'Enter',
                 ctrlKey: true,
@@ -1348,8 +1342,8 @@ describe('MarkedTextArea favorites', () => {
         // Caret at the start of the (unmarked) second line.
         const caret = value.indexOf('\n') + 1;
         ta.focus();
-        ta.setSelectionRange(caret, caret);
-        ta.dispatchEvent(
+        textareaEditor(ta).setSelectionRange(caret, caret);
+        textareaEditor(ta).dispatchEvent(
             new KeyboardEvent('keydown', {
                 key: 'Enter',
                 ctrlKey: true,
@@ -1380,8 +1374,8 @@ describe('MarkedTextArea favorites', () => {
         // Caret lands inside "Hello", between "Hel" and "lo".
         const caret = value.indexOf('Hel') + 3;
         ta.focus();
-        ta.setSelectionRange(caret, caret);
-        ta.dispatchEvent(
+        textareaEditor(ta).setSelectionRange(caret, caret);
+        textareaEditor(ta).dispatchEvent(
             new KeyboardEvent('keydown', {
                 key: 'Enter',
                 ctrlKey: true,
@@ -1418,8 +1412,8 @@ it.each(['before', 'after'])(
 
         const clickMark = () => {
             textarea.focus();
-            textarea.setSelectionRange(2, 2);
-            textarea.dispatchEvent(
+            textareaEditor(textarea).setSelectionRange(2, 2);
+            textareaEditor(textarea).dispatchEvent(
                 new MouseEvent('mouseup', {
                     bubbles: true,
                     button: 0,
@@ -1458,7 +1452,7 @@ describe('MarkedTextArea favorites: caret-scoped selection and pinned row', () =
 
     /** Move the caret and fire the same event MTA listens for. */
     function moveCaret(ta: HTMLTextAreaElement, pos: number): void {
-        ta.setSelectionRange(pos, pos);
+        textareaEditor(ta).setSelectionRange(pos, pos);
         document.dispatchEvent(new Event('selectionchange'));
     }
 
@@ -1522,7 +1516,7 @@ describe('MarkedTextArea favorites: caret-scoped selection and pinned row', () =
                 const text = ta.value;
                 ta.focus();
                 moveCaret(ta, text.length);
-                const caret = ta.selectionStart;
+                const caret = textareaEditor(ta).selectionStart;
                 let draft: HTMLInputElement | null = null;
                 if (held) {
                     moveCaret(ta, 1);
@@ -1547,14 +1541,19 @@ describe('MarkedTextArea favorites: caret-scoped selection and pinned row', () =
                     }),
                 );
                 await wait(80);
-                expect(document.activeElement).toBe(held ? draft : ta);
+                expect(document.activeElement).toBe(
+                    held ? draft : textareaEditor(ta),
+                );
                 if (held) expect(draft?.selectionStart).toBe(0);
-                else expect(ta.selectionStart).toBe(retainedCaret);
+                else
+                    expect(textareaEditor(ta).selectionStart).toBe(
+                        retainedCaret,
+                    );
                 expect(ta.value).toBe(text);
                 if (held) {
                     expect(draft?.isConnected).toBe(true);
                     expect(draft?.value).toBe('S');
-                    ta.dispatchEvent(
+                    textareaEditor(ta).dispatchEvent(
                         new KeyboardEvent('keydown', {
                             key: 'Escape',
                             bubbles: true,
@@ -1626,7 +1625,7 @@ describe('MarkedTextArea favorites: caret-scoped selection and pinned row', () =
                 .querySelector<HTMLButtonElement>('.ez-marking-tools__close')!
                 .click();
             if (mode === 'pointer')
-                ta.dispatchEvent(
+                textareaEditor(ta).dispatchEvent(
                     new MouseEvent('mousedown', {
                         button: 0,
                         detail: 1,
@@ -1635,8 +1634,8 @@ describe('MarkedTextArea favorites: caret-scoped selection and pinned row', () =
                 );
             ta.focus();
             if (mode === 'pointer') {
-                ta.setSelectionRange(3, 3);
-                ta.dispatchEvent(
+                textareaEditor(ta).setSelectionRange(3, 3);
+                textareaEditor(ta).dispatchEvent(
                     new MouseEvent('mouseup', {
                         button: 0,
                         detail: 1,
@@ -1707,7 +1706,7 @@ describe('MarkedTextArea favorites: caret-scoped selection and pinned row', () =
         ta.focus();
         moveCaret(ta, 1);
         await wait(30);
-        ta.dispatchEvent(
+        textareaEditor(ta).dispatchEvent(
             new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
         );
         ta.focus();
@@ -1870,9 +1869,7 @@ describe('MarkedTextArea registered mount hosts in mixed forms', () => {
             await waitFor(() => forms.isReady, 2000);
             for (const id of ['mixed-body-one', 'mixed-body-two']) {
                 const host = root.querySelector<HTMLTextAreaElement>(`#${id}`)!;
-                expect(host.classList.contains('marked-textarea-input')).toBe(
-                    true,
-                );
+                expect(host.hidden).toBe(true);
                 expect(
                     host
                         .closest('.marked-textarea-wrap')
@@ -1882,9 +1879,7 @@ describe('MarkedTextArea registered mount hosts in mixed forms', () => {
             const whole = root.querySelector<HTMLTextAreaElement>(
                 '#mixed-whole-editor',
             )!;
-            expect(whole.classList.contains('marked-textarea-input')).toBe(
-                false,
-            );
+            expect(whole.hidden).toBe(false);
             expect(
                 root.querySelector<HTMLTextAreaElement>('#mixed-body-one')!
                     .value,

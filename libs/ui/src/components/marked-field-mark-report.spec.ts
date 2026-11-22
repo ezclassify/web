@@ -1,3 +1,4 @@
+import { textareaEditor } from '../../test-fixtures/textarea-editor';
 /**
  * What the marked fields show about each mark.
  *
@@ -363,8 +364,8 @@ describe('the editor of a paragraph mark', () => {
         await wait(400);
         const start = textarea.value.indexOf('(I)') + 1;
         textarea.focus();
-        textarea.setSelectionRange(start, start);
-        textarea.dispatchEvent(
+        textareaEditor(textarea).setSelectionRange(start, start);
+        textareaEditor(textarea).dispatchEvent(
             new KeyboardEvent('keydown', {
                 key: 'Enter',
                 ctrlKey: true,
@@ -390,8 +391,8 @@ describe('the editor of a paragraph mark', () => {
         await wait(400);
         const start = textarea.value.indexOf('(I)') + 1;
         textarea.focus();
-        textarea.setSelectionRange(start, start);
-        textarea.dispatchEvent(
+        textareaEditor(textarea).setSelectionRange(start, start);
+        textareaEditor(textarea).dispatchEvent(
             new KeyboardEvent('keydown', {
                 key: 'Enter',
                 ctrlKey: true,
