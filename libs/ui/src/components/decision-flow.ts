@@ -109,6 +109,7 @@ import {
 import decisionFlowCss from './decision-flow.css?inline';
 import { getPublicFormatLayout, viewForCategory } from '../format-layout';
 import { observeNativeLock } from './dom-helpers';
+import { getMountHost } from '../mount-host-registry';
 import type { EzClassifyState } from '../store/ezclassify-store';
 import {
     fieldOutputFor,
@@ -144,6 +145,8 @@ export interface DecisionFlowOptions extends ComponentOptions {
      * JSON array, or a comma or space list, of category IDs in step order.
      */
     categories?: string;
+    /** Original controls when several declared scopes share one flow. @internal */
+    nativeFields?: readonly (HTMLInputElement | HTMLTextAreaElement)[];
 }
 
 interface ConceptDef {
@@ -404,12 +407,7 @@ export class DecisionFlow extends ComponentBase {
         this.setOpen(false);
     };
     private readonly requestOptions = () => {
-        if (
-            this._destroyed ||
-            this.rendering ||
-            this.enhancedInput?.matches(':disabled, [readonly]')
-        )
-            return;
+        if (this._destroyed || this.rendering || this.nativeLocked) return;
         void this.refreshOptions();
     };
 
@@ -432,6 +430,46 @@ export class DecisionFlow extends ComponentBase {
             scopes,
             scope: scopes.length === 1 ? scopes[0] : undefined,
         } as DecisionFlowOptions);
+    }
+
+    private formWrite?: Promise<void>;
+    private formChoice?: Promise<void>;
+
+    /** Whether an authored update has reached the marking store. @internal */
+    get formEditPending(): boolean {
+        return !!(this.formWrite || this.formChoice);
+    }
+
+    private trackFormEdit(
+        edit: Promise<void>,
+        slot: 'formWrite' | 'formChoice',
+    ): Promise<void> {
+        if (!this.flowOptions.nativeFields) return edit;
+        this[slot] = edit;
+        return edit.finally(() => {
+            if (this[slot] === edit) this[slot] = undefined;
+        });
+    }
+
+    protected override reprocessNow(processEmpty = false): Promise<void> {
+        return this.trackFormEdit(
+            super.reprocessNow(processEmpty),
+            'formWrite',
+        );
+    }
+
+    protected override nativeInputFor(container: HTMLDivElement) {
+        if (this.flowOptions.nativeFields) return null;
+        const host = getMountHost(container);
+        return host instanceof HTMLTextAreaElement
+            ? host
+            : super.nativeInputFor(container);
+    }
+
+    private get nativeLocked(): boolean {
+        return (this.flowOptions.nativeFields ?? [this.enhancedInput]).some(
+            (field) => field?.matches(':disabled, [readonly]'),
+        );
     }
 
     protected override valueOutputFormat(): string | undefined {
@@ -533,7 +571,7 @@ export class DecisionFlow extends ComponentBase {
             if (
                 this._destroyed ||
                 sequence !== this.pickSequence ||
-                this.enhancedInput?.matches(':disabled, [readonly]')
+                this.nativeLocked
             )
                 return false;
             if (
@@ -560,11 +598,15 @@ export class DecisionFlow extends ComponentBase {
         };
         // A choice the engine has not offered yet may be on its way: the
         // options for the marking as it now stands are still loading.
+        this.formChoice = undefined;
         if (this.catalogReady && apply()) return;
-        void this.refreshOptions(false).then(() => {
-            if (this._destroyed || sequence !== this.pickSequence) return;
-            if (!apply()) this.render();
-        });
+        void this.trackFormEdit(
+            this.refreshOptions(false).then(() => {
+                if (this._destroyed || sequence !== this.pickSequence) return;
+                if (!apply()) this.render();
+            }),
+            'formChoice',
+        );
     }
 
     private visibleConcepts(step: StepDef): ConceptDef[] {
@@ -786,13 +828,15 @@ export class DecisionFlow extends ComponentBase {
         document.addEventListener('click', this.outsideClick);
         document.addEventListener('pointerup', this.releasePointer);
         document.addEventListener('pointercancel', this.finishPointer);
-        this.stopObservingLock = observeNativeLock(
-            this.enhancedInput,
-            (locked) => {
-                this.locked = locked;
+        const stopLocks = (
+            this.flowOptions.nativeFields ?? [this.enhancedInput]
+        ).map((native) =>
+            observeNativeLock(native, () => {
+                this.locked = this.nativeLocked;
                 this.render();
-            },
+            }),
         );
+        this.stopObservingLock = () => stopLocks.forEach((stop) => stop());
         this.render();
         // The steps the flow shows are the engine's answer, at rest as when
         // open, so its dots do not change when it opens.
@@ -2097,11 +2141,7 @@ export class DecisionFlow extends ComponentBase {
                         this.hideBlockReason();
                 },
                 onActivate: () => {
-                    if (
-                        this._destroyed ||
-                        this.enhancedInput?.matches(':disabled, [readonly]')
-                    )
-                        return;
+                    if (this._destroyed || this.nativeLocked) return;
                     // Restore focus to this option after the DOM rebuild that follows reprocess().
                     this._restoreFocusAfterRender = true;
                     this._lastFocusConceptId = concept.id;
@@ -2398,11 +2438,7 @@ export class DecisionFlow extends ComponentBase {
         };
 
         input.addEventListener('input', () => {
-            if (
-                this._destroyed ||
-                this.enhancedInput?.matches(':disabled, [readonly]')
-            )
-                return;
+            if (this._destroyed || this.nativeLocked) return;
             showError(false);
             this.fitFormat(input);
             this.enterValue(step, concept, input);
@@ -2587,11 +2623,7 @@ export class DecisionFlow extends ComponentBase {
                         this.hideBlockReason();
                 },
                 onActivate: () => {
-                    if (
-                        this._destroyed ||
-                        this.enhancedInput?.matches(':disabled, [readonly]')
-                    )
-                        return;
+                    if (this._destroyed || this.nativeLocked) return;
                     this._restoreFocusAfterRender = true;
                     this._lastFocusConceptId = concept.id;
                     this.pick(step, concept.id, () => {
@@ -2787,12 +2819,7 @@ export class DecisionFlow extends ComponentBase {
             this.flowEl.insertBefore(this.fixesList.element, this.previewEl);
         }
         this.fixesList.update({ messages: [], warnings: [], fixes }, (fix) => {
-            if (
-                this._destroyed ||
-                this.locked ||
-                this.enhancedInput?.matches(':disabled, [readonly]')
-            )
-                return;
+            if (this._destroyed || this.locked || this.nativeLocked) return;
             if (this.ruleFixesInput !== this.proofInputKey()) {
                 this.clearRuleFixes();
                 return;

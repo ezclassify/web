@@ -244,6 +244,8 @@ export interface ComponentOptions {
      * `data-ezclassify-facet-of` attribute on the host element.
      */
     facetOf?: string;
+    /** The store's current judgment on the whole this facet edits. @internal */
+    resolveFacetJudgment?: () => EzClassifyState;
     /**
      * For a facet of a marking no field shows (a hidden host with only facets):
      * why that marking could not be written, when it could not. Nothing else on
@@ -484,7 +486,8 @@ export abstract class ReadOnlyComponentBase
     private reportInField = false;
 
     /** The original <input> element being progressively enhanced (if any) */
-    protected enhancedInput: HTMLInputElement | null = null;
+    protected enhancedInput: HTMLInputElement | HTMLTextAreaElement | null =
+        null;
 
     /**
      * Refuse an engine missing a capability this component needs, once, where
@@ -593,29 +596,7 @@ export abstract class ReadOnlyComponentBase
             );
         }
 
-        // Find the original input for progressive enhancement.
-        // Only consider text/hidden inputs (not radios/checkboxes which belong to native fallback UI)
-        const inputSelector =
-            'input[type="text"], input[type="hidden"], input:not([type])';
-        // A runtime-mounted controller binds exactly its registered host, or an
-        // input inside its own container. The parent-wide search remains only
-        // for a component mounted by hand with no registered host; under the
-        // runtime it would bind the first input of a form whose fields share
-        // one parent, and write this field's value into that other field.
-        const host = getMountHost(container);
-        this.enhancedInput = host
-            ? host.matches(inputSelector)
-                ? (host as HTMLInputElement)
-                : host.matches(
-                        'fieldset[data-ezclassify-controller="selector"], fieldset[data-ezclassify-controller="checklist"]',
-                    )
-                  ? host.querySelector<HTMLInputElement>('input[type="hidden"]')
-                  : container.querySelector<HTMLInputElement>(inputSelector)
-            : (container.querySelector<HTMLInputElement>(inputSelector) ??
-              container.parentElement?.querySelector<HTMLInputElement>(
-                  inputSelector,
-              ) ??
-              null);
+        this.enhancedInput = this.nativeInputFor(container);
 
         // Determine initial value: explicit option > enhanced input > empty
         let initialValue = options?.initialValue ?? '';
@@ -679,6 +660,34 @@ export abstract class ReadOnlyComponentBase
         if (this.enhancedInput) {
             this.enhancedInput.value = this._lastRendered;
         }
+    }
+
+    protected nativeInputFor(
+        container: HTMLDivElement,
+    ): HTMLInputElement | HTMLTextAreaElement | null {
+        // Find the original input for progressive enhancement.
+        // Only consider text/hidden inputs (not radios/checkboxes which belong to native fallback UI)
+        const inputSelector =
+            'input[type="text"], input[type="hidden"], input:not([type])';
+        // A runtime-mounted controller binds exactly its registered host, or an
+        // input inside its own container. The parent-wide search remains only
+        // for a component mounted by hand with no registered host; under the
+        // runtime it would bind the first input of a form whose fields share
+        // one parent, and write this field's value into that other field.
+        const host = getMountHost(container);
+        return host
+            ? host.matches(inputSelector)
+                ? (host as HTMLInputElement)
+                : host.matches(
+                        'fieldset[data-ezclassify-controller="selector"], fieldset[data-ezclassify-controller="checklist"]',
+                    )
+                  ? host.querySelector<HTMLInputElement>('input[type="hidden"]')
+                  : container.querySelector<HTMLInputElement>(inputSelector)
+            : (container.querySelector<HTMLInputElement>(inputSelector) ??
+                  container.parentElement?.querySelector<HTMLInputElement>(
+                      inputSelector,
+                  ) ??
+                  null);
     }
 
     getAssertions(): Assertion[] {
@@ -1088,19 +1097,44 @@ export abstract class ReadOnlyComponentBase
         if (this.options.facetOf) this.showRuleErrors(this.facetReport());
     }
 
-    /**
-     * What a facet shows. By default only its marking's refusal is reported; a
-     * category editor can also report judgments on its own displayed facts.
-     */
+    /** Report the whole's errors that the runtime associates with this facet. */
     protected facetReport(
         _errors?: readonly ValidationError[],
         _proposedFixes: readonly Fix[] = [],
         _warnings: readonly Warning[] = [],
     ): RuleErrorReport {
         const messages = this.options.resolveFacetRefusal?.() ?? [];
-        return messages.length > 0
-            ? { ...NO_RULE_ERRORS, messages: [...messages] }
-            : NO_RULE_ERRORS;
+        const state = this.options.resolveFacetJudgment?.();
+        const category = this.options.categoryId;
+        if (!state || !category)
+            return messages.length > 0
+                ? { ...NO_RULE_ERRORS, messages: [...messages] }
+                : NO_RULE_ERRORS;
+
+        const localConcepts = new Set(
+            this.scheme.concepts
+                .filter((concept) => concept.categories.includes(category))
+                .map(({ id }) => id),
+        );
+        const fixes = state.proposedFixes ?? [];
+        const fixesTouchFacet = fixes.some((fix) =>
+            [...fix.adds, ...fix.removes].some(
+                (ref) => ref.categoryId === category,
+            ),
+        );
+        const errors = state.errors.filter(
+            (error) =>
+                error.categoryId === category ||
+                error.affectedConcepts?.some((id) => localConcepts.has(id)) ||
+                // With one error, a runtime fix touching this category
+                // identifies it as another place the author can resolve it.
+                (state.errors.length === 1 && fixesTouchFacet),
+        );
+        const report = ruleErrorsFrom(errors, fixes);
+        return {
+            ...report,
+            messages: [...new Set([...report.messages, ...messages])],
+        };
     }
 
     private showRuleErrors(report: RuleErrorReport): void {

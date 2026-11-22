@@ -346,6 +346,8 @@ const DERIVING_ATTRS: readonly string[] = [
     ...VIEW_ATTRS,
     'data-ezclassify-category',
     'data-ezclassify-scope',
+    'data-ezclassify-decisionflow-combine',
+    'data-ezclassify-format',
     ...STRUCTURAL_ATTRS,
 ];
 
@@ -445,6 +447,13 @@ export function observeNewElements(
                         references = true;
                     continue;
                 }
+                if (
+                    m.attributeName === 'data-ezclassify-format' &&
+                    !(m.target as Element).hasAttribute(
+                        'data-ezclassify-decisionflow-combine',
+                    )
+                )
+                    continue;
                 if (m.attributeName === COLLECTION_ATTR) references = true;
                 if (m.target instanceof HTMLElement) restructured.add(m.target);
                 continue;

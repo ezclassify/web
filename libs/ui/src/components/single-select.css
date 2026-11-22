@@ -275,12 +275,9 @@
 }
 
 /* ── Dropdown mode ────────────────────────────────── */
-/* The select sits in the suite's field frame (field-chrome.css), which draws
-   the edge, the padding and the focus ring; the select itself is bare inside
-   it, and the chrome lies over the trailing edge the way it does on the text
-   fields, with its reserve kept clear. Its rules weigh one class, so a host's
-   own rule for its selects (a class and an element, say) still sets the
-   select's type. */
+/* An authored select draws the whole field edge. Its text reserves room for
+   the chevron and the two controls over its trailing edge. An owned select
+   uses the suite frame for that edge instead. */
 .select-dropdown-field {
     display: flex;
     align-items: center;
@@ -293,7 +290,10 @@
     flex: 1;
     min-width: 0;
     width: 100%;
-    padding-inline-end: calc(var(--ez-spacing-md, 0.75rem) + 0.75em);
+    padding-inline-end: calc(
+        var(--ez-field-chrome-inline-size, 0px) + 0.5rem +
+            var(--ez-spacing-md, 0.75rem) + 0.75em
+    ) !important;
 }
 .select-dropdown-field--native::after {
     content: '';
@@ -327,6 +327,9 @@
     outline: none;
 }
 @media (pointer: coarse) {
+    .select-dropdown-native {
+        min-height: 2.75rem;
+    }
     .select-dropdown {
         min-height: 2.75rem;
         font-size: max(1em, 16px);

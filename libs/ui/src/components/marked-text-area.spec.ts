@@ -1272,6 +1272,29 @@ describe('MarkedTextArea favorites', () => {
         expect(root.querySelector('.marked-textarea-picker-mount')).toBeNull();
     });
 
+    it('keeps tools open after the first press when the display repaints', async () => {
+        const load = vi.fn(async () => [{ marking: 'S' }]);
+        const { ta, field } = await mountDirect('', {
+            favorites: { load },
+        });
+        textareaEditor(ta).focus();
+        const button = root.querySelector<HTMLButtonElement>(
+            '.ez-status-mark--tools',
+        )!;
+        try {
+            button.click();
+            expect(button.getAttribute('aria-expanded')).toBe('true');
+            field['renderDisplay']();
+            await wait(80);
+            expect(button.getAttribute('aria-expanded')).toBe('true');
+            expect(
+                document.querySelector('.ez-tooltip--tools:not([hidden])'),
+            ).not.toBeNull();
+        } finally {
+            field.destroy();
+        }
+    });
+
     it('Esc closes the tools and returns focus to the branding button', async () => {
         const load = vi.fn(async () => [{ marking: 'S' }]);
         const { ta } = await mountDirect('', { favorites: { load } });

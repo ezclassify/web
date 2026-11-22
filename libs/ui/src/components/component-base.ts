@@ -36,6 +36,7 @@ import {
 import { t } from '../i18n';
 import { type FavoritesPanelHost } from './favorites-panel';
 import { markingTarget } from './marking-target';
+import { getMountHost } from '../mount-host-registry';
 import {
     assertDescribesConcepts,
     createConceptDescriber,
@@ -758,6 +759,37 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
     protected override ruleFixHandler(): (fix: Fix) => void {
         return (fix) => {
             if (this._destroyed) return;
+            const facet = this.options.resolveFacetJudgment;
+            if (facet) {
+                if (
+                    !facet().proposedFixes?.includes(fix) ||
+                    (
+                        getMountHost(this.container) ?? this.enhancedInput
+                    )?.matches(':disabled, [readonly]')
+                )
+                    return;
+                const apply = markingTarget(this)?.applyFix;
+                if (apply) {
+                    void Promise.resolve()
+                        .then(() => {
+                            if (
+                                !this._destroyed &&
+                                facet().proposedFixes?.includes(fix)
+                            )
+                                return apply(fix, new AbortController().signal);
+                        })
+                        .catch((error: unknown) => {
+                            if (!this._destroyed && this.undoAnnouncer)
+                                announce(
+                                    this.undoAnnouncer,
+                                    error instanceof Error
+                                        ? error.message
+                                        : String(error),
+                                );
+                        });
+                }
+                return;
+            }
             this.beginUserEdit();
             this.reprocessEdit(this.fixedAssertions(fix, this.assertions));
         };

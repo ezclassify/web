@@ -700,9 +700,41 @@ When a hidden marking is empty, enhancement starts from the native picker
 selections. For a populated marking, native edits replace only their own
 category. Use concept IDs as the values of native select options and checkboxes.
 
-An independent DecisionFlow can enhance a named hidden input directly. With
-more than one scope and no explicit format, its native value uses the Runtime's
-automatic output so the form can submit the whole marking.
+Put `data-ezclassify-controller="decisionflow"` on a text input or textarea
+to guide the author through one scope. The original control keeps its name
+and submitted value.
+
+Add `data-ezclassify-decisionflow-combine` to each native field that should
+share one flow. The fields must be in the same form, use the same marking
+as their `data-ezclassify-bound-to` target, and each name a different
+`data-ezclassify-scope`. The flow appears at the first field. The native
+values initialize their scopes, and the runtime writes subsequent changes
+back to both native fields and the hidden whole.
+
+```html
+<input id="whole" type="hidden" name="marking" data-ezclassify-marking />
+
+<label for="classification">Classification marking</label>
+<input
+    id="classification"
+    name="classification"
+    data-ezclassify-controller="decisionflow"
+    data-ezclassify-decisionflow-combine
+    data-ezclassify-scope="classification"
+    data-ezclassify-bound-to="whole" />
+
+<label for="authority">Classification authority block</label>
+<textarea
+    id="authority"
+    name="authority"
+    data-ezclassify-controller="decisionflow"
+    data-ezclassify-decisionflow-combine
+    data-ezclassify-scope="authority"
+    data-ezclassify-bound-to="whole"></textarea>
+```
+
+Use the scope IDs from your marking language. A named hidden input can also
+host a standalone flow when the form only needs the rendered marking.
 
 ## Theming
 

@@ -2075,7 +2075,9 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         const selEnd = this.hasFocus ? this.textarea.selectionEnd : -1;
         const hasSelection = selStart !== selEnd && selStart >= 0;
 
-        if (!statusMarkFavoriteApplyOwner(this.toolsButton))
+        // Repainting the marking chips can dismiss their old hover, but the
+        // tools dialog is anchored to the persistent button outside the display.
+        if (this.toolsButton?.getAttribute('aria-expanded') !== 'true')
             hideTooltip(this.container);
         this.clearSegmentHover();
         this.display.innerHTML = '';

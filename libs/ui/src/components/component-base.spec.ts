@@ -12,6 +12,7 @@ import type {
     Fix,
 } from '@ezclassify/types';
 import { schemeOnlyContext } from '../../test-fixtures/context-doubles';
+import type { EzClassifyState } from '../store/ezclassify-store';
 import { mockProcessResult } from '../engine-result-mock';
 import { mockRenderFormats } from '../render-format-layout-mock';
 
@@ -51,6 +52,9 @@ class TestComponent extends ComponentBase {
     }
     doReprocess(): void {
         this.reprocess();
+    }
+    doFacetReport() {
+        return this.facetReport();
     }
     doApplyRuleFix(fix: Fix): void {
         this.ruleFixHandler()(fix);
@@ -220,6 +224,41 @@ describe('ComponentBase', () => {
     afterEach(() => {
         component.destroy();
         container.remove();
+    });
+
+    it('shows whole-marking feedback in a facet affected by the runtime remedy', async () => {
+        const fix: Fix = {
+            message: 'Remove the incompatible value.',
+            rendered: 'C1',
+            keeps: [{ categoryId: 'cat1', conceptId: 'c1' }],
+            adds: [],
+            removes: [{ categoryId: 'cat2', conceptId: 'c2' }],
+        };
+        const state: EzClassifyState = {
+            valid: false,
+            rendered: 'C1/C2',
+            assertions: [],
+            renders: {},
+            errors: [
+                {
+                    constraintId: 'requires',
+                    categoryId: 'cat1',
+                    message: 'These values do not go together.',
+                },
+            ],
+            proposedFixes: [fix],
+        };
+        await component.init(container, toCtx(engine), {
+            facetOf: 'whole',
+            categoryId: 'cat2',
+            resolveFacetJudgment: () => state,
+        });
+        expect(component.doFacetReport()).toMatchObject({
+            messages: ['These values do not go together.'],
+            fixes: [{ fix }],
+        });
+        state.proposedFixes = [];
+        expect(component.doFacetReport().messages).toEqual([]);
     });
 
     it('addAssertion creates a new assertion and reprocesses', () => {

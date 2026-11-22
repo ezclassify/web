@@ -144,7 +144,7 @@ export function isMacPlatform(): boolean {
  * observation when the enhancement is destroyed.
  */
 export function observeNativeLock(
-    host: HTMLInputElement | null,
+    host: HTMLInputElement | HTMLTextAreaElement | null,
     update: (locked: boolean) => void,
 ): () => void {
     const refresh = () => update(!!host?.matches(':disabled, [readonly]'));

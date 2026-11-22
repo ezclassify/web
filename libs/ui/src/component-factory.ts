@@ -15,6 +15,7 @@ import {
 import type { ControllerName } from './element-scanner';
 import { resolveFormatAttr } from './format-resolver';
 import { parseScopeList } from './scopes';
+import { isNativeTextField } from './decision-flow-form';
 import { setMountHost } from './mount-host-registry';
 import type {
     ComponentInstance,
@@ -189,6 +190,7 @@ export function createMountContainer(
         controller === 'marked-textarea' ||
         controller === 'marked-input' ||
         controller === 'marking' ||
+        (controller === 'decisionflow' && isNativeTextField(el)) ||
         (controller === 'select' && isNativeSingleSelect(el));
 
     if (isInteractive) {

@@ -16,8 +16,13 @@ import type {
     CategoryView,
 } from '@ezclassify/types';
 import { schemeOnlyContext } from '../../test-fixtures/context-doubles';
+import { EzClassifyUI } from '../ezclassify-ui';
 import { setStatusMarkFixes } from './status-mark';
-import { mockAssertion, mockProcessResult } from '../engine-result-mock';
+import {
+    mockAssertion,
+    mockProcessResult,
+    mockValidateResult,
+} from '../engine-result-mock';
 import {
     mockRenderFormat,
     mockRenderFormats,
@@ -6202,5 +6207,198 @@ describe('DecisionFlow: steps in written order', () => {
         )!;
         expect(usa.classList).toContain('ez-decision-flow__option--inferred');
         expect(usa.getAttribute('aria-pressed')).toBe('false');
+    });
+});
+
+describe('DecisionFlow native scopes', () => {
+    function mount(combine: boolean, options?: { sameScope?: boolean }) {
+        const form = document.createElement('form');
+        const attrs = `data-ezclassify-controller="decisionflow" data-ezclassify-bound-to="scoped-whole"
+            ${combine ? 'data-ezclassify-decisionflow-combine' : ''}`;
+        form.innerHTML = `
+            <input id="scoped-whole" name="whole" type="hidden" data-ezclassify-marking>
+            <input name="label" value="T:A" data-ezclassify-scope="marking" ${attrs}>
+            <textarea name="details" data-ezclassify-scope="${options?.sameScope ? 'marking' : 'admin'}" ${attrs}>AX</textarea>`;
+        document.body.append(form);
+        const engine = createScopedEngine();
+        const getMeta = engine.getSchemeMeta.bind(engine);
+        engine.getSchemeMeta = () => ({
+            ...getMeta(),
+            formats: [
+                mockRenderFormat({
+                    id: 'default',
+                    surface: 'marking',
+                    categoryOrder: ['level'],
+                }),
+                mockRenderFormat({
+                    id: 'admin',
+                    surface: 'admin',
+                    categoryOrder: ['admin_cat'],
+                }),
+            ],
+        });
+        engine.aggregateAssertions = vi.fn(async (sets: Assertion[][]) => {
+            const assertions = sets.flat();
+            return {
+                ...(await engine.render(assertions)),
+                assertions,
+                valid: true,
+                errors: [],
+                warnings: [],
+            };
+        }) as unknown as typeof engine.aggregateAssertions;
+        const process = engine.process.bind(engine);
+        engine.process = (async (
+            input: string | Assertion[],
+            options?: { assertions?: Assertion[] },
+        ) =>
+            typeof input === 'string'
+                ? process(input, options)
+                : mockProcessResult({
+                      assertions: input,
+                      rendered: (await engine.render(input)).rendered,
+                  })) as typeof engine.process;
+        const scheme = engine.getScheme();
+        engine.validate = vi.fn((raw) => {
+            const concept = scheme.concepts.find(
+                (item) => item.views.default === raw,
+            );
+            return mockValidateResult(
+                concept
+                    ? {
+                          assertions: [
+                              mockAssertion({
+                                  conceptId: concept.id,
+                                  categoryId: concept.categories[0],
+                              }),
+                          ],
+                          recognition: { status: 'complete', unmatched: [] },
+                          rendered: raw,
+                      }
+                    : { valid: false },
+            );
+        });
+        const ui = new EzClassifyUI(toCtx(engine), { root: form });
+        const label = form.querySelector<HTMLInputElement>('[name="label"]')!;
+        const details = form.querySelector<HTMLTextAreaElement>('textarea')!;
+        const values = () => Object.fromEntries(new FormData(form));
+        const mounts = () =>
+            form.querySelectorAll<HTMLElement>(
+                '[data-ezclassify-mount="decisionflow"]',
+            );
+        const close = () => {
+            ui.destroy();
+            form.remove();
+        };
+        return { ui, form, label, details, values, mounts, close };
+    }
+
+    it('seeds one flow from both originals and announces only after the three form values agree', async () => {
+        const { form, label, details, values, mounts, close } = mount(true);
+        const seen = vi.fn(() => values());
+        form.addEventListener('ezclassify:change', seen);
+        try {
+            await vi.waitFor(() => expect(label.style.display).toBe('none'));
+            expect(details.style.display).toBe('none');
+            expect(mounts()).toHaveLength(1);
+            expect(values()).toEqual({
+                whole: 'T:A/AX',
+                label: 'T:A',
+                details: 'AX',
+            });
+
+            label.value = 'T:B';
+            label.dispatchEvent(new Event('input', { bubbles: true }));
+            await vi.waitFor(() =>
+                expect(seen).toHaveLastReturnedWith({
+                    whole: 'T:B/AX',
+                    label: 'T:B',
+                    details: 'AX',
+                }),
+            );
+
+            details.value = 'unread';
+            details.dispatchEvent(new Event('input', { bubbles: true }));
+            await vi.waitFor(() => expect(details.validity.valid).toBe(false));
+            expect(details.style.display).toBe('');
+            expect(details.value).toBe('unread');
+            expect(values().whole).toBe('');
+            const submit = new Event('submit', {
+                bubbles: true,
+                cancelable: true,
+            });
+            expect(form.dispatchEvent(submit)).toBe(false);
+
+            form.reset();
+            await vi.waitFor(() =>
+                expect(values()).toEqual({
+                    whole: 'T:A/AX',
+                    label: 'T:A',
+                    details: 'AX',
+                }),
+            );
+            expect(details.validity.valid).toBe(true);
+        } finally {
+            close();
+        }
+        expect(label.style.display).toBe('');
+        expect(details.value).toBe('AX');
+    });
+
+    it('remounts the remaining field when the first grouped field is removed', async () => {
+        const { label, details, mounts, close } = mount(true);
+        try {
+            await vi.waitFor(() => expect(details.style.display).toBe('none'));
+            label.remove();
+            await vi.waitFor(() => {
+                expect(mounts()).toHaveLength(1);
+                expect(mounts()[0].previousElementSibling).toBe(details);
+                expect(mounts()[0].hidden).toBe(false);
+            });
+        } finally {
+            close();
+        }
+    });
+
+    it('keeps the scoped textarea as the native field when it mounts by itself', async () => {
+        const { form, details, mounts, close } = mount(false);
+        try {
+            await vi.waitFor(() => expect(mounts()).toHaveLength(2));
+            expect(mounts()[1].previousElementSibling).toBe(details);
+            expect(new FormData(form).has('details')).toBe(true);
+            await vi.waitFor(() => {
+                expect(
+                    mounts()[1].querySelector('.ez-decision-flow'),
+                ).not.toBeNull();
+            });
+        } finally {
+            close();
+        }
+        expect(details.style.display).toBe('');
+    });
+
+    it('mounts separate flows when the fields do not opt in', async () => {
+        const { mounts, close } = mount(false);
+        try {
+            await vi.waitFor(() => expect(mounts()).toHaveLength(2));
+        } finally {
+            close();
+        }
+    });
+
+    it('leaves the native fields available if the opted-in scopes repeat', async () => {
+        const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+        const { mounts, close, label, details } = mount(true, {
+            sameScope: true,
+        });
+        try {
+            expect(mounts()).toHaveLength(0);
+            expect(label.style.display).toBe('');
+            expect(details.style.display).toBe('');
+            expect(log).toHaveBeenCalled();
+        } finally {
+            close();
+            log.mockRestore();
+        }
     });
 });

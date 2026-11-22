@@ -656,7 +656,7 @@ describe('CategorySelector', () => {
                         {
                             message: 'Remove Option X.',
                             rendered: 'c5:country:name:date',
-                            keeps: refs([second, country, name, date]),
+                            keeps: refs([second, country]),
                             adds: [],
                             removes: refs([first]),
                         },

@@ -198,7 +198,7 @@ export class MarkingField extends ComposerFieldBase {
         this.wrap.className = 'marking-field-wrap';
         native.parentNode?.insertBefore(this.wrap, native);
         this.wrap.appendChild(native);
-        if (native.tagName === 'INPUT') this.createInputEditor(native);
+        if (native instanceof HTMLInputElement) this.createInputEditor(native);
         const host = this.host;
 
         host.classList.add('marking-field-host');

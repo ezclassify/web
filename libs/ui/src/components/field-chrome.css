@@ -57,7 +57,7 @@
 .marked-input-wrap > .marked-input-display,
 .marked-textarea-wrap > .marked-textarea-input,
 .marked-textarea-wrap > .marked-textarea-display,
-.select-dropdown-field {
+.select-dropdown-field:not(.select-dropdown-field--native) {
     padding-inline-end: calc(
         var(--ez-field-chrome-inline-size, 0px) + 0.5rem
     ) !important;
