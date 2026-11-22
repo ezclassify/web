@@ -584,7 +584,7 @@ function chipHost(element: HTMLElement, target: HTMLElement): HTMLElement {
     // owned field wrapper contains the visible editor, errors and fixes.
     const native = getMountHost(element) ?? element;
     const enhancement = native.closest<HTMLElement>(
-        '.marking-field-wrap, .marked-input-wrap',
+        '.marking-field-wrap, .marked-input-wrap, .marked-textarea-wrap',
     );
     if (
         enhancement &&
