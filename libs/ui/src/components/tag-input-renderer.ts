@@ -48,6 +48,7 @@ export interface TagChipRenderContext {
     filterInput: HTMLInputElement;
     getCategoryColor: (categoryId: string) => string;
     getCategoryTextColor: (categoryId: string) => string;
+    categoryHueOffset?: (categoryId: string) => number | undefined;
     /**
      * Category that drives the scheme-default display color
      * (`render.color_from`). When set, a chip whose concept carries a mandated
@@ -257,6 +258,14 @@ export function renderTagChips(ctx: TagChipRenderContext): HTMLElement[] {
                     : undefined,
                 editable: editableOpts,
             });
+            const hue =
+                authority || ctx.colorCoding === false
+                    ? undefined
+                    : ctx.categoryHueOffset?.(a.categoryId);
+            if (hue !== undefined) {
+                el.setAttribute('data-ez-themed-category', '');
+                el.style.setProperty('--ez-category-hue-offset', String(hue));
+            }
             el.tabIndex = -1;
             el.addEventListener('click', (e) => {
                 e.stopPropagation();

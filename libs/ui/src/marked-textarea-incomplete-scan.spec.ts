@@ -6,6 +6,7 @@
  * rollups its portions feed are flagged stale, until a scan that reads the
  * whole text clears all three.
  */
+import { textareaEditor } from '../test-fixtures/textarea-editor';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ScanOutcome } from '@ezclassify/types';
 import { EzClassifyUI } from './ezclassify-ui';
@@ -483,14 +484,15 @@ describe('MarkedTextArea scan that does not read the whole text', () => {
         expect(announcer()?.getAttribute('aria-live')).toBe('polite');
         expect(notice()?.hidden).toBe(false);
         expect(notice()?.textContent).toContain(message);
-        const describedBy = textarea.getAttribute('aria-describedby') ?? '';
+        const describedBy =
+            textareaEditor(textarea).getAttribute('aria-describedby') ?? '';
         expect(describedBy.split(' ')).toContain(notice()!.id);
 
         control.stopEarly = false;
         await type(textarea, '(ST) First.\n(DC) Second.');
         expect(notice()?.hidden).toBe(true);
-        expect(textarea.getAttribute('aria-describedby') ?? '').not.toContain(
-            notice()!.id,
-        );
+        expect(
+            textareaEditor(textarea).getAttribute('aria-describedby') ?? '',
+        ).not.toContain(notice()!.id);
     });
 });

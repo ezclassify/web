@@ -22,6 +22,7 @@ import type {
 import { returnToField, partsOption } from './component-base-readonly';
 import { getMountHost } from '../mount-host-registry';
 import { accessibleLabel } from './composer/composer-view';
+import { bindNativeTextEditor } from './native-text-editor';
 import { takenFromWhole, withStatedAssertions } from '../assertion-identity';
 import {
     renderViewRefusalMessages,
@@ -80,7 +81,6 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
     protected override options: MarkedInputOptions = {};
     private nativeInput!: HTMLInputElement;
     private releaseInputEditor: (() => void) | null = null;
-    private forwardingInput = false;
 
     /** Readability alias for the owned wrapping editor. */
     private get input(): HTMLTextAreaElement {
@@ -165,6 +165,7 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
 
         this.host = this.resolveHost();
         const input = this.input;
+        this.styleNativeField(this.nativeInput);
 
         // Capture the input's current styles before making it invisible.
         // window.getComputedStyle() returns a live CSSStyleDeclaration, snapshot
@@ -187,6 +188,9 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
             'borderWidth',
             'borderStyle',
             'borderRadius',
+            'font',
+            'fontSize',
+            'lineHeight',
             'paddingTop',
             'paddingRight',
             'paddingBottom',
@@ -225,6 +229,9 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
                 capturedStyles[p] = box[p];
                 this.display.style[p] = box[p];
             }
+            this.setMeasuredFontSize(box.fontSize);
+            input.style.font = box.font;
+            input.style.lineHeight = box.lineHeight;
             input.style.borderWidth = box.borderWidth;
             input.style.borderStyle = box.borderStyle;
             // The text starts where the host's padding puts it, in both layers.
@@ -456,178 +463,22 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
         return editor;
     }
 
-    /** Preserve the original form field while the owned editor wraps its text. */
     private wireInputEditor(): void {
-        const native = this.nativeInput;
-        const editor = this.input;
-        const cleanups: Array<() => void> = [];
-        const on = (
-            target: EventTarget,
-            type: string,
-            listener: EventListener,
-            capture = false,
-        ) => {
-            target.addEventListener(type, listener, capture);
-            cleanups.push(() =>
-                target.removeEventListener(type, listener, capture),
-            );
-        };
-        const hidden = native.hidden;
-        native.hidden = true;
-        const focus = Object.getOwnPropertyDescriptor(native, 'focus');
-        Object.defineProperty(native, 'focus', {
-            configurable: true,
-            value: (options?: FocusOptions) => editor.focus(options),
-        });
-        const attributes = [
-            'disabled',
-            'readonly',
-            'required',
-            'placeholder',
-            'tabindex',
-            'title',
-            'minlength',
-            'maxlength',
-            'form',
-            'aria-describedby',
-            'aria-required',
-            'aria-label',
-            'aria-labelledby',
-        ];
-        const sync = () => {
-            for (const name of attributes) {
-                const value = native.getAttribute(name);
-                if (value === null) editor.removeAttribute(name);
-                else editor.setAttribute(name, value);
-            }
-            const label = accessibleLabel(native, t('aria.markingInput'));
-            editor.removeAttribute('aria-label');
-            editor.removeAttribute('aria-labelledby');
-            editor.setAttribute(
-                label.id ? 'aria-labelledby' : 'aria-label',
-                native.getAttribute('aria-labelledby') ??
-                    label.id ??
-                    label.text,
-            );
-            if (editor.matches(':disabled') || editor.readOnly)
-                void this.closePicker();
-        };
-        sync();
-        const observer = new MutationObserver(sync);
-        observer.observe(native, {
-            attributes: true,
-            attributeFilter: attributes,
-        });
-        for (
-            let parent = native.parentElement;
-            parent;
-            parent = parent.parentElement
-        )
-            if (parent.tagName === 'FIELDSET')
-                observer.observe(parent, {
-                    attributes: true,
-                    attributeFilter: ['disabled'],
-                });
-        cleanups.push(() => observer.disconnect());
-        let hostValidity = native.validity.customError
-            ? native.validationMessage
-            : '';
-        const validity = Object.getOwnPropertyDescriptor(
-            native,
-            'setCustomValidity',
-        );
-        const writeValidity = native.setCustomValidity.bind(native);
-        const syncValidity = () =>
-            writeValidity(
-                editor.validity.customError
-                    ? editor.validationMessage
-                    : hostValidity,
-            );
-        Object.defineProperty(native, 'setCustomValidity', {
-            configurable: true,
-            value: (message: string) => {
-                hostValidity = String(message);
-                syncValidity();
-            },
-        });
-        const validityObserver = new MutationObserver(syncValidity);
-        validityObserver.observe(editor, {
-            attributes: true,
-            attributeFilter: ['aria-invalid'],
-        });
-        cleanups.push(() => {
-            validityObserver.disconnect();
-            if (validity)
-                Object.defineProperty(native, 'setCustomValidity', validity);
-            else delete (native as Partial<HTMLInputElement>).setCustomValidity;
-            writeValidity(hostValidity);
-        });
-        on(
-            editor,
-            'input',
-            () => {
-                native.value = editor.value;
-                editor.value = native.value;
-            },
-            true,
-        );
-        for (const type of ['input', 'change']) {
-            on(editor, type, (event) => {
-                event.stopPropagation();
-                native.value = editor.value;
-                this.forwardingInput = true;
-                try {
-                    native.dispatchEvent(new Event(type, { bubbles: true }));
-                } finally {
-                    this.forwardingInput = false;
-                }
-            });
-            on(native, type, () => {
-                if (this.forwardingInput || native.value === editor.value)
-                    return;
-                editor.value = native.value;
-                this.onInput();
-            });
-        }
-        on(
-            editor,
-            'keydown',
-            (event) => {
-                if (editor.matches(':disabled') || editor.readOnly)
-                    event.stopImmediatePropagation();
-            },
-            true,
-        );
-        for (const label of Array.from(native.labels ?? []))
-            on(label, 'click', (event) => {
-                if (
-                    event.target instanceof Element &&
-                    event.target.closest(
-                        'a[href], button, input, select, textarea, [contenteditable]',
-                    )
-                )
-                    return;
-                event.preventDefault();
-                editor.focus();
-            });
-        on(native, 'invalid', (event) => {
-            event.preventDefault();
-            editor.focus();
-        });
-        if (native.form)
-            on(native.form, 'reset', (event) =>
-                queueMicrotask(() => {
-                    if (this.destroyed || event.defaultPrevented) return;
+        this.releaseInputEditor = bindNativeTextEditor(
+            this.nativeInput,
+            this.input,
+            {
+                label: () => t('aria.markingInput'),
+                onNativeInput: (changed) => {
+                    if (changed) this.onInput();
+                },
+                onLocked: () => void this.closePicker(),
+                onReset: () => {
                     this.destroyPicker();
-                    this.setValue(native.value);
-                }),
-            );
-        this.releaseInputEditor = () => {
-            for (const cleanup of cleanups) cleanup();
-            native.hidden = hidden;
-            if (focus) Object.defineProperty(native, 'focus', focus);
-            else delete (native as unknown as { focus?: unknown }).focus;
-        };
+                    this.setValue(this.nativeInput.value);
+                },
+            },
+        ).release;
     }
 
     /**
@@ -1259,6 +1110,7 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
         const selEnd = this.hasFocus ? (this.input.selectionEnd ?? -1) : -1;
         const hasSelection = selStart >= 0 && selStart !== selEnd;
 
+        this.clearSegmentHover();
         this.display.innerHTML = '';
 
         // Append a text run, wrapping any part inside the active selection in
@@ -1319,7 +1171,6 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
                     valid: this.valid,
                     errors: this.errors,
                     warnings: this.warnings,
-                    assertions: this.assertions,
                 });
                 chip.dataset.start = '0';
                 chip.dataset.end = String(this.markEnd);
@@ -1343,7 +1194,12 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
                             document.createTextNode(mark.slice(overlapEnd)),
                         );
                 } else {
-                    chip.textContent = mark;
+                    this.paintSegmentConceptHints(
+                        chip,
+                        mark,
+                        this.assertions,
+                        this._fixesAssessment,
+                    );
                 }
                 this.display.appendChild(chip);
             }

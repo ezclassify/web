@@ -7,9 +7,15 @@
  * arranging the mount container.
  */
 
+import {
+    isNativeSingleSelect,
+    markGeneratedChoiceValue,
+    nativeChoiceGroup,
+} from './native-control-host';
 import type { ControllerName } from './element-scanner';
 import { resolveFormatAttr } from './format-resolver';
 import { parseScopeList } from './scopes';
+import { isNativeTextField } from './decision-flow-form';
 import { setMountHost } from './mount-host-registry';
 import type {
     ComponentInstance,
@@ -131,12 +137,20 @@ export function resolveNativeInput(
     el: HTMLElement,
     controller: ControllerName,
 ): HTMLInputElement {
-    if (el.tagName === 'FIELDSET') {
+    if (el.tagName === 'FIELDSET' && !nativeChoiceGroup(el)) {
         let hidden = el.querySelector<HTMLInputElement>('input[type="hidden"]');
         if (!hidden) {
             hidden = document.createElement('input');
             hidden.type = 'hidden';
-            hidden.name = el.getAttribute('name') ?? el.id ?? controller;
+            const categoryChoice =
+                controller === 'selector' || controller === 'checklist';
+            const usesSharedValue =
+                categoryChoice &&
+                (el.hasAttribute('data-ezclassify-facet-of') ||
+                    el.hasAttribute('data-ezclassify-bound-to'));
+            if (!usesSharedValue)
+                hidden.name = el.getAttribute('name') ?? el.id ?? controller;
+            if (categoryChoice) markGeneratedChoiceValue(hidden);
             el.appendChild(hidden);
         }
         return hidden;
@@ -175,7 +189,9 @@ export function createMountContainer(
     const keepElementVisible =
         controller === 'marked-textarea' ||
         controller === 'marked-input' ||
-        controller === 'marking';
+        controller === 'marking' ||
+        (controller === 'decisionflow' && isNativeTextField(el)) ||
+        (controller === 'select' && isNativeSingleSelect(el));
 
     if (isInteractive) {
         const container = document.createElement('div');

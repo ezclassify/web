@@ -17,7 +17,7 @@
 
 .ez-access-handbook__overview-marking {
     font-weight: 700;
-    font-size: 0.75rem;
+    font-size: calc(var(--ez-font-size, 1rem) * 0.75);
     letter-spacing: 0.02em;
     color: var(--ez-color-text, #111);
     margin-bottom: 0.25rem;
@@ -26,19 +26,19 @@
 
 .ez-access-handbook__overview-name {
     font-weight: 700;
-    font-size: 1rem;
+    font-size: var(--ez-font-size, 1rem);
     color: var(--ez-color-text, #111);
     margin-bottom: 0.125rem;
 }
 
 .ez-access-handbook__overview-meta {
-    font-size: 0.6875rem;
+    font-size: calc(var(--ez-font-size, 1rem) * 0.6875);
     color: var(--ez-color-muted, #555);
     margin-bottom: 0.25rem;
 }
 
 .ez-access-handbook__overview-desc {
-    font-size: 0.8125rem;
+    font-size: calc(var(--ez-font-size, 1rem) * 0.8125);
     color: var(--ez-color-text, #333);
     white-space: pre-line;
 }
@@ -51,7 +51,7 @@
 .ez-access-handbook__search-input {
     width: 100%;
     padding: 0.375rem 0.5rem;
-    font-size: 0.875rem;
+    font-size: calc(var(--ez-font-size, 1rem) * 0.875);
     border: 1px solid var(--ez-color-border, #d1d5db);
     border-radius: 0.25rem;
     background: var(--ez-color-background, #fff);
@@ -89,7 +89,7 @@
     padding: 0.5rem 0.75rem;
     cursor: pointer;
     font-weight: 600;
-    font-size: 0.875rem;
+    font-size: calc(var(--ez-font-size, 1rem) * 0.875);
     border-bottom: 1px solid var(--ez-color-border, #d1d5db);
     user-select: none;
     background: none;
@@ -108,7 +108,7 @@
 }
 
 .ez-access-handbook__group-arrow {
-    font-size: 0.8125rem;
+    font-size: calc(var(--ez-font-size, 1rem) * 0.8125);
     width: 1rem;
     text-align: center;
     flex-shrink: 0;
@@ -121,7 +121,7 @@
     font-weight: 400;
     color: var(--ez-color-muted, #777);
     margin-left: auto;
-    font-size: 0.8125rem;
+    font-size: calc(var(--ez-font-size, 1rem) * 0.8125);
 }
 
 .ez-access-handbook__group-body {
@@ -154,13 +154,13 @@
 
 .ez-access-handbook__entry-name {
     font-weight: 600;
-    font-size: 0.875rem;
+    font-size: calc(var(--ez-font-size, 1rem) * 0.875);
     margin-bottom: 0.1875rem;
 }
 
 .ez-access-handbook__section-label {
     font-weight: 600;
-    font-size: 0.6875rem;
+    font-size: calc(var(--ez-font-size, 1rem) * 0.6875);
     text-transform: uppercase;
     letter-spacing: 0.04em;
     color: var(--ez-color-muted, #555);
@@ -169,7 +169,7 @@
 }
 
 .ez-access-handbook__section-text {
-    font-size: 0.8125rem;
+    font-size: calc(var(--ez-font-size, 1rem) * 0.8125);
     color: var(--ez-color-text, #333);
 }
 
@@ -182,7 +182,7 @@
 }
 
 .ez-access-handbook__attribute {
-    font-size: 0.6875rem;
+    font-size: calc(var(--ez-font-size, 1rem) * 0.6875);
     padding: 0.0625rem 0.375rem;
     border-radius: 0.1875rem;
     background: var(--ez-color-surface, #f5f5f5);
@@ -201,7 +201,7 @@
 .ez-access-handbook__empty {
     padding: 1rem 0.75rem;
     color: var(--ez-color-muted, #777);
-    font-size: 0.875rem;
+    font-size: calc(var(--ez-font-size, 1rem) * 0.875);
     font-style: italic;
 }
 
@@ -212,5 +212,5 @@
     border-left: 0.25rem solid var(--ez-color-error, #b91c1c);
     background: var(--ez-color-error-bg, #fef2f2);
     color: var(--ez-color-error-text, #7f1d1d);
-    font-size: 0.875rem;
+    font-size: calc(var(--ez-font-size, 1rem) * 0.875);
 }

@@ -124,7 +124,7 @@ describe('the EzClassify suite', () => {
     it('draws the shared frame from the tokens, at the weight of a plain input', () => {
         const frame = rule(css('field-chrome.css'), '.ez-field-frame');
         expect(frame).toMatch(
-            /border:\s*1px solid var\(--ez-color-border, #d1d5db\)/,
+            /border:\s*var\(--ez-border-width, 1px\) solid var\(--ez-color-border, #d1d5db\)/,
         );
         expect(frame).toMatch(
             /border-radius:\s*var\(--ez-border-radius, 0\.25rem\)/,
@@ -140,9 +140,9 @@ describe('the EzClassify suite', () => {
         ).toMatch(/min-height:\s*2rem/);
     });
 
-    it('draws one focus ring for every control: 2px of the accent, inside the edge', () => {
+    it('draws a shared, token-driven focus ring', () => {
         const ring =
-            /outline:\s*2px solid var\(--ez-color-primary, #fdb827\);\s*outline-offset:\s*-2px/;
+            /outline:\s*var\(--ez-focus-ring-width, 2px\) solid\s+var\(--ez-color-border-focus, var\(--ez-color-primary, #fdb827\)\);\s*outline-offset:\s*var\(--ez-focus-ring-offset, -2px\)/;
         expect(
             rule(
                 css('field-chrome.css'),
@@ -152,6 +152,33 @@ describe('the EzClassify suite', () => {
         expect(
             rule(css('marking-field.css'), '.marking-field-host:focus'),
         ).toMatch(ring);
+    });
+
+    it('uses the field font size for primary choice labels and marking values', () => {
+        const primaryText = [
+            ['category-selector.css', '.category-selector-label'],
+            ['category-selector.css', '.category-selector-btn'],
+            ['category-checklist.css', '.category-checklist-name'],
+            ['category-checklist.css', '.category-checklist-label'],
+            ['decision-flow.css', '.ez-decision-flow__question-label'],
+            ['decision-flow.css', '.ez-decision-flow__option'],
+            ['decision-flow.css', '.ez-decision-flow__value'],
+        ] as const;
+        for (const [file, selector] of primaryText)
+            expect(rule(css(file), selector), selector).toContain(
+                'font-size: var(--ez-font-size, 1em)',
+            );
+    });
+
+    it('scales secondary labels proportionally to the inherited field size', () => {
+        const secondaryText = [
+            ['category-checklist.css', '.category-checklist-count'],
+            ['decision-flow.css', '.ez-decision-flow__scope-caption'],
+        ] as const;
+        for (const [file, selector] of secondaryText)
+            expect(rule(css(file), selector), selector).toContain(
+                'font-size: calc(var(--ez-font-size, 1em) * 0.75)',
+            );
     });
 
     it("lets a framed control take a text host's own edge, as the text fields do", async () => {

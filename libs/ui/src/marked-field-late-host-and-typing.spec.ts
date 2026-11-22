@@ -15,6 +15,7 @@
  * as a control.
  */
 
+import { textareaEditor } from '../test-fixtures/textarea-editor';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -182,10 +183,12 @@ describe('marked-textarea keeps every keystroke, popup does not steal', () => {
         ta: HTMLTextAreaElement,
         ch: string,
     ): Promise<void> {
-        const pos = ta.selectionStart ?? ta.value.length;
-        ta.value = ta.value.slice(0, pos) + ch + ta.value.slice(pos);
-        ta.setSelectionRange(pos + 1, pos + 1);
-        ta.dispatchEvent(new Event('input', { bubbles: true }));
+        const editor = textareaEditor(ta);
+        const pos = editor.selectionStart ?? editor.value.length;
+        editor.value =
+            editor.value.slice(0, pos) + ch + editor.value.slice(pos);
+        editor.setSelectionRange(pos + 1, pos + 1);
+        editor.dispatchEvent(new Event('input', { bubbles: true }));
         document.dispatchEvent(new Event('selectionchange'));
         await wait(30);
     }
@@ -204,12 +207,12 @@ describe('marked-textarea keeps every keystroke, popup does not steal', () => {
         expect(comp.getSegments()).toHaveLength(1);
 
         ta.focus();
-        ta.dispatchEvent(new Event('focus'));
+        textareaEditor(ta).dispatchEvent(new Event('focus'));
 
         // Caret to the very start (just before the marking), then type plain text.
         // The scan is debounced, so segment offsets stay stale as the text shifts
         // right; the editor must NOT auto-open against those stale offsets.
-        ta.setSelectionRange(0, 0);
+        textareaEditor(ta).setSelectionRange(0, 0);
         document.dispatchEvent(new Event('selectionchange'));
         await wait(20);
 
@@ -236,10 +239,10 @@ describe('marked-textarea keeps every keystroke, popup does not steal', () => {
 
         const ta = document.getElementById('body') as HTMLTextAreaElement;
         ta.focus();
-        ta.dispatchEvent(new Event('focus'));
+        textareaEditor(ta).dispatchEvent(new Event('focus'));
 
         // No pending edit: segments match the live value, caret moves inside "(S)".
-        ta.setSelectionRange(1, 1);
+        textareaEditor(ta).setSelectionRange(1, 1);
         document.dispatchEvent(new Event('selectionchange'));
         await wait(60);
 
@@ -500,8 +503,8 @@ describe('Escape cancels the marking picker instead of committing junk', () => {
 
         // Open the picker via Ctrl+Enter (inserts the "()" template).
         ta.focus();
-        ta.setSelectionRange(0, 0);
-        ta.dispatchEvent(
+        textareaEditor(ta).setSelectionRange(0, 0);
+        textareaEditor(ta).dispatchEvent(
             new KeyboardEvent('keydown', {
                 key: 'Enter',
                 ctrlKey: true,
@@ -519,7 +522,7 @@ describe('Escape cancels the marking picker instead of committing junk', () => {
         editorInput.dispatchEvent(new Event('input'));
         await wait(80);
 
-        ta.dispatchEvent(
+        textareaEditor(ta).dispatchEvent(
             new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
         );
         await wait(400);
@@ -542,8 +545,8 @@ describe('Escape cancels the marking picker instead of committing junk', () => {
 
         // Open the picker on the existing marking.
         ta.focus();
-        ta.setSelectionRange(1, 1);
-        ta.dispatchEvent(
+        textareaEditor(ta).setSelectionRange(1, 1);
+        textareaEditor(ta).dispatchEvent(
             new KeyboardEvent('keydown', {
                 key: 'Enter',
                 ctrlKey: true,
@@ -568,7 +571,7 @@ describe('Escape cancels the marking picker instead of committing junk', () => {
         );
         await wait(200);
 
-        ta.dispatchEvent(
+        textareaEditor(ta).dispatchEvent(
             new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
         );
         await wait(400);

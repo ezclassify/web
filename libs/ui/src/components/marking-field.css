@@ -66,8 +66,9 @@
 }
 
 .marking-field-host:focus {
-    outline: 2px solid var(--ez-color-primary, #fdb827);
-    outline-offset: -2px;
+    outline: var(--ez-focus-ring-width, 2px) solid
+        var(--ez-color-border-focus, var(--ez-color-primary, #fdb827));
+    outline-offset: var(--ez-focus-ring-offset, -2px);
     border-radius: var(--ez-border-radius, 0.25rem);
 }
 
@@ -158,7 +159,10 @@
     text-decoration-line: underline;
     text-decoration-color: var(
         --ez-category-accent,
-        var(--ez-token-underline, var(--ez-color-primary, #fdb827))
+        var(
+            --ez-theme-category-accent,
+            var(--ez-token-underline, var(--ez-color-primary, #fdb827))
+        )
     );
     text-decoration-thickness: 0.1875rem;
     text-underline-offset: 0.125rem;

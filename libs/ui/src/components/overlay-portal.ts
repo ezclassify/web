@@ -14,6 +14,8 @@ const THEME_PROPERTIES = [
     '--ez-color-background',
     '--ez-color-border',
     '--ez-color-border-focus',
+    '--ez-focus-ring-width',
+    '--ez-focus-ring-offset',
     '--ez-color-text',
     '--ez-color-muted',
     '--ez-color-primary',
@@ -39,7 +41,9 @@ const THEME_PROPERTIES = [
     '--ez-tooltip-body-color',
     '--ez-tooltip-rule-color',
     '--ez-border-radius',
+    '--ez-border-width',
     '--ez-font-family',
+    '--ez-font-size',
     '--ez-z-dropdown',
     '--ez-z-tooltip',
 ] as const;
@@ -70,13 +74,16 @@ const CSS_WIDE_KEYWORD = /^(?:inherit|initial|unset|revert|revert-layer)$/;
  *
  * @param owner - The component the chrome belongs to: its root container, or an
  *   element of it that sits outside the field's text layers
- * @returns A `font-family` value
+ * @returns The CSS style of the surrounding UI
  */
-function uiFontFamily(owner: HTMLElement): string {
+function uiFontStyle(owner: HTMLElement): CSSStyleDeclaration {
     let surrounding = owner.closest<HTMLElement>(UI_ROOT) ?? owner;
     while (surrounding.matches(FORM_CONTROL) && surrounding.parentElement)
         surrounding = surrounding.parentElement;
-    const style = window.getComputedStyle(surrounding);
+    return window.getComputedStyle(surrounding);
+}
+
+function uiFontFamily(style: CSSStyleDeclaration): string {
     const host = style.getPropertyValue('--ez-font-family').trim();
     return host && !CSS_WIDE_KEYWORD.test(host) ? host : style.fontFamily;
 }
@@ -85,9 +92,9 @@ function uiFontFamily(owner: HTMLElement): string {
  * Copy documented presentation tokens from an in-flow anchor to an overlay, and
  * give the overlay the surrounding UI font (see {@link uiFontFamily}).
  *
- * Only the family travels. Size, weight and line height stay with the overlay's
- * own stylesheet, so chrome reads at the library's scale whatever size the
- * field it opened from uses.
+ * The overlay keeps the theme's base size and font family. Its stylesheet
+ * supplies the relative sizes for labels and help text, independent of any font
+ * applied directly to the native field.
  *
  * @param source - The in-flow element whose tokens the overlay takes
  * @param overlay - The portaled element
@@ -107,7 +114,14 @@ export function copyOverlayTheme(
         if (value) overlay.style.setProperty(property, value);
         else overlay.style.removeProperty(property);
     }
-    overlay.style.fontFamily = uiFontFamily(owner);
+    const fontStyle = uiFontStyle(owner);
+    overlay.style.fontFamily = uiFontFamily(fontStyle);
+    if (
+        !style.getPropertyValue('--ez-font-size').trim() &&
+        fontStyle.fontSize
+    ) {
+        overlay.style.setProperty('--ez-font-size', fontStyle.fontSize);
+    }
 }
 
 /**

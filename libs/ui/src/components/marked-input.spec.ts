@@ -559,16 +559,12 @@ describe('MarkedInput', () => {
         );
     });
 
-    it('the async style re-read derives font from the class-ON inherited state', async () => {
-        // The native host uses its class-on inherited font while the display
-        // mirrors those metrics. Temporarily unmasking authored colors must not
-        // replace that font with the browser control default. Mock the two
-        // computed states because jsdom does not apply the stylesheet cascade.
+    it('mirrors the original input font onto both marked text layers', async () => {
         const engine = await createTestEngine();
         root.innerHTML = `<input type="text" id="field" data-ezclassify-controller="marked-input" value="(U) title">`;
 
-        const CLASS_ON_FONT = '16px system-ui'; // what .marked-input-native (font: inherit) resolves to
-        const CLASS_OFF_FONT = '13.3333px Arial'; // the UA default control font a bare <textarea> gets
+        const HOST_FONT = '16px system-ui';
+        const EDITOR_FONT = '13.3333px Arial';
 
         const target = () => editingField('field') as HTMLTextAreaElement;
         const realGetComputedStyle = window.getComputedStyle.bind(window);
@@ -589,7 +585,10 @@ describe('MarkedInput', () => {
                     'marked-input-native',
                 );
                 return {
-                    font: classOn ? CLASS_ON_FONT : CLASS_OFF_FONT,
+                    font:
+                        el.id === 'field'
+                            ? HOST_FONT
+                            : (el as HTMLElement).style.font || EDITOR_FONT,
                     padding: '0px',
                     borderWidth: '1px',
                     borderStyle: 'solid',
@@ -631,6 +630,7 @@ describe('MarkedInput', () => {
             // working: it's the only way to see the host's real border/color
             // through the class's hard-coded transparent values.
             expect(display.style.backgroundColor).toBe('rgb(255, 255, 255)');
+            expect(target().style.font).toContain('system-ui');
             target().dispatchEvent(new Event('focus'));
             target().dispatchEvent(new Event('blur'));
             expect(display.style.borderColor).toBe('rgb(209, 213, 219)');
@@ -986,7 +986,7 @@ describe('MarkedInput', () => {
         expect(chip?.textContent).toContain('(U)');
     });
 
-    it('shows a concept dwell tooltip on hover over the marking chip', async () => {
+    it('uses native help for the written classification in the marking chip', async () => {
         const engine = await createTestEngine();
         root.innerHTML = `
       <input type="text" id="field" data-ezclassify-controller="marked-input" value="(U) memo text">
@@ -995,57 +995,12 @@ describe('MarkedInput', () => {
         activeForms.push(forms);
         await wait(50);
 
-        const inputEl = editingField('field') as HTMLTextAreaElement;
-        const wrap = inputEl.closest('.marked-input-wrap')!;
-        const display = wrap.querySelector('.marked-input-display')!;
-        const chip = display.querySelector('.marked-input-chip') as HTMLElement;
-        expect(chip).toBeTruthy();
-
-        expect(document.body.querySelector('.ez-tooltip')).toBeNull();
-        chip.dispatchEvent(new Event('mouseenter'));
-        await wait(350);
-
-        const tip = document.body.querySelector(
-            '.ez-tooltip',
-        ) as HTMLElement | null;
-        expect(tip).not.toBeNull();
-        expect(tip!.hidden).toBe(false);
-
-        chip.dispatchEvent(new Event('mouseleave'));
-        // It stays a moment, so the pointer can reach it, then closes.
-        await wait(350);
-        expect(tip!.hidden).toBe(true);
-    });
-
-    it('removes a VISIBLE segment tooltip and its listeners on destroy (no leak)', async () => {
-        // Destroy must remove a visible segment tooltip and its Escape, scroll,
-        // and resize listeners, including destruction during hover.
-        const engine = await createTestEngine();
-        root.innerHTML = `
-      <input type="text" id="field" data-ezclassify-controller="marked-input" value="(U) memo text">
-    `;
-        const forms = new EzClassifyUI(asContext(engine as never), {});
-        await wait(50);
-
-        const inputEl = editingField('field') as HTMLTextAreaElement;
-        const wrap = inputEl.closest('.marked-input-wrap')!;
-        const display = wrap.querySelector('.marked-input-display')!;
-        const chip = display.querySelector('.marked-input-chip') as HTMLElement;
-
-        chip.dispatchEvent(new Event('mouseenter'));
-        await wait(350);
-        const tip = document.body.querySelector(
-            '.ez-tooltip',
-        ) as HTMLElement | null;
-        expect(tip).not.toBeNull();
-        expect(tip!.hidden).toBe(false);
-
-        forms.destroy();
-
-        // Gone from the DOM entirely, not merely hidden: a hidden orphan node
-        // still parented to body is the same leak with an extra step.
-        expect(tip!.isConnected).toBe(false);
-        expect(document.body.querySelector('.ez-tooltip')).toBeNull();
+        const chip = root.querySelector('.marked-input-chip');
+        expect(chip?.textContent).toBe('(U)');
+        const concept = chip?.querySelector('[data-concept-id="U"]');
+        expect(concept?.textContent).toBe('U');
+        expect(concept?.getAttribute('title')).toBe('Level: Unclassified');
+        expect(chip?.hasAttribute('data-ez-segment-tooltip')).toBe(false);
     });
 
     it('honors the data-ezclassify-no-tooltips opt-out for the marking chip', async () => {
@@ -1063,10 +1018,7 @@ describe('MarkedInput', () => {
         const chip = display.querySelector('.marked-input-chip') as HTMLElement;
         expect(chip).toBeTruthy();
 
-        chip.dispatchEvent(new Event('mouseenter'));
-        await wait(350);
-
-        expect(document.body.querySelector('.ez-tooltip')).toBeNull();
+        expect(chip.querySelector('[title]')).toBeNull();
     });
 
     it('clears assertions when the marking is removed from the value', async () => {

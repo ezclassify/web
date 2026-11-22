@@ -394,7 +394,17 @@ describe('the reserve rule', () => {
             '.marked-input-wrap > .marked-input-display',
             '.marked-textarea-wrap > .marked-textarea-input',
             '.marked-textarea-wrap > .marked-textarea-display',
-            '.select-dropdown-field',
+            '.select-dropdown-field:not(.select-dropdown-field--native)',
         ]);
+    });
+
+    it('reserves the chrome and chevron inside the authored select', () => {
+        const here = dirname(fileURLToPath(import.meta.url));
+        const css = readFileSync(join(here, 'single-select.css'), 'utf8');
+        const { selector, body } = ruleSetting(css, 'padding-inline-end');
+        expect(selector).toBe('.select-dropdown-native');
+        expect(body).toMatch(
+            /padding-inline-end:\s*calc\(\s*var\(--ez-field-chrome-inline-size, 0px\)\s*\+\s*0\.5rem\s*\+\s*var\(--ez-spacing-md, 0\.75rem\)\s*\+\s*0\.75em\s*\)\s*!important/,
+        );
     });
 });

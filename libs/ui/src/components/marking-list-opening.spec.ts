@@ -91,7 +91,12 @@ async function mountTextArea(
     fields.push(field);
     await field.init(container, ctx ?? (await context()), {});
     await settle();
-    return { ta, container };
+    return {
+        ta: container.querySelector<HTMLTextAreaElement>(
+            '.marked-textarea-input',
+        )!,
+        container,
+    };
 }
 
 async function mountInput(

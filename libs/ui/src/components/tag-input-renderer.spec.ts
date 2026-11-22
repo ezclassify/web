@@ -96,6 +96,8 @@ describe('renderTagChips', () => {
             filterInput,
             getCategoryColor: () => '#000000',
             getCategoryTextColor: () => '#ffffff',
+            categoryHueOffset: (category) =>
+                category === 'level' ? 0 : undefined,
             onRemoveAssertion: vi.fn(),
             onReprocess: vi.fn(),
             onChipClick: vi.fn(),
@@ -106,6 +108,13 @@ describe('renderTagChips', () => {
         expect(tags.map((tag) => tag.dataset.conceptId)).toEqual(
             assertions.map((a) => a.conceptId),
         );
+        const themed = tags.filter((tag) =>
+            tag.hasAttribute('data-ez-themed-category'),
+        );
+        expect(themed.map((tag) => tag.dataset.categoryId)).toEqual(['level']);
+        expect(
+            themed[0].style.getPropertyValue('--ez-category-hue-offset'),
+        ).toBe('0');
     });
 
     it('names a chip whose value is typed into it by its concept, not its view template', () => {

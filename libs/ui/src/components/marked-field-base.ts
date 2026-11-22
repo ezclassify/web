@@ -47,10 +47,9 @@ import {
 } from './marked-text-area-logic';
 import { adoptStylesOnce } from '../styles/adopt';
 import { attachTooltip, COMPONENT_CSS } from './component-utils';
-import {
-    assertDescribesConcepts,
-    createConceptDescriber,
-} from './concept-description';
+import { assertDescribesConcepts } from './concept-description';
+import { conceptHint, conceptHintName } from './concept-hint';
+import { buildTokenTree, locateTokenSpans } from '../token-tree/token-tree';
 import {
     assertWritesScopes,
     defaultSurfaceOf,
@@ -76,7 +75,11 @@ import { writtenFactTest, type ShownForm } from '../written-facts';
 import type { ClearButton } from './clear-button';
 import { isUndoChord, MarkingUndo } from './marking-undo';
 import { announce, createAnnouncer } from './accessibility-helpers';
-import { mountFieldChrome, type FieldChrome } from './field-chrome';
+import {
+    mountFieldChrome,
+    observeFieldTheme,
+    type FieldChrome,
+} from './field-chrome';
 import { FieldComponentBase } from './field-component-base';
 import type { FavoritesPanelHost } from './favorites-panel';
 import { markingTarget } from './marking-target';
@@ -216,7 +219,7 @@ export abstract class MarkedFieldBase<
     protected picker: InlineMarkingEditor | null = null;
     protected pickerMount: HTMLElement | null = null;
     /**
-     * The theme MutationObserver on document.documentElement. Stored so
+     * The MutationObserver for the field’s theme scope. Stored so
      * {@link disconnectThemeObserver} can tear it down on destroy; otherwise
      * every mounted field leaks a live observer (and its closure over the
      * detached DOM) for the page lifetime.
@@ -447,10 +450,15 @@ export abstract class MarkedFieldBase<
         return capturedStyles;
     }
 
+    protected setMeasuredFontSize(size: string): void {
+        this.host.style.setProperty('--ez-field-measured-font-size', size);
+        this.display.style.setProperty('--ez-field-measured-font-size', size);
+    }
+
     /**
-     * Watch the document root for theme attribute changes and re-sync the
-     * display's color/background/at-rest border to match the themed host. An
-     * owned editor can supply its original native input as the paint source.
+     * Watch the host's ancestors for theme changes and re-sync the display's
+     * color/background/at-rest border to match the themed host. An owned editor
+     * can supply its original native input as the paint source.
      */
     protected installThemeObserver(
         capturedStyles: Record<string, string>,
@@ -460,7 +468,24 @@ export abstract class MarkedFieldBase<
         if (typeof MutationObserver === 'undefined') return;
         // Replace any prior observer (defensive against a double install).
         this.disconnectThemeObserver();
-        const observer = new MutationObserver(() => {
+        const layout = [
+            'font',
+            'fontSize',
+            'lineHeight',
+            'borderWidth',
+            'borderStyle',
+            'borderRadius',
+            'paddingTop',
+            'paddingRight',
+            'paddingBottom',
+            'paddingLeft',
+        ] as const;
+        const paintProperties = [
+            'color',
+            'backgroundColor',
+            'borderColor',
+        ] as const;
+        this._themeObserver = observeFieldTheme(paintHost, () => {
             const masked = paintHost === this.host;
             const transitionProperty = paintHost.style.getPropertyValue(
                 'transition-property',
@@ -468,11 +493,9 @@ export abstract class MarkedFieldBase<
             const transitionPriority = paintHost.style.getPropertyPriority(
                 'transition-property',
             );
-            let paint: {
-                color: string;
-                backgroundColor: string;
-                borderColor: string;
-            };
+            const paint: Partial<
+                Record<(typeof layout | typeof paintProperties)[number], string>
+            > = {};
             try {
                 if (masked) {
                     // Even reduced-motion's tiny nonzero duration can leave the
@@ -485,11 +508,8 @@ export abstract class MarkedFieldBase<
                     paintHost.classList.remove(hostInputClass);
                 }
                 const cs = window.getComputedStyle(paintHost);
-                paint = {
-                    color: cs.color,
-                    backgroundColor: cs.backgroundColor,
-                    borderColor: cs.borderColor,
-                };
+                for (const property of [...layout, ...paintProperties])
+                    paint[property] = cs[property];
             } finally {
                 if (masked) {
                     paintHost.classList.add(hostInputClass);
@@ -502,23 +522,18 @@ export abstract class MarkedFieldBase<
                     else paintHost.style.removeProperty('transition-property');
                 }
             }
-            this.display.style.color = paint.color;
-            this.display.style.backgroundColor = paint.backgroundColor;
+            for (const property of layout) {
+                const value = paint[property] ?? '';
+                this.display.style[property] = value;
+                if (!masked) this.host.style[property] = value;
+            }
+            if (paint.fontSize) this.setMeasuredFontSize(paint.fontSize);
+            this.display.style.color = paint.color ?? '';
+            this.display.style.backgroundColor = paint.backgroundColor ?? '';
             // Keep the at-rest border current so blur restores themed paint.
-            capturedStyles.borderColor = paint.borderColor;
-            if (!this.hasFocus)
-                this.display.style.borderColor = paint.borderColor;
+            capturedStyles.borderColor = paint.borderColor ?? '';
+            this.display.style.borderColor = capturedStyles.borderColor;
         });
-        observer.observe(document.documentElement, {
-            attributes: true,
-            attributeFilter: [
-                'data-color-scheme',
-                'data-theme',
-                'data-bs-theme',
-                'class',
-            ],
-        });
-        this._themeObserver = observer;
     }
 
     /**
@@ -1050,65 +1065,74 @@ export abstract class MarkedFieldBase<
     /** Run the post-close re-sync (syncFromInput / syncFromTextarea). */
     protected abstract afterClose(): void;
 
-    // --- Concept dwell tooltip: the one resolution path a marking chip's
-    // hover reads from, shared with the dropdown row and MarkingField token
-    // tooltips via `createConceptDescriber`. -------------------------------
-
-    /**
-     * Concept-detail resolution and its result cache for this instance, shared
-     * with every other field class via `createConceptDescriber`. Constructed
-     * here even though `engine` and `schemeId` are not assigned until `init()`
-     * runs; the describer reads those fields live on each call, not at
-     * construction time.
-     */
-    private readonly _conceptDescriber = createConceptDescriber({
-        engine: () => this.engine,
-        options: () => this.options,
-    });
-
-    /** Resolve one concept's detail text (see `createConceptDescriber`). */
-    protected resolveConceptDescription(
-        conceptId: string,
-        categoryId: string,
-    ): string | undefined {
-        return this._conceptDescriber.resolve(conceptId, categoryId);
-    }
-
-    /**
-     * Guard for tooltip display: honors the host's declarative opt-out
-     * (`data-ezclassify-no-tooltips` → options.tooltips === false). The one
-     * spelling of this predicate every tooltip on a marked field reads,
-     * concept-detail or not (segment chips, the status mark, the invalid-
-     * marking error tooltip).
-     */
     protected shouldShowTooltip(): boolean {
-        return this._conceptDescriber.enabled();
+        return this.options.tooltips !== false;
     }
 
-    /**
-     * Join every assertion in a marking segment into one tooltip body,
-     * blank-line separated so the tooltip's line parser treats each concept as
-     * its own block. A segment can hold more than one concept (e.g. "[[H/A]]"
-     * is HIGH + CTRL-A), unlike MarkingField's per-token paint, which already
-     * isolates one concept per hoverable span.
-     *
-     * Returns undefined while any assertion's description is still resolving
-     * asynchronously, so a caller polling for content (attachTooltip) waits for
-     * the whole segment rather than showing a partial result that then never
-     * completes.
-     */
-    private describeSegment(assertions: Assertion[]): string | undefined {
-        if (assertions.length === 0) return undefined;
-        const blocks: string[] = [];
-        for (const a of assertions) {
-            const text = this.resolveConceptDescription(
-                a.conceptId,
-                a.categoryId,
-            );
-            if (text === undefined) return undefined;
-            blocks.push(text);
+    /** Add native help to the concepts the field actually prints. */
+    protected paintSegmentConceptHints(
+        chip: HTMLElement,
+        text: string,
+        assertions: readonly Assertion[],
+        assessment: ShownForm['assessment'],
+    ): void {
+        if (
+            !this.shouldShowTooltip() ||
+            chip.hasAttribute('data-ez-segment-tooltip')
+        ) {
+            chip.textContent = text;
+            return;
         }
-        return blocks.join('\n\n');
+
+        const meta = this.engine.getSchemeMeta();
+        const written = writtenFactTest(
+            [{ formatId: this.scanFormat, assessment }],
+            this.scheme.categories,
+            meta,
+        );
+        const tree = buildTokenTree(
+            assertions.filter((assertion) => !takenFromWhole(assertion)),
+            this.scheme,
+            meta,
+            this.scanFormat,
+        );
+        const spans = locateTokenSpans(
+            text,
+            tree,
+            (node) =>
+                node.conceptId !== undefined &&
+                // A tier can be collapsed into a compound that still prints
+                // its label, for example SI in SI-G.
+                written(
+                    { conceptId: node.conceptId, categoryId: node.categoryId },
+                    true,
+                ),
+        );
+
+        let cursor = 0;
+        for (const { start, end, token } of spans) {
+            const concept = this.scheme.concepts.find(
+                (c) => c.id === token.conceptId,
+            );
+            if (!concept) continue;
+            const category = this.scheme.categories.find(
+                (c) => c.id === token.categoryId,
+            );
+            const hint = conceptHint(
+                category?.label ?? '',
+                conceptHintName(concept, this.options.tooltipConceptProperty),
+                concept.definition ?? '',
+            );
+            const span = document.createElement('span');
+            span.dataset.ezSegmentConcept = '';
+            span.dataset.conceptId = concept.id;
+            span.title = hint.title;
+            span.setAttribute('aria-description', hint.description);
+            span.textContent = text.slice(start, end);
+            chip.append(text.slice(cursor, start), span);
+            cursor = end;
+        }
+        chip.append(text.slice(cursor));
     }
 
     protected segmentAttention(segment: {
@@ -1131,7 +1155,6 @@ export abstract class MarkedFieldBase<
             valid: boolean;
             errors: readonly string[];
             warnings?: readonly string[];
-            assertions: readonly Assertion[];
         },
         open?: (event: Event) => void,
     ) {
@@ -1150,17 +1173,11 @@ export abstract class MarkedFieldBase<
                 if (event.key === 'Enter' || event.key === ' ') open(event);
             });
         }
-        if (!this.shouldShowTooltip()) return attention;
-        const written = segment.valid
-            ? segment.assertions.filter(
-                  (assertion) => !takenFromWhole(assertion),
-              )
-            : [];
-        if (!attention && written.length === 0) return null;
+        if (!attention || !this.shouldShowTooltip()) return attention;
         chip.dataset.ezSegmentTooltip = '';
         attachTooltip(
             chip,
-            () => attention?.tooltip ?? this.describeSegment(written),
+            () => attention.tooltip,
             this.container,
             () => chip.isConnected && this.shouldShowTooltip(),
             undefined,
@@ -1172,9 +1189,17 @@ export abstract class MarkedFieldBase<
 
     private hoveredSegment: HTMLElement | undefined;
 
-    private readonly clearSegmentHover = () => {
+    private segmentHoverTitle:
+        { original: string | null; applied: string } | undefined;
+
+    protected readonly clearSegmentHover = () => {
         this.hoveredSegment?.dispatchEvent(new MouseEvent('mouseleave'));
         this.hoveredSegment = undefined;
+        const title = this.segmentHoverTitle;
+        this.segmentHoverTitle = undefined;
+        if (!title || this.host.getAttribute('title') !== title.applied) return;
+        if (title.original === null) this.host.removeAttribute('title');
+        else this.host.title = title.original;
     };
 
     /**
@@ -1203,11 +1228,19 @@ export abstract class MarkedFieldBase<
         this.clearSegmentHover();
         const chip = [
             ...this.display.querySelectorAll<HTMLElement>(
-                '[data-ez-segment-tooltip]',
+                '[data-ez-segment-tooltip], [data-ez-segment-concept]',
             ),
         ].find(contains);
-        chip?.dispatchEvent(new MouseEvent('mouseenter'));
         this.hoveredSegment = chip;
+        if (chip?.hasAttribute('data-ez-segment-concept')) {
+            this.segmentHoverTitle = {
+                original: this.host.getAttribute('title'),
+                applied: chip.title,
+            };
+            this.host.title = chip.title;
+        } else {
+            chip?.dispatchEvent(new MouseEvent('mouseenter'));
+        }
     };
 
     /**

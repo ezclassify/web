@@ -36,6 +36,7 @@ import {
 import { t } from '../i18n';
 import { type FavoritesPanelHost } from './favorites-panel';
 import { markingTarget } from './marking-target';
+import { getMountHost } from '../mount-host-registry';
 import {
     assertDescribesConcepts,
     createConceptDescriber,
@@ -609,7 +610,7 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
         );
     }
 
-    override setAssertions(assertions: Assertion[]): void {
+    override setAssertions(assertions: Assertion[]): void | Promise<void> {
         // A value from the host or the store is nobody's edit here.
         this.editStart = null;
         this.invalidateValueRead();
@@ -618,7 +619,7 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
         const held = this.heldFacts(assertions);
         if (replacesStated(this.assertions, held)) this._appliedFixes.clear();
         this.assertions = held;
-        this.reprocess();
+        return this.reprocessNow();
     }
 
     /**
@@ -758,6 +759,37 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
     protected override ruleFixHandler(): (fix: Fix) => void {
         return (fix) => {
             if (this._destroyed) return;
+            const facet = this.options.resolveFacetJudgment;
+            if (facet) {
+                if (
+                    !facet().proposedFixes?.includes(fix) ||
+                    (
+                        getMountHost(this.container) ?? this.enhancedInput
+                    )?.matches(':disabled, [readonly]')
+                )
+                    return;
+                const apply = markingTarget(this)?.applyFix;
+                if (apply) {
+                    void Promise.resolve()
+                        .then(() => {
+                            if (
+                                !this._destroyed &&
+                                facet().proposedFixes?.includes(fix)
+                            )
+                                return apply(fix, new AbortController().signal);
+                        })
+                        .catch((error: unknown) => {
+                            if (!this._destroyed && this.undoAnnouncer)
+                                announce(
+                                    this.undoAnnouncer,
+                                    error instanceof Error
+                                        ? error.message
+                                        : String(error),
+                                );
+                        });
+                }
+                return;
+            }
             this.beginUserEdit();
             this.reprocessEdit(this.fixedAssertions(fix, this.assertions));
         };
@@ -807,10 +839,15 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
      * An editable field reads its value as the author's call: the proven fix
      * paths are the buttons under it.
      */
+    /** Output requested when settling the field's own value. */
+    protected valueOutputFormat(): string | undefined {
+        return this.formatId;
+    }
+
     protected override readValue(value: string): Promise<ProcessResult> {
         return Promise.resolve(
             this.callProcess(value, {
-                outputFormat: this.formatId,
+                outputFormat: this.valueOutputFormat(),
                 context: this.getProcessingContext(),
             }),
         );
@@ -1027,7 +1064,7 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
         // offered back as a way to fix.
         const read = (assertions: Assertion[]) =>
             this.callProcess('', {
-                outputFormat: this.formatId,
+                outputFormat: this.valueOutputFormat(),
                 assertions,
                 context: this.getProcessingContext(),
             });

@@ -392,7 +392,7 @@ for (const viewport of [
                 attachment: page.locator('textarea[role=combobox]').nth(1),
                 summary: page.locator('input.tag-input-filter'),
                 title: page.locator('textarea.marked-input-native'),
-                body: page.locator('textarea#body'),
+                body: page.locator('textarea.marked-textarea-input'),
             };
 
             await page.goto('/');
@@ -618,7 +618,7 @@ test.describe('README document form beside monospace fields', () => {
             locator.evaluate((element) => getComputedStyle(element).fontFamily);
 
         await page.goto('/');
-        const body = page.locator('textarea#body');
+        const body = page.locator('textarea.marked-textarea-input');
         const summary = page.locator('input.tag-input-filter');
         await expect(body).toBeVisible({ timeout: 60_000 });
         await settle(observed);

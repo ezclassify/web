@@ -152,7 +152,7 @@ export interface ComponentInstance {
     /** Get the current assertions */
     getAssertions(): Assertion[];
     /** Set assertions (replaces current state) */
-    setAssertions(assertions: Assertion[]): void;
+    setAssertions(assertions: Assertion[]): void | Promise<void>;
     /** Set the value from a marking string (reads it again and re-renders) */
     setValue(value: string): void;
     /** Clean up DOM and event listeners */
@@ -244,6 +244,8 @@ export interface ComponentOptions {
      * `data-ezclassify-facet-of` attribute on the host element.
      */
     facetOf?: string;
+    /** The store's current judgment on the whole this facet edits. @internal */
+    resolveFacetJudgment?: () => EzClassifyState;
     /**
      * For a facet of a marking no field shows (a hidden host with only facets):
      * why that marking could not be written, when it could not. Nothing else on
@@ -429,6 +431,7 @@ export abstract class ReadOnlyComponentBase
     protected formatId!: string;
     protected categoryColorMap = new Map<string, string>();
     protected categoryTextColorMap = new Map<string, string>();
+    private readonly categoryHueOffsets = new Map<string, number>();
     /**
      * Category ID that drives the marking's scheme-default display color.
      * Undefined in rule mode and when the scheme declares no authored colors.
@@ -484,7 +487,8 @@ export abstract class ReadOnlyComponentBase
     private reportInField = false;
 
     /** The original <input> element being progressively enhanced (if any) */
-    protected enhancedInput: HTMLInputElement | null = null;
+    protected enhancedInput: HTMLInputElement | HTMLTextAreaElement | null =
+        null;
 
     /**
      * Refuse an engine missing a capability this component needs, once, where
@@ -545,16 +549,7 @@ export abstract class ReadOnlyComponentBase
         // Mark container for scoped CSS variable inheritance
         container.setAttribute('data-ezclassify', '');
 
-        // Apply color scheme preference.
-        // "auto" (default): no attribute, inherits from the host via cascade.
-        //   Dark variants kick in only when an ancestor sets .dark /
-        //   [data-theme="dark"] / [data-bs-theme="dark"]. The library never
-        //   reaches around the host to query the OS prefers-color-scheme.
-        // "light"/"dark": forces a specific scheme via data-color-scheme attribute.
-        const scheme = this.options.colorScheme ?? 'auto';
-        if (scheme !== 'auto') {
-            container.setAttribute('data-color-scheme', scheme);
-        }
+        this.applyThemeTo(container);
 
         // Apply opt-in input styling
         if (this.options.styleInputs) {
@@ -563,10 +558,16 @@ export abstract class ReadOnlyComponentBase
 
         // Build category→color lookup (custom categoryColors override defaults)
         const customColors = this.options.categoryColors;
+        this.categoryHueOffsets.clear();
         this.scheme.categories.forEach((f, i) => {
             if (customColors && customColors[f.id]) {
                 this.categoryColorMap.set(f.id, customColors[f.id]);
             } else {
+                // Space categories within 12° of the theme hue. Fractional
+                // spacing keeps nearby indices apart without reshuffling them
+                // when new categories are appended.
+                const phase = ((0.5 + i * 0.61803398875) % 1) - 0.5;
+                this.categoryHueOffsets.set(f.id, phase * 24);
                 this.categoryColorMap.set(
                     f.id,
                     CATEGORY_COLORS[i % CATEGORY_COLORS.length],
@@ -578,13 +579,6 @@ export abstract class ReadOnlyComponentBase
             );
         });
 
-        // Apply theme CSS variables on the container
-        if (this.options.theme && typeof this.options.theme === 'object') {
-            for (const [prop, value] of Object.entries(this.options.theme)) {
-                container.style.setProperty(prop, value);
-            }
-        }
-
         // Apply z-index overrides
         if (this.options.zIndex != null) {
             container.style.setProperty(
@@ -593,25 +587,7 @@ export abstract class ReadOnlyComponentBase
             );
         }
 
-        // Find the original input for progressive enhancement.
-        // Only consider text/hidden inputs (not radios/checkboxes which belong to native fallback UI)
-        const inputSelector =
-            'input[type="text"], input[type="hidden"], input:not([type])';
-        // A runtime-mounted controller binds exactly its registered host, or an
-        // input inside its own container. The parent-wide search remains only
-        // for a component mounted by hand with no registered host; under the
-        // runtime it would bind the first input of a form whose fields share
-        // one parent, and write this field's value into that other field.
-        const host = getMountHost(container);
-        this.enhancedInput = host
-            ? host.matches(inputSelector)
-                ? (host as HTMLInputElement)
-                : container.querySelector<HTMLInputElement>(inputSelector)
-            : (container.querySelector<HTMLInputElement>(inputSelector) ??
-              container.parentElement?.querySelector<HTMLInputElement>(
-                  inputSelector,
-              ) ??
-              null);
+        this.enhancedInput = this.nativeInputFor(container);
 
         // Determine initial value: explicit option > enhanced input > empty
         let initialValue = options?.initialValue ?? '';
@@ -675,6 +651,34 @@ export abstract class ReadOnlyComponentBase
         if (this.enhancedInput) {
             this.enhancedInput.value = this._lastRendered;
         }
+    }
+
+    protected nativeInputFor(
+        container: HTMLDivElement,
+    ): HTMLInputElement | HTMLTextAreaElement | null {
+        // Find the original input for progressive enhancement.
+        // Only consider text/hidden inputs (not radios/checkboxes which belong to native fallback UI)
+        const inputSelector =
+            'input[type="text"], input[type="hidden"], input:not([type])';
+        // A runtime-mounted controller binds exactly its registered host, or an
+        // input inside its own container. The parent-wide search remains only
+        // for a component mounted by hand with no registered host; under the
+        // runtime it would bind the first input of a form whose fields share
+        // one parent, and write this field's value into that other field.
+        const host = getMountHost(container);
+        return host
+            ? host.matches(inputSelector)
+                ? (host as HTMLInputElement)
+                : host.matches(
+                        'fieldset[data-ezclassify-controller="selector"], fieldset[data-ezclassify-controller="checklist"]',
+                    )
+                  ? host.querySelector<HTMLInputElement>('input[type="hidden"]')
+                  : container.querySelector<HTMLInputElement>(inputSelector)
+            : (container.querySelector<HTMLInputElement>(inputSelector) ??
+                  container.parentElement?.querySelector<HTMLInputElement>(
+                      inputSelector,
+                  ) ??
+                  null);
     }
 
     getAssertions(): Assertion[] {
@@ -878,12 +882,14 @@ export abstract class ReadOnlyComponentBase
     protected callProcess(
         input: string | Assertion[],
         options?: ProcessOptions,
+        includeParts = true,
     ) {
         return this.processInput(
             input,
             this.options.scope
                 ? { ...options, surface: this.options.scope }
                 : options,
+            includeParts,
         );
     }
 
@@ -898,11 +904,14 @@ export abstract class ReadOnlyComponentBase
     private processInput(
         input: string | Assertion[],
         options?: ProcessOptions,
+        includeParts = true,
     ) {
         // Values taken from a whole are never sent back: the engine takes
         // them again from the whole this call supplies.
         const stated = withStatedAssertions(options);
-        const withParts = partsOption(this._resolveParts, stated);
+        const withParts = includeParts
+            ? partsOption(this._resolveParts, stated)
+            : stated;
         const read =
             typeof input === 'string' ? input : withoutTakenFromWhole(input);
         return this.engine.process(read, withParts);
@@ -1084,19 +1093,44 @@ export abstract class ReadOnlyComponentBase
         if (this.options.facetOf) this.showRuleErrors(this.facetReport());
     }
 
-    /**
-     * What a facet shows. By default only its marking's refusal is reported; a
-     * category editor can also report judgments on its own displayed facts.
-     */
+    /** Report the whole's errors that the runtime associates with this facet. */
     protected facetReport(
         _errors?: readonly ValidationError[],
         _proposedFixes: readonly Fix[] = [],
         _warnings: readonly Warning[] = [],
     ): RuleErrorReport {
         const messages = this.options.resolveFacetRefusal?.() ?? [];
-        return messages.length > 0
-            ? { ...NO_RULE_ERRORS, messages: [...messages] }
-            : NO_RULE_ERRORS;
+        const state = this.options.resolveFacetJudgment?.();
+        const category = this.options.categoryId;
+        if (!state || !category)
+            return messages.length > 0
+                ? { ...NO_RULE_ERRORS, messages: [...messages] }
+                : NO_RULE_ERRORS;
+
+        const localConcepts = new Set(
+            this.scheme.concepts
+                .filter((concept) => concept.categories.includes(category))
+                .map(({ id }) => id),
+        );
+        const fixes = state.proposedFixes ?? [];
+        const fixesTouchFacet = fixes.some((fix) =>
+            [...fix.adds, ...fix.removes].some(
+                (ref) => ref.categoryId === category,
+            ),
+        );
+        const errors = state.errors.filter(
+            (error) =>
+                error.categoryId === category ||
+                error.affectedConcepts?.some((id) => localConcepts.has(id)) ||
+                // With one error, a runtime fix touching this category
+                // identifies it as another place the author can resolve it.
+                (state.errors.length === 1 && fixesTouchFacet),
+        );
+        const report = ruleErrorsFrom(errors, fixes);
+        return {
+            ...report,
+            messages: [...new Set([...report.messages, ...messages])],
+        };
     }
 
     private showRuleErrors(report: RuleErrorReport): void {
@@ -1165,6 +1199,18 @@ export abstract class ReadOnlyComponentBase
      */
     protected ruleFixHandler(): ((fix: Fix) => void) | null {
         return null;
+    }
+
+    /** Apply a component's theme to a surface that may sit beside its mount. */
+    protected applyThemeTo(surface: HTMLElement): void {
+        const scheme = this.options.colorScheme;
+        if (scheme && scheme !== 'auto')
+            surface.setAttribute('data-color-scheme', scheme);
+        const theme = this.options.theme;
+        if (theme && typeof theme === 'object') {
+            for (const [name, value] of Object.entries(theme))
+                surface.style.setProperty(name, value);
+        }
     }
 
     /** Change the color scheme at runtime. */
@@ -1348,6 +1394,10 @@ export abstract class ReadOnlyComponentBase
      */
     protected changeWords(): ChangeWords {
         return schemeChangeWords(() => this.conceptWriting());
+    }
+
+    protected categoryHueOffset(categoryId: string): number | undefined {
+        return this.categoryHueOffsets.get(categoryId);
     }
 
     /** Get the color for a category */

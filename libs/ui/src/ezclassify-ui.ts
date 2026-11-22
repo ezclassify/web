@@ -16,8 +16,20 @@
  * onto the shared shape or into per-field parameter lists, so it stays here by
  * design.
  */
+import {
+    isNativeSingleSelect,
+    nativeChoiceGroup,
+    readNativeFacetSelection,
+    writeNativeChoiceGroup,
+} from './native-control-host';
+import {
+    DECISION_FLOW_COMBINE,
+    DecisionFlowForm,
+    isNativeTextField,
+    type NativeTextField,
+} from './decision-flow-form';
 import { acceptedValue, judgedAsHeld } from './loaded-value';
-import { assertionOriginKey } from './assertion-identity';
+import { assertionFactKey, assertionOriginKey } from './assertion-identity';
 import { fixAssertions } from './components/rule-errors';
 import {
     type Assertion as EngineAssertion,
@@ -27,6 +39,7 @@ import {
 } from '@ezclassify/types';
 import { type RenderColorMap } from './render-colors';
 import { TagInput } from './components/tag-input';
+import { DecisionFlow } from './components/decision-flow';
 import {
     pendingTeardownWrite,
     tearingDownRuntime,
@@ -433,6 +446,11 @@ export class EzClassifyUI {
      * seeds it again.
      */
     private readonly seededMarkings = new Set<string>();
+    private readonly decisionFlowForms = new Map<string, DecisionFlowForm>();
+    private readonly nativeFacetSeeds = new Map<
+        string,
+        Map<string, EngineAssertion[]>
+    >();
     /**
      * The seeds of hosts mounted during the initial sweep, started together
      * once every init has resolved (see {@link seedOnMount}).
@@ -1158,14 +1176,68 @@ export class EzClassifyUI {
         else seedPortions();
     }
 
-    private seedMarkingHost(id: string, host: HTMLElement): Promise<void> {
+    private async seedMarkingHost(
+        id: string,
+        host: HTMLElement,
+    ): Promise<void> {
+        const flow = this.decisionFlowForms.get(id);
+        if (flow) {
+            const facets = this.nativeFacetSeeds.get(id);
+            this.nativeFacetSeeds.delete(id);
+            return flow.seed(facets);
+        }
+
         const assertions = this.bodyEditorMark(host);
-        return assertions
-            ? this.store.seedAssertions(id, assertions)
-            : this.store.seedRendered(
-                  id,
-                  (host as HTMLInputElement).value ?? '',
-              );
+        if (assertions) return this.store.seedAssertions(id, assertions);
+
+        const rendered = (host as HTMLInputElement).value ?? '';
+        const facets = this.nativeFacetSeeds.get(id);
+        this.nativeFacetSeeds.delete(id);
+        if (!facets?.size) return this.store.seedRendered(id, rendered);
+
+        const selected = [...facets.values()].flat();
+        if (!rendered) return this.store.seedAssertions(id, selected);
+
+        // The store composes the native edits over the served text, preserving
+        // its other categories and any unread text.
+        await Promise.all([
+            this.store.seedRendered(id, rendered),
+            this.store.publishAssertions(id, selected, undefined, {
+                categories: [...facets.keys()],
+            }),
+        ]);
+    }
+
+    /** Capture the authored inputs before a picker replaces or disables them. */
+    private captureNativeFacet(
+        el: HTMLElement,
+        id: string,
+        category: string,
+    ): void {
+        const host = this.markingHosts.get(id);
+        if (!(host instanceof HTMLInputElement) || host.type !== 'hidden')
+            return;
+        const values = readNativeFacetSelection(el, !!host.value);
+        if (!values) return;
+
+        const known = new Set(
+            schemeEngineOf(this.resolveContext(el), el)
+                .getConceptsInCategory(category)
+                .map((concept) => concept.id),
+        );
+        if (values.some((value) => !known.has(value))) return;
+
+        let facets = this.nativeFacetSeeds.get(id);
+        if (!facets) this.nativeFacetSeeds.set(id, (facets = new Map()));
+        facets.set(
+            category,
+            values.map((conceptId): EngineAssertion => ({
+                categoryId: category,
+                conceptId,
+                source: 'user',
+                confidence: 'certain',
+            })),
+        );
     }
 
     /**
@@ -1226,7 +1298,7 @@ export class EzClassifyUI {
             const host = this.root.querySelector<HTMLElement>(
                 '#' + cssEscape(id),
             );
-            if (!host) continue;
+            if (!host || this.decisionFlowForms.has(id)) continue;
             if (host.hasAttribute('data-ezclassify-controller')) continue;
             if (host.tagName !== 'INPUT' && host.tagName !== 'TEXTAREA')
                 continue;
@@ -1316,6 +1388,7 @@ export class EzClassifyUI {
             (el, controller, options) =>
                 this.attachView(el, controller, options),
             (el) => {
+                this.invalidateDecisionFlow(el);
                 this.teardownElement(el);
                 this.clearHostError(el);
                 this.bindingNodes.delete(el);
@@ -1572,6 +1645,7 @@ export class EzClassifyUI {
      */
     private rederive(el: HTMLElement): void {
         if (this._destroyed) return;
+        this.invalidateDecisionFlow(el);
         this.rederiveScope(el);
         if (!this.root.contains(el)) return;
         const wholes = new Set<string>();
@@ -1597,6 +1671,9 @@ export class EzClassifyUI {
      * has left the page.
      */
     private rederiveDependents(): void {
+        for (const [id, group] of this.decisionFlowForms) {
+            if (group.whole.id !== id) this.invalidateDecisionFlow(group.whole);
+        }
         if (this._destroyed) return;
         const stale = new Set<HTMLElement>();
         for (const [el, { error }] of this.hostErrors)
@@ -2522,12 +2599,26 @@ export class EzClassifyUI {
                 if (this._destroyed || signal.aborted) return;
                 const id = targetId();
                 if (!id) return;
-                return publish(id, () =>
-                    this.store.publishAssertions(
-                        id,
-                        fixAssertions(fix, this.store.get(id).assertions),
+                const categories = [
+                    ...new Set(
+                        [...fix.adds, ...fix.removes].map(
+                            ({ categoryId }) => categoryId,
+                        ),
                     ),
-                );
+                ];
+                if (!categories.length) return;
+                return publish(id, () => {
+                    const current = this.store.get(id).assertions;
+                    const kept = new Map(
+                        current.map((fact) => [assertionFactKey(fact), fact]),
+                    );
+                    const facts = fixAssertions(fix, current).map(
+                        (fact) => kept.get(assertionFactKey(fact)) ?? fact,
+                    );
+                    return this.store.publishAssertions(id, facts, undefined, {
+                        categories,
+                    });
+                });
             },
         };
     }
@@ -3136,7 +3227,7 @@ export class EzClassifyUI {
         const engine = schemeEngineOf(this.resolveContext(el), el);
         return factsOfScopeSet(
             assertions,
-            parseScopeList(el.getAttribute('data-ezclassify-scope')),
+            this.viewScopes(el),
             engine.listCategories(),
             engine.getSchemeMeta(),
         );
@@ -3153,7 +3244,7 @@ export class EzClassifyUI {
         const engine = schemeEngineOf(this.resolveContext(el), el);
         const categories = engine.listCategories();
         const writes = writesCategoryOf(
-            parseScopeList(el.getAttribute('data-ezclassify-scope')),
+            this.viewScopes(el),
             categories,
             engine.getSchemeMeta(),
         );
@@ -3169,7 +3260,7 @@ export class EzClassifyUI {
      * @param el - The view's host
      */
     private writesPastDefaultScope(el: HTMLElement): boolean {
-        const listed = parseScopeList(el.getAttribute('data-ezclassify-scope'));
+        const listed = this.viewScopes(el);
         if (listed.length === 0) return false;
         const meta = schemeEngineOf(
             this.resolveContext(el),
@@ -3199,10 +3290,7 @@ export class EzClassifyUI {
             held,
             own,
             engine.listCategories(),
-            scopeSetOf(
-                parseScopeList(el.getAttribute('data-ezclassify-scope')),
-                meta,
-            ),
+            scopeSetOf(this.viewScopes(el), meta),
             meta,
         );
     }
@@ -3423,6 +3511,96 @@ export class EzClassifyUI {
         this._pendingInits.push(init);
     }
 
+    private invalidateDecisionFlow(el: HTMLElement): void {
+        const group = [...this.decisionFlowForms.values()].find(
+            ({ natives, whole }) =>
+                el.contains(whole) ||
+                natives.some((native) => el.contains(native)),
+        );
+        if (!group) return;
+        this.teardownElement(group.natives[0]);
+        queueMicrotask(() => {
+            if (this._destroyed) return;
+            for (const native of group.natives) {
+                if (
+                    this.root.contains(native) &&
+                    native.getAttribute('data-ezclassify-controller') ===
+                        'decisionflow'
+                )
+                    this.attachView(
+                        native,
+                        'decisionflow',
+                        harvestControllerOptions(native, 'decisionflow'),
+                    );
+            }
+            this.wireHostWriteback();
+        });
+    }
+
+    private scopedFlowFields(
+        el: HTMLElement,
+        markingId: string,
+    ): NativeTextField[] {
+        if (
+            !isNativeTextField(el) ||
+            !el.hasAttribute(DECISION_FLOW_COMBINE) ||
+            !this.markingHosts.has(markingId)
+        )
+            return [];
+        const selector = `[data-ezclassify-controller="decisionflow"][${DECISION_FLOW_COMBINE}][data-ezclassify-bound-to="${cssEscape(markingId)}"]`;
+        return Array.from(this.root.querySelectorAll(selector)).filter(
+            (candidate): candidate is NativeTextField =>
+                isNativeTextField(candidate) &&
+                isOwnedBy(candidate, this._instanceId) &&
+                !this.nodeOf(candidate).error &&
+                candidate.form === el.form &&
+                parseScopeList(candidate.getAttribute('data-ezclassify-scope'))
+                    .length === 1,
+        );
+    }
+
+    private viewScopes(el: HTMLElement): string[] {
+        const group =
+            el.getAttribute('data-ezclassify-controller') === 'decisionflow'
+                ? this.decisionFlowForms.get(
+                      el.getAttribute('data-ezclassify-bound-to') ?? '',
+                  )
+                : undefined;
+        return group?.natives[0] === el
+            ? group.scopes
+            : parseScopeList(el.getAttribute('data-ezclassify-scope'));
+    }
+
+    private wireDirectDecisionFlow(
+        native: NativeTextField,
+        component: ComponentInstance,
+        mount: HTMLElement,
+    ): void {
+        const display = native.style.display;
+        native.style.display = 'none';
+        const read = () => {
+            if (!this.settingValue) void component.setValue(native.value);
+        };
+        const reset = (event: Event) => {
+            queueMicrotask(() => {
+                if (
+                    !event.defaultPrevented &&
+                    this.mounted.get(native) === component
+                )
+                    read();
+            });
+        };
+        native.addEventListener('input', read);
+        const form = native.form;
+        form?.addEventListener('reset', reset);
+        this.plainBehaviorCleanups.set(native, () => {
+            native.removeEventListener('input', read);
+            form?.removeEventListener('reset', reset);
+            native.style.display = display;
+            mount.remove();
+        });
+    }
+
     private attachView(
         el: HTMLElement,
         controller: ControllerName,
@@ -3447,6 +3625,82 @@ export class EzClassifyUI {
         // resolves none stays unenhanced as a host error. A reference drawer
         // shows every Context the instance holds and marks in none, so it
         // resolves no Context of its own.
+        if (
+            controller === 'select' &&
+            el.tagName === 'SELECT' &&
+            !isNativeSingleSelect(el)
+        ) {
+            this.logInitFailure(
+                el,
+                controller,
+                new Error(
+                    'Use a single-value select for the dropdown controller.',
+                ),
+            );
+            return;
+        }
+        const wholeIdForFlow =
+            controller === 'decisionflow'
+                ? el.getAttribute('data-ezclassify-bound-to')
+                : null;
+        let flowForm: DecisionFlowForm | undefined;
+        if (wholeIdForFlow) {
+            const natives = this.scopedFlowFields(el, wholeIdForFlow);
+            if (natives.length > 1) {
+                const lead = natives[0];
+                const existing = this.decisionFlowForms.get(wholeIdForFlow);
+                if (
+                    existing &&
+                    existing.natives.length === natives.length &&
+                    existing.natives.every(
+                        (native, index) => native === natives[index],
+                    )
+                )
+                    return;
+                if (existing) this.teardownElement(existing.natives[0]);
+                for (const native of natives) {
+                    if (this.mounted.has(native)) this.teardownElement(native);
+                }
+                if (lead !== el) {
+                    this.attachView(
+                        lead,
+                        controller,
+                        harvestControllerOptions(lead, controller),
+                    );
+                    return;
+                }
+                const whole = this.markingHosts.get(wholeIdForFlow);
+                const resolvedWhole =
+                    whole instanceof HTMLElement
+                        ? this.contextForMount(whole)
+                        : null;
+                try {
+                    if (
+                        !(whole instanceof HTMLInputElement) ||
+                        whole.type !== 'hidden' ||
+                        whole.hasAttribute('data-ezclassify-controller') ||
+                        !resolvedWhole ||
+                        natives.some(
+                            (native) =>
+                                this.contextForMount(native)?.bucket !==
+                                resolvedWhole.bucket,
+                        )
+                    )
+                        throw new Error(
+                            'Scoped DecisionFlow fields must share a hidden whole in the same Context and scheme.',
+                        );
+                    flowForm = new DecisionFlowForm(
+                        natives,
+                        whole,
+                        schemeEngineOf(resolvedWhole, whole),
+                        this.store,
+                    );
+                } catch (error) {
+                    this.logInitFailure(el, controller, error);
+                    return;
+                }
+            }
+        }
         if (this.mounted.has(el)) return;
         const drawer = controller === 'context-reference';
         const resolved = drawer ? null : this.contextForMount(el);
@@ -3542,9 +3796,28 @@ export class EzClassifyUI {
 
         // Parse the harvested options bag into typed component options.
         const opts = parseComponentOptions(el, rawOptions);
+        if (flowForm) {
+            this.decisionFlowForms.set(wholeIdForFlow!, flowForm);
+            opts.scopes = flowForm.scopes;
+            opts.scope = undefined;
+            opts.nativeFields = flowForm.natives;
+        }
         this.warnOnScopeMismatch(el, opts);
 
+        if (
+            this.initializing &&
+            facetOfId &&
+            facetCategory &&
+            storeBinding &&
+            (controller === 'select' ||
+                controller === 'selector' ||
+                controller === 'checklist')
+        )
+            this.captureNativeFacet(el, facetOfId, facetCategory);
+
         // Resolve the native input element (source of truth)
+        const category = el.getAttribute('data-ezclassify-category');
+        const choiceGroup = category ? nativeChoiceGroup(el) : undefined;
         const nativeInput = resolveNativeInput(el, controller);
 
         // Create mount container
@@ -3554,6 +3827,10 @@ export class EzClassifyUI {
         // and (when bound to a store-tracked marking) publish the new state so
         // sibling views naming the same marking-id stay in sync.
         const onChange = (assertions: EngineAssertion[], rendered: string) => {
+            if (flowForm) {
+                storeBinding?.publish(assertions, rendered);
+                return;
+            }
             if (controller === 'tags') {
                 this.fieldAssertions.set(
                     nativeInput,
@@ -3561,11 +3838,27 @@ export class EzClassifyUI {
                 );
                 this.lastValidated.set(nativeInput, rendered);
             }
+            if (choiceGroup) {
+                writeNativeChoiceGroup(
+                    el,
+                    choiceGroup,
+                    new Set(
+                        assertions
+                            .filter(
+                                (assertion) =>
+                                    assertion.categoryId === category,
+                            )
+                            .map((assertion) => assertion.conceptId),
+                    ),
+                );
+            }
             if (
+                !choiceGroup &&
                 controller !== 'hidden' &&
                 controller !== 'marked-textarea' &&
                 controller !== 'marked-input' &&
                 controller !== 'text' &&
+                !(controller === 'select' && isNativeSingleSelect(el)) &&
                 nativeInput.value !== rendered
             ) {
                 this.settingValue = true;
@@ -3611,6 +3904,8 @@ export class EzClassifyUI {
         // A facet's composer judges its draft with what the rest of its
         // marking holds (see ComponentOptions.resolveFacetSiblings).
         if (facetOfId && facetCategory && storeEligible) {
+            componentOpts.resolveFacetJudgment = () =>
+                this.store.get(facetOfId);
             componentOpts.resolveFacetSiblings = () =>
                 this.store
                     .get(facetOfId)
@@ -3803,7 +4098,7 @@ export class EzClassifyUI {
             this.draftHosts.set(component, storeMarkingId);
 
         // The component marks with the Context its element resolved.
-        const initPromise = drawer
+        const mounted = drawer
             ? (component as ContextReference).init(
                   container,
                   this.referenceSource(),
@@ -3814,6 +4109,89 @@ export class EzClassifyUI {
                   contextForScheme(resolved!, el),
                   componentOpts,
               );
+
+        if (flowForm && wholeIdForFlow) {
+            const group = flowForm;
+            const whole = this.markingHosts.get(
+                wholeIdForFlow,
+            ) as HTMLInputElement;
+            this.storeUnsubscribers.get(whole)?.();
+            this.storeUnsubscribers.delete(whole);
+            group.connect(
+                container,
+                () => (component as DecisionFlow).formEditPending,
+                (state) => {
+                    rollup.updateRollup(this);
+                    el.dispatchEvent(
+                        new CustomEvent('ezclassify:change', {
+                            bubbles: true,
+                            detail: {
+                                assertions: state.assertions,
+                                rendered: whole.value,
+                            },
+                        }),
+                    );
+                },
+            );
+            this.plainBehaviorCleanups.set(el, () => {
+                group.destroy();
+                if (this.decisionFlowForms.get(wholeIdForFlow) === group)
+                    this.decisionFlowForms.delete(wholeIdForFlow);
+            });
+            if (!this.initializing)
+                void Promise.resolve(mounted).then(
+                    () => group.syncNative(),
+                    () => {},
+                );
+        } else if (controller === 'decisionflow' && isNativeTextField(el)) {
+            this.wireDirectDecisionFlow(el, component, container);
+        }
+
+        const initPromise =
+            choiceGroup && category && mounted instanceof Promise
+                ? mounted.then(async () => {
+                      const readGroup = async () => {
+                          if (
+                              this._destroyed ||
+                              this.mounted.get(el) !== component
+                          )
+                              return;
+                          await component.setAssertions(
+                              choiceGroup.inputs
+                                  .filter(
+                                      (input) =>
+                                          input.checked && !input.disabled,
+                                  )
+                                  .map((input): EngineAssertion => ({
+                                      categoryId: category,
+                                      conceptId: input.value,
+                                      source: 'user',
+                                      confidence: 'certain',
+                                  })),
+                          );
+                      };
+                      await readGroup();
+                      if (this._destroyed || this.mounted.get(el) !== component)
+                          return;
+                      const form = choiceGroup.inputs[0]?.form;
+                      if (!form) return;
+                      const reset = (event: Event) => {
+                          queueMicrotask(() => {
+                              if (!event.defaultPrevented) void readGroup();
+                          });
+                      };
+                      form.addEventListener('reset', reset);
+                      this.plainBehaviorCleanups.set(el, () =>
+                          form.removeEventListener('reset', reset),
+                      );
+                  })
+                : mounted;
+        if (initPromise !== mounted && initPromise instanceof Promise)
+            this._pendingInits.push(
+                initPromise.catch((err) =>
+                    this.logInitFailure(el, controller, err),
+                ),
+            );
 
         if (componentOpts.resolveParts && wholeId) {
             // A part committing changes what the whole has to cover, so the
@@ -3895,7 +4273,12 @@ export class EzClassifyUI {
                 // already destroyed, which raises, and the raise is reported
                 // as the field failing to mount even though the live instance
                 // enhanced it perfectly well.
-                if (this._destroyed) return;
+                if (
+                    this._destroyed ||
+                    (controller === 'decisionflow' &&
+                        this.mounted.get(el) !== component)
+                )
+                    return;
                 if (controller === 'marked-textarea') {
                     this.wireMarkedTextareaStore(
                         el as HTMLTextAreaElement,
@@ -5290,11 +5673,25 @@ export class EzClassifyUI {
                 ) {
                     prev.style.display = '';
                     if (prev.tagName === 'FIELDSET') {
+                        const controller = prev.getAttribute(
+                            'data-ezclassify-controller',
+                        );
+                        if (
+                            controller === 'selector' ||
+                            controller === 'checklist'
+                        ) {
+                            mount.remove();
+                            return;
+                        }
                         const hidden = prev.querySelector<HTMLInputElement>(
                             'input[type="hidden"]',
                         );
                         if (hidden) hidden.value = '';
-                    } else if ('value' in prev) {
+                    } else if (
+                        'value' in prev &&
+                        prev.getAttribute('data-ezclassify-controller') !==
+                            'decisionflow'
+                    ) {
                         (prev as HTMLInputElement).value = '';
                     }
                 }
