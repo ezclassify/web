@@ -295,7 +295,7 @@ export interface TooltipPlacement {
      * target in the box's top half opens above it, one in the bottom half below
      * it, and one at its trailing edge beside that edge. Above or below, its
      * trailing edge lines up with the target's; beside, its top lines up with
-     * the target's top. Interactive field tools align to the field's leading
+     * the target's top. Interactive field tools align to the field's trailing
      * edge and keep their opening side as the active section changes. Room is
      * judged first inside every ancestor that clips the box's overflow, so the
      * tooltip stays by what the reader can see, then inside the viewport alone.
@@ -476,7 +476,7 @@ function placeTools(
     const side = below >= above ? 'below' : 'above';
     return {
         left: clamp(
-            rtl ? anchor.right - width : anchor.left,
+            rtl ? anchor.left : anchor.right - width,
             area.left,
             area.right - width,
         ),
@@ -500,7 +500,7 @@ function placeToolsInViewport(
         placeTools(anchor, clear, width, area, minimumHeight, rtl) ??
         placeTools(anchor, target, width, area, minimumHeight, rtl) ?? {
             left: clamp(
-                rtl ? anchor.right - width : anchor.left,
+                rtl ? anchor.left : anchor.right - width,
                 area.left,
                 area.right - width,
             ),
