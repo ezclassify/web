@@ -71,8 +71,7 @@ jobs:
         id: public
         uses: ezclassify/.github/actions/public-npm-dependencies@d71909714a08e9a2c60e0d987ecffa03419f73e8
         with:
-          # The action admits these at the original floor only while npm returns 404.
-          first-publication-packages: '@ezclassify/conformance-server @ezclassify/rest-client @ezclassify/types'
+          first-publication-packages: ${{ github.repository == 'ezclassify/web' && vars.EZ_FIRST_PUBLICATION_PACKAGES || '' }}
 
       - name: Configure the first-publication mirror
         if: steps.public.outputs.lane == 'bootstrap'
@@ -213,8 +212,7 @@ jobs:
         id: public
         uses: ezclassify/.github/actions/public-npm-dependencies@d71909714a08e9a2c60e0d987ecffa03419f73e8
         with:
-          # The action admits these at the original floor only while npm returns 404.
-          first-publication-packages: '@ezclassify/conformance-server @ezclassify/rest-client @ezclassify/types'
+          first-publication-packages: ${{ github.repository == 'ezclassify/web' && vars.EZ_FIRST_PUBLICATION_PACKAGES || '' }}
 
       - name: Configure the first-publication mirror
         if: steps.public.outputs.lane == 'bootstrap'
