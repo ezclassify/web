@@ -462,7 +462,9 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         this.nativeEditor = bindNativeTextEditor(native, textarea, {
             label: () => t('aria.markingInput'),
             onNativeInput: () => this.onTextareaInput(),
-            onLocked: () => void this.closePicker(),
+            onLocked: () => {
+                if (this.picker) void this.closePicker();
+            },
             onReset: () => {
                 ++this.scanSeq;
                 this.finishClose();
