@@ -1,11 +1,11 @@
 import { markingTarget, setMarkingEntry } from './marking-target';
 /**
  * MarkedTextArea: progressively enhances a <textarea> whose value contains
- * inline markings (e.g. "(U) Para one.\n\n(S) Para two."). The textarea
- * captures all keyboard/mouse input but is fully invisible. A display div
- * renders styled text with marking chips, a blinking caret, and selection
- * highlights; all in one text flow, so there is zero drift between cursor and
- * text.
+ * inline markings (e.g. "(U) Para one.\n\n(S) Para two."). An owned editor
+ * captures keyboard and pointer input. The original textarea holds the
+ * submitted value. A display div renders styled text with marking chips, a
+ * blinking caret, and selection highlights; all in one text flow, so there is
+ * zero drift between cursor and text.
  *
  * Press Ctrl+Enter (Cmd+Enter on Mac) to open the marking picker. If the caret
  * is inside an existing marking, the picker edits it. Otherwise a new marking
@@ -29,6 +29,7 @@ import type { ComponentEngineSource } from './component-base-readonly';
 import type { ComponentOptions } from './component-base-readonly';
 import { HiddenAssertionField } from './hidden-assertion-field';
 import { accessibleLabel } from './composer/composer-view';
+import { bindNativeTextEditor } from './native-text-editor';
 import { assertionFactKey, withoutTakenFromWhole } from '../assertion-identity';
 import { renderViewRefused } from '../render-refusal';
 import { t } from '../i18n';
@@ -234,7 +235,11 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
     /** A text area's chrome pins to its first line, top right. */
     protected override readonly chromeAlign = 'start';
 
-    /** Alias kept for readability against the host element. */
+    private nativeTextarea!: HTMLTextAreaElement;
+    private nativeEditor: ReturnType<typeof bindNativeTextEditor> | null = null;
+    private restoreScanAriaInvalid: string | null | undefined;
+
+    /** The component-owned editing surface. */
     private get textarea(): HTMLTextAreaElement {
         return this.host;
     }
@@ -377,10 +382,10 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
     private lastMarkingStrings: string[] = [];
     /** Set once the field is torn down; a late whole change reads nothing. */
     private tornDown = false;
+    private readonly textareaEvents = new AbortController();
     /**
-     * True when the next scan follows a user edit. Initial and externally
-     * supplied values are parsed and validated without rewriting them; safe
-     * engine repairs become eligible only after the user edits a marking.
+     * True when the next scan follows a user edit. Externally supplied
+     * replacements are read without rewriting them.
      */
     private userEditPending = false;
     /**
@@ -444,18 +449,33 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
 
         this.host = this.resolveHost();
         const textarea = this.textarea;
+        const native = this.nativeTextarea;
+        this.styleNativeField(native);
 
         // Capture textarea styles BEFORE making it invisible
         const capturedStyles = this.captureAndMirrorStylesPreHide();
-        const hadFocus = document.activeElement === textarea;
-        textarea.focus({ preventScroll: true });
-        const focusBorderColor = window.getComputedStyle(textarea).borderColor;
-        if (!hadFocus) textarea.blur();
 
         this.wrap = document.createElement('div');
         this.wrap.className = this.classNames.wrap;
-        textarea.parentNode?.insertBefore(this.wrap, textarea);
-        this.wrap.appendChild(textarea);
+        native.parentNode?.insertBefore(this.wrap, native);
+        this.wrap.append(native, textarea);
+        this.nativeEditor = bindNativeTextEditor(native, textarea, {
+            label: () => t('aria.markingInput'),
+            onNativeInput: () => this.onTextareaInput(),
+            onLocked: () => void this.closePicker(),
+            onReset: () => {
+                ++this.scanSeq;
+                this.finishClose();
+                this.setValue(native.value);
+            },
+            describe: () =>
+                [
+                    native.getAttribute('aria-describedby'),
+                    this.scanValidity ? this.scanNotice?.id : undefined,
+                ]
+                    .filter(Boolean)
+                    .join(' '),
+        });
 
         textarea.classList.add('marked-textarea-input');
         textarea.setAttribute('spellcheck', 'false');
@@ -496,15 +516,23 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         for (const p of layoutProps) {
             (this.display.style as unknown as Record<string, string>)[p] =
                 capturedStyles[p];
+            if (!['color', 'backgroundColor', 'borderColor'].includes(p))
+                (textarea.style as unknown as Record<string, string>)[p] =
+                    capturedStyles[p];
         }
-        if (textarea.style.height)
-            this.display.style.height = textarea.style.height;
-        if (textarea.style.minHeight)
-            this.display.style.minHeight = textarea.style.minHeight;
+        if (native.style.height)
+            this.display.style.height = native.style.height;
+        if (native.style.minHeight)
+            this.display.style.minHeight = native.style.minHeight;
 
         // Re-sync color/background when the host changes theme so the display
         // div matches the themed appearance in both light and dark modes.
-        this.installThemeObserver(capturedStyles, 'marked-textarea-input');
+        this.setMeasuredFontSize(capturedStyles.fontSize);
+        this.installThemeObserver(
+            capturedStyles,
+            'marked-textarea-input',
+            native,
+        );
 
         this.wrap.insertBefore(this.display, textarea);
 
@@ -595,11 +623,10 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         this.boundDocKeydown = (e) => this.onDocKeydown(e);
         this.boundDocClick = (e) => this.onDocClick(e);
         this.boundSelectionChange = () => this.onSelectionChange();
-        this.textarea.addEventListener('input', this.boundInput);
-        this.textarea.addEventListener('keydown', this.boundKeydown);
-        this.textarea.addEventListener('focus', () => {
+        this.listenToTextarea('input', this.boundInput);
+        this.listenToTextarea('keydown', this.boundKeydown);
+        this.listenToTextarea('focus', () => {
             this.hasFocus = true;
-            this.display.style.borderColor = focusBorderColor;
             this.renderDisplay();
             if (this.picker?.isToolsSuspended && !this.pressing) {
                 const retained = this.picker;
@@ -624,7 +651,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                 });
             }
         });
-        this.textarea.addEventListener('blur', () => {
+        this.listenToTextarea('blur', () => {
             this.hasFocus = false;
             this.display.style.borderColor = capturedStyles.borderColor;
             if (!this.picker) this.renderDisplay();
@@ -638,11 +665,11 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         // click. The release decides (see MarkedFieldBase.pressing): a drag or
         // a double-click is a text selection and opens nothing.
         this.watchPresses();
-        this.textarea.addEventListener('mouseup', (event) => {
+        this.listenToTextarea('mouseup', (event) => {
             if (event.button !== 0 || event.detail > 1) return;
             requestAnimationFrame(() => this.openFromClick());
         });
-        this.textarea.addEventListener('scroll', () => {
+        this.listenToTextarea('scroll', () => {
             this.display.scrollTop = this.textarea.scrollTop;
             this.display.scrollLeft = this.textarea.scrollLeft;
         });
@@ -661,10 +688,10 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         }
         document.fonts?.ready.then(() => this.renderDisplay());
 
-        await this.syncFromTextarea();
+        await this.syncFromTextarea(true);
     }
 
-    /** Resolve the host textarea from this container (or its parent). */
+    /** Create the editor alongside the original form textarea. */
     protected resolveHost(): HTMLTextAreaElement {
         const host = getMountHost(this.container);
         const textarea =
@@ -680,7 +707,17 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                 'MarkedTextArea requires a <textarea> element in the enhanced container or its parent.',
             );
         }
-        return textarea;
+        this.nativeTextarea = textarea;
+        const editor = textarea.ownerDocument.createElement('textarea');
+        editor.className = textarea.className;
+        editor.defaultValue = textarea.defaultValue;
+        editor.value = textarea.value;
+        editor.setSelectionRange(
+            textarea.selectionStart,
+            textarea.selectionEnd,
+            textarea.selectionDirection,
+        );
+        return editor;
     }
 
     /**
@@ -689,7 +726,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
      * init, so it only needs the captured map here (no display yet).
      */
     private captureAndMirrorStylesPreHide(): Record<string, string> {
-        const csBeforeHide = window.getComputedStyle(this.host);
+        const csBeforeHide = window.getComputedStyle(this.nativeTextarea);
         const capturedStyles: Record<string, string> = {};
         const layoutProps = [
             'padding',
@@ -760,8 +797,13 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
 
     setValue(value: string): void {
         this.userEditPending = false;
-        this.textarea.value = value;
+        this.setHostValue(value, false);
         void this.syncFromTextarea();
+    }
+
+    protected override setHostValue(value: string, notify = true): void {
+        this.nativeTextarea.value = value;
+        super.setHostValue(this.nativeTextarea.value, notify);
     }
 
     getRendered(): string {
@@ -864,7 +906,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                     !entries.some((entry) => entry.entryId === segment.entryId),
             )
         ) {
-            this.textarea.setAttribute(
+            this.nativeTextarea.setAttribute(
                 'data-ezclassify-entry-conflict',
                 'unresolved-source',
             );
@@ -882,17 +924,20 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                 );
             })
         ) {
-            this.textarea.setAttribute(
+            this.nativeTextarea.setAttribute(
                 'data-ezclassify-entry-conflict',
                 'unresolved-source',
             );
             return false;
         }
         if (
-            this.textarea.getAttribute('data-ezclassify-entry-conflict') ===
-            'unresolved-source'
+            this.nativeTextarea.getAttribute(
+                'data-ezclassify-entry-conflict',
+            ) === 'unresolved-source'
         )
-            this.textarea.removeAttribute('data-ezclassify-entry-conflict');
+            this.nativeTextarea.removeAttribute(
+                'data-ezclassify-entry-conflict',
+            );
         const successfulReads = new Map<string, ProcessResult>();
         this.renderingEntrySeq = seq;
         const rendered = await Promise.all(
@@ -1095,8 +1140,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         );
         this.destroyFieldTools();
         this.toolsButton = null;
-        this.textarea.removeEventListener('input', this.boundInput);
-        this.textarea.removeEventListener('keydown', this.boundKeydown);
+        this.textareaEvents.abort();
         document.removeEventListener('keydown', this.boundDocKeydown, true);
         document.removeEventListener('mousedown', this.boundDocClick);
         this.unwatchPresses();
@@ -1107,17 +1151,35 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         for (const f of this.hiddenFields) f?.destroy();
         this.hiddenFields = [];
         this.hiddenContainers = [];
+        this.restoreNativeScanAria();
+        this.nativeEditor?.release();
+        this.nativeEditor = null;
+        const native = this.nativeTextarea;
+        native.setSelectionRange(
+            this.textarea.selectionStart,
+            this.textarea.selectionEnd,
+            this.textarea.selectionDirection,
+        );
         // A host the page removed itself stays removed (see MarkingField).
-        if (this.wrap.parentNode && this.textarea.parentNode === this.wrap)
-            this.wrap.parentNode.insertBefore(this.textarea, this.wrap);
+        if (this.wrap.parentNode && native.parentNode === this.wrap)
+            this.wrap.parentNode.insertBefore(native, this.wrap);
         this.wrap.remove();
-        this.container.innerHTML = '';
+        this.hiddenRoot.remove();
         // Last, so nothing above is skipped if the store refuses the call. The
         // restored textarea is no longer checked by this field: it keeps none
         // of this field's verdicts, and the rollups stop counting a field
         // that is gone.
         this.scanComplete = true;
         this.reportScanCompleteness();
+    }
+
+    private listenToTextarea<K extends keyof HTMLElementEventMap>(
+        type: K,
+        listener: (event: HTMLElementEventMap[K]) => void,
+    ): void {
+        this.textarea.addEventListener(type, listener, {
+            signal: this.textareaEvents.signal,
+        });
     }
 
     private onTextareaInput(): void {
@@ -1143,7 +1205,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         }, MarkedTextArea.SYNC_DEBOUNCE_MS);
     }
 
-    private async syncFromTextarea(): Promise<void> {
+    private async syncFromTextarea(initializing = false): Promise<void> {
         // While the inline picker is open, the empty "()" template won't be
         // recognized by the engine scan, so the scan would clear the segment list
         // and call renderDisplay(), which tears down and re-mounts the pickerMount
@@ -1241,7 +1303,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         // Read against a settled whole: when this edit also changed the whole,
         // reading now would compare the marks with whichever whole answered
         // first.
-        await wholeSettled(this.textarea);
+        await wholeSettled(this.nativeTextarea);
         if (!isCurrent()) return;
         const ctx = this.options.resolveContext?.();
         const prevMarkings = this.lastMarkingStrings;
@@ -1264,9 +1326,8 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         this.lastMarkingStrings = embedded.map((r) => r.marking);
         // The marks this user edit wrote. Only they may take the engine's safe
         // repairs: a fix rewrites the portion that was edited and no other, so
-        // typing in one paragraph never rewrites the mark of another. A scan
-        // that follows no user edit (load, a value set from outside) edits
-        // nothing and rewrites nothing.
+        // typing in one paragraph never rewrites the mark of another. The
+        // initial scan also accepts safe, settled repairs to loaded marks.
         const edited = new Set(
             userInitiated
                 ? editedMarkingIndices(
@@ -1367,8 +1428,19 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                       res.appliedFixes,
                       this.omittedFromFieldFormat(res),
                   );
-            const unappliedFixes = corrections.length > 0;
-            if (isEdited) editsByStart.set(r.start, res.appliedFixes);
+            const initialRepair =
+                initializing &&
+                complete &&
+                !!processed &&
+                corrections.length > 0 &&
+                res.valid &&
+                res.recognition?.status === 'complete' &&
+                !!res.rendered &&
+                !renderViewRefused(res) &&
+                this.canRepairAtCaret(r.start, r.end);
+            const unappliedFixes = !initialRepair && corrections.length > 0;
+            if (isEdited || initialRepair)
+                editsByStart.set(r.start, res.appliedFixes);
             const errors = res.errors.map((e) => e.message);
             if (unappliedFixes) {
                 errors.push(
@@ -1404,7 +1476,8 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                 errors,
                 warnings,
                 validationErrors: res.errors,
-                repaired: isEdited && res.appliedFixes.length > 0,
+                repaired:
+                    initialRepair || (isEdited && res.appliedFixes.length > 0),
                 pendingFixes: unappliedFixes ? res.appliedFixes : [],
                 readFailure: failure,
                 sourceUnresolved,
@@ -1459,7 +1532,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
             text,
             owned,
             () =>
-                `${this.textarea.id || this.partOfId || this.entryIdPrefix}-entry-${++this.hiddenGeneration}`,
+                `${this.nativeTextarea.id || this.partOfId || this.entryIdPrefix}-entry-${++this.hiddenGeneration}`,
         );
         owned.forEach((segment, index) => {
             segment.entryId = ids[index];
@@ -1547,7 +1620,8 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         // Apply autofixes: patch textarea if the repaired rendered differs from what was typed.
         // If repairs were applied, a follow-up scan runs and will call renderDisplay; skip
         // rendering here to avoid displaying stale segment positions against the patched text.
-        const repaired = userInitiated && (await this.applyRepairs());
+        const repaired =
+            (initializing || userInitiated) && (await this.applyRepairs());
         if (repaired) return;
 
         // If no markings changed and the count is the same as before, only the
@@ -1711,6 +1785,10 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
             .split(/\s+/)
             .filter((id) => id && id !== this.scanNotice.id);
         if (show) {
+            if (this.restoreScanAriaInvalid === undefined)
+                this.restoreScanAriaInvalid =
+                    this.nativeTextarea.getAttribute('aria-invalid');
+            this.nativeTextarea.setAttribute('aria-invalid', 'true');
             this.scanValidity = t('mark.scanIncomplete');
             this.textarea.setCustomValidity(this.scanValidity);
             this.textarea.setAttribute('aria-invalid', 'true');
@@ -1733,6 +1811,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                 this.textarea.setCustomValidity('');
             this.scanValidity = null;
             this.textarea.removeAttribute('aria-invalid');
+            this.restoreNativeScanAria();
             this.scanNotice.hidden = true;
             this.scanAnnouncer.textContent = '';
         }
@@ -1742,6 +1821,19 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                 describedBy.join(' '),
             );
         else this.textarea.removeAttribute('aria-describedby');
+        this.nativeEditor?.syncValidity();
+    }
+
+    private restoreNativeScanAria(): void {
+        if (this.restoreScanAriaInvalid === undefined) return;
+        if (this.restoreScanAriaInvalid === null)
+            this.nativeTextarea.removeAttribute('aria-invalid');
+        else
+            this.nativeTextarea.setAttribute(
+                'aria-invalid',
+                this.restoreScanAriaInvalid,
+            );
+        this.restoreScanAriaInvalid = undefined;
     }
 
     /**
@@ -1821,6 +1913,14 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         return new Set(result.assessment.omitted.map((o) => o.conceptId));
     }
 
+    private canRepairAtCaret(
+        start: number,
+        end: number,
+        caret = this.textarea.selectionStart,
+    ): boolean {
+        return !this.hasFocus || caret <= start || caret >= end;
+    }
+
     /**
      * Patch the textarea when repair changed any marking's rendered form.
      * Returns true if patched.
@@ -1831,10 +1931,8 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         // editor click-out commit), the stale textarea caret must not defer the
         // repair.
         const cursorPos = this.textarea.selectionStart;
-        const safeSegments = this.segments.filter(
-            (seg) =>
-                !this.hasFocus ||
-                !(cursorPos > seg.start && cursorPos < seg.end),
+        const safeSegments = this.segments.filter((seg) =>
+            this.canRepairAtCaret(seg.start, seg.end, cursorPos),
         );
 
         const template = this.template;
@@ -1977,8 +2075,11 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         const selEnd = this.hasFocus ? this.textarea.selectionEnd : -1;
         const hasSelection = selStart !== selEnd && selStart >= 0;
 
-        if (!statusMarkFavoriteApplyOwner(this.toolsButton))
+        // Repainting the marking chips can dismiss their old hover, but the
+        // tools dialog is anchored to the persistent button outside the display.
+        if (this.toolsButton?.getAttribute('aria-expanded') !== 'true')
             hideTooltip(this.container);
+        this.clearSegmentHover();
         this.display.innerHTML = '';
 
         let cursor = 0;
@@ -2111,7 +2212,12 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                     document.createTextNode(chipText.slice(caretOffset)),
                 );
             } else {
-                chip.textContent = chipText;
+                this.paintSegmentConceptHints(
+                    chip,
+                    chipText,
+                    seg.assertions,
+                    seg.assessment,
+                );
             }
 
             // If the inline editor is active for this segment, mount it inline
@@ -2122,16 +2228,8 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                 seg.start === this.activeRange.start &&
                 seg.end === this.activeRange.end
             ) {
-                // Wrap the editor in a chip-styled span so the delimiters and
-                // border-radius match a resting chip's shape. The FILL does
-                // not carry over: marked-text-area.css's `--editing`
-                // modifier clears `.marked-textarea-chip`'s solid background,
-                // since that background reuses the same accent-tinted token
-                // the design system's own real selection/highlight states
-                // draw from (--ez-color-surface-active): painting it behind
-                // a still-empty, freshly-inserted template read as a stray
-                // selection sitting on the open delimiter, not as "you're
-                // editing this."
+                // Keep the resting chip's shape without giving an empty
+                // portion template a fill that looks like text selection.
                 const editorChip = document.createElement('span');
                 editorChip.className =
                     'marked-textarea-chip marked-textarea-chip--editing';
@@ -2304,7 +2402,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
             scanResult: null,
             origin: this.applyingEntryState ? 'store' : 'editor',
         };
-        this.textarea.dispatchEvent(
+        this.nativeTextarea.dispatchEvent(
             new CustomEvent('ezclassify:marked-change', {
                 bubbles: true,
                 detail,
@@ -2333,7 +2431,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
             };
         });
         const detail = { segments, scanResult: null };
-        this.textarea.dispatchEvent(
+        this.nativeTextarea.dispatchEvent(
             new CustomEvent('ezclassify:text-change', {
                 bubbles: true,
                 detail,
@@ -2419,6 +2517,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         openList = true,
         caret?: number,
     ): Promise<void> {
+        if (this.tornDown || !this.wrap.isConnected) return;
         this.destroyPicker();
         // Escape cancels the edit. The Ctrl+Enter path snapshots before its
         // template insertion; the click/caret-driven opens snapshot here.
@@ -2494,7 +2593,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                 // truncate.
                 label: () => {
                     const field = accessibleLabel(
-                        this.textarea,
+                        this.nativeTextarea,
                         t('aria.markingInput'),
                     );
                     const paragraph = paragraphNumber(
@@ -2521,7 +2620,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
      * leaves the marking that was open, as a keyboard move would.
      */
     private openFromClick(): void {
-        if (!this.hasFocus) return;
+        if (this.tornDown || !this.hasFocus) return;
         const pos = this.textarea.selectionStart;
         if (pos !== this.textarea.selectionEnd) return;
         // Offsets from a scan that lags the text would point at the wrong
@@ -3105,7 +3204,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
             try {
                 await this.applyEntryStates(pending.entries, pending.current);
             } catch (error) {
-                this.textarea.dispatchEvent(
+                this.nativeTextarea.dispatchEvent(
                     new CustomEvent('ezclassify:entry-error', {
                         bubbles: true,
                         detail: { error },

@@ -75,17 +75,19 @@
     --ez-color-surface-hover: #f3f4f6;
     --ez-color-surface-active: #e8f0fe;
 
-    /* Focus aliases resolve --ez-color-primary at their declaration site.
-       Declare them in each theme scope for the local palette. The :root
-       copy also serves standalone .ez-input.ez-styled inputs that have no
-       component or theme ancestor. */
-    --ez-color-border-focus: var(--ez-color-primary, #fdb827);
+    /* The shadow takes the accent of this palette. Field outlines resolve
+       the focus color at the control so a nested accent also works. */
     --ez-focus-ring-shadow: 0 0 0 3px
         color-mix(in srgb, var(--ez-color-primary, #3b82f6) 15%, transparent);
 
     /* These theme-invariant border, spacing, and transition literals serve
        standalone .ez-input.ez-styled inputs from :root. Unlike the focus
        aliases, they do not require redeclaration in each theme scope. */
+    --ez-font-family: system-ui, sans-serif;
+    --ez-font-weight: 400;
+    --ez-line-height: 1.5;
+    --ez-focus-ring-width: 2px;
+    --ez-focus-ring-offset: calc(-1 * var(--ez-focus-ring-width));
     --ez-border-width: 1px;
     --ez-border-radius: 0.375rem;
     --ez-spacing-sm: 0.5rem;
@@ -174,7 +176,6 @@
 
     /* Focus: redeclared per the :root comment above (theme-scoping audit,
        same reasoning as the Dropdown block's redeclare below). */
-    --ez-color-border-focus: var(--ez-color-primary, #fdb827);
     --ez-focus-ring-shadow: 0 0 0 3px
         color-mix(in srgb, var(--ez-color-primary, #3b82f6) 15%, transparent);
 
@@ -237,7 +238,6 @@
 
     /* Focus: redeclared per the :root comment above (theme-scoping audit,
        same reasoning as the Dropdown block's redeclare below). */
-    --ez-color-border-focus: var(--ez-color-primary, #fdb827);
     --ez-focus-ring-shadow: 0 0 0 3px
         color-mix(in srgb, var(--ez-color-primary, #3b82f6) 15%, transparent);
 
@@ -269,11 +269,35 @@
     --ez-status-mark-strong-color: currentColor;
 }
 
+/* Defaults for mounted UI and the native controls it enhances.
+   Zero specificity lets ordinary host styles win. The marked text editors
+   use a transparent interaction layer with higher specificity. */
+:where(
+    [data-ezclassify],
+    [data-ezclassify-mount],
+    .marking-field-wrap,
+    .marked-input-wrap,
+    .marked-textarea-wrap
+) {
+    font-family: var(--ez-font-family);
+    color: var(--ez-color-text, inherit);
+}
+
+:where(.ez-native-field) {
+    font: var(--ez-font-weight) var(--ez-font-size, 1em) / var(--ez-line-height)
+        var(--ez-font-family);
+    color: var(--ez-color-text, inherit);
+    background: var(--ez-color-background);
+    border: var(--ez-border-width) solid var(--ez-color-border);
+    border-radius: var(--ez-border-radius);
+    padding: var(--ez-spacing-sm) var(--ez-spacing-md);
+}
+
 /* ── Opt-in input styling (.ez-styled-inputs or styleInputs: true) ── */
 .ez-styled-inputs .ez-input,
 .ez-input.ez-styled {
     font-family: var(--ez-font-family);
-    font-size: var(--ez-font-size);
+    font-size: var(--ez-font-size, 1em);
     font-weight: var(--ez-font-weight);
     line-height: var(--ez-line-height);
     color: var(--ez-color-text);
@@ -291,7 +315,10 @@
 
 .ez-styled-inputs .ez-input:focus,
 .ez-input.ez-styled:focus {
-    border-color: var(--ez-color-border-focus);
+    border-color: var(
+        --ez-color-border-focus,
+        var(--ez-color-primary, #fdb827)
+    );
     box-shadow: var(--ez-focus-ring-shadow);
 }
 
@@ -307,7 +334,7 @@
 /* Display */
 .ez-display {
     font-family: var(--ez-font-family);
-    font-size: var(--ez-font-size);
+    font-size: var(--ez-font-size, 1em);
     font-weight: 600;
     color: var(--ez-color-text);
     letter-spacing: 0.02em;
@@ -316,7 +343,7 @@
 /* Validation */
 .ez-validation {
     font-family: var(--ez-font-family);
-    font-size: calc(var(--ez-font-size) - 0.125rem);
+    font-size: calc(var(--ez-font-size, 1rem) * 0.875);
     margin-top: var(--ez-spacing-xs, 0.25rem);
 }
 

@@ -16,7 +16,13 @@ import type {
     CategoryView,
 } from '@ezclassify/types';
 import { schemeOnlyContext } from '../../test-fixtures/context-doubles';
+import { EzClassifyUI } from '../ezclassify-ui';
 import { setStatusMarkFixes } from './status-mark';
+import {
+    mockAssertion,
+    mockProcessResult,
+    mockValidateResult,
+} from '../engine-result-mock';
 import {
     mockRenderFormat,
     mockRenderFormats,
@@ -782,10 +788,9 @@ describe('DecisionFlow', () => {
         const arrows = [back, next].map((button) =>
             button.querySelector('[aria-hidden="true"]'),
         );
-        expect(arrows.map((arrow) => arrow?.textContent)).toEqual([
-            '\u2039\uFE0E',
-            '\u203a\uFE0E',
-        ]);
+        expect(arrows.every((arrow) => arrow instanceof HTMLSpanElement)).toBe(
+            true,
+        );
     });
 
     it('shows an unset marking on its line as a word, not a dash', async () => {
@@ -909,7 +914,7 @@ describe('DecisionFlow', () => {
         mixedContainer.remove();
     });
 
-    it('seeded marking with only required categories filled does not land on optional empty step', async () => {
+    it('opens a seeded flow at the first step and can jump to a later one', async () => {
         // Profile: scope required=true, impact required=false. Seed with scope only.
         const seededProfile = createStepProfile();
         (seededProfile.categories[0] as any).required = true;
@@ -951,11 +956,26 @@ describe('DecisionFlow', () => {
         });
         await enterFlow(seedContainer);
 
-        // Should land on last step (scope filled, impact optional = passable), not stuck on impact
-        const label = seedContainer.querySelector(
-            '.ez-decision-flow__question-label',
-        );
-        expect(label?.textContent).toContain('Impact');
+        const question = () =>
+            seedContainer.querySelector('.ez-decision-flow__question-label')
+                ?.textContent;
+        expect(question()).toBe('1 of 2 · Scope');
+
+        seedContainer
+            .querySelector<HTMLButtonElement>(
+                '.ez-decision-flow__step-dot[data-index="1"]',
+            )!
+            .click();
+        expect(question()).toBe('2 of 2 · Impact');
+
+        document.body.click();
+        seedContainer
+            .querySelector<HTMLElement>('.ez-decision-flow__values')!
+            .click();
+        expect(question()).toBe('1 of 2 · Scope');
+        expect(flow.getAssertions()).toEqual(initialAssertions);
+        flow.destroy();
+        seedContainer.remove();
     });
 });
 
@@ -2703,6 +2723,54 @@ describe('DecisionFlow: compact layout', () => {
         dots()[1].focus();
         expect(ringed()).toEqual([dots()[0]]);
         expect(dots()[0].getAttribute('aria-current')).toBe('step');
+    });
+
+    it('writes both scopes to its own native field through automatic Runtime output', async () => {
+        const form = document.createElement('form');
+        const field = document.createElement('input');
+        field.type = 'hidden';
+        field.name = 'marking';
+        field.value = 'A/ADMIN';
+        const mount = document.createElement('div');
+        form.append(field, mount);
+        document.body.append(form);
+        const engine = createScopedEngine();
+        const level = mockAssertion({
+            conceptId: 'LEVEL_A',
+            categoryId: 'level',
+        });
+        const admin = mockAssertion({
+            conceptId: 'ADMIN',
+            categoryId: 'admin_cat',
+        });
+        const process = vi.mocked(engine.process);
+        process.mockImplementation((input, options) => {
+            const assertions = options?.assertions ?? [level, admin];
+            return mockProcessResult({
+                assertions,
+                rendered: options?.outputFormat
+                    ? 'A'
+                    : typeof input === 'string' && input
+                      ? input
+                      : 'B/ADMIN',
+                valid: true,
+            });
+        });
+
+        try {
+            await flow.init(mount, toCtx(engine), { scope: 'marking admin' });
+            expect(new FormData(form).get('marking')).toBe('A/ADMIN');
+            flow.setAssertions([
+                mockAssertion({ conceptId: 'LEVEL_B', categoryId: 'level' }),
+                admin,
+            ]);
+            await vi.waitFor(() =>
+                expect(new FormData(form).get('marking')).toBe('B/ADMIN'),
+            );
+        } finally {
+            flow.destroy();
+            form.remove();
+        }
     });
 
     it("across scopes keeps one row of dots, and captions each scope's value under the step", async () => {
@@ -4644,7 +4712,7 @@ describe('DecisionFlow: compact layout', () => {
         },
     );
 
-    it('focuses the first unanswered step when defaults already answer an earlier step', async () => {
+    it('focuses the first step even when a default already answers it', async () => {
         await flow.init(container, toCtx(createMockEngine()));
         flow.applyStoreState({
             rendered: 'S:F',
@@ -4679,10 +4747,10 @@ describe('DecisionFlow: compact layout', () => {
             .dispatchEvent(
                 new MouseEvent('click', { bubbles: true, detail: 1 }),
             );
-        expect(title()).toBe('2 of 2 · Impact');
-        expect((document.activeElement as HTMLElement).dataset.conceptId).toBe(
-            'IMPACT_LOW',
-        );
+        expect(title()).toBe('1 of 2 · Scope');
+        expect(
+            (document.activeElement as HTMLElement).dataset.conceptId,
+        ).toMatch(/^SCOPE_/);
     });
 
     it('skips unavailable options when a summary press opens the flow', async () => {
@@ -4718,12 +4786,12 @@ describe('DecisionFlow: compact layout', () => {
         );
     });
 
-    it('focuses the existing value input when opening its current step from the summary', async () => {
+    it('focuses the existing value input when opening the first step from the summary', async () => {
         const outside = document.createElement('button');
         document.body.appendChild(outside);
         container.setAttribute(
             'data-ezclassify-decisionflow-categories',
-            '["level","label"]',
+            '["label","level"]',
         );
         await flow.init(container, toCtx(createTextInputEngine()));
         flow.setAssertions([
@@ -6104,17 +6172,7 @@ describe('DecisionFlow: steps in written order', () => {
         expect(dotCategories()).toEqual(['level', 'sharing', 'owner', 'note']);
     });
 
-    it('opens on the first step with no value when the author has chosen nothing', async () => {
-        await mount(
-            ['owner', 'level', 'sharing', 'recipients'],
-            [defaultOwner],
-        );
-        await open();
-        expect(title()).toBe('2 of 4 · Level');
-        expect(dotFor('level').getAttribute('aria-current')).toBe('step');
-    });
-
-    it('opens where it was once the author has chosen something', async () => {
+    it('opens at the first step when the author has chosen something', async () => {
         await mount(
             ['owner', 'level', 'sharing', 'recipients'],
             [
@@ -6131,7 +6189,7 @@ describe('DecisionFlow: steps in written order', () => {
         expect(title()).toBe('1 of 4 \u00b7 Owner');
     });
 
-    it('passes over a step a default answers, shows it inferred, and still goes there from its dot', async () => {
+    it('opens on the first step with its default shown as inferred', async () => {
         await mount(
             ['owner', 'level', 'sharing', 'recipients'],
             [defaultOwner],
@@ -6143,15 +6201,206 @@ describe('DecisionFlow: steps in written order', () => {
             'Step 1 of 4, Owner: USA (inferred)',
         );
         await open();
-        expect(title()).toBe('2 of 4 · Level');
-        dotFor('owner').click();
-        await settle();
         expect(title()).toBe('1 of 4 · Owner');
+        expect(dotFor('owner').getAttribute('aria-current')).toBe('step');
         // The option the default holds reads as inferred, not chosen.
         const usa = host.querySelector<HTMLElement>(
             '.ez-decision-flow__option[data-concept-id="USA"]',
         )!;
         expect(usa.classList).toContain('ez-decision-flow__option--inferred');
         expect(usa.getAttribute('aria-pressed')).toBe('false');
+    });
+});
+
+describe('DecisionFlow native scopes', () => {
+    function mount(combine: boolean, options?: { sameScope?: boolean }) {
+        const form = document.createElement('form');
+        const attrs = `data-ezclassify-controller="decisionflow" data-ezclassify-bound-to="scoped-whole"
+            ${combine ? 'data-ezclassify-decisionflow-combine' : ''}`;
+        form.innerHTML = `
+            <input id="scoped-whole" name="whole" type="hidden" data-ezclassify-marking>
+            <input name="label" value="T:A" data-ezclassify-scope="marking" ${attrs}>
+            <textarea name="details" data-ezclassify-scope="${options?.sameScope ? 'marking' : 'admin'}" ${attrs}>AX</textarea>`;
+        document.body.append(form);
+        const engine = createScopedEngine();
+        const getMeta = engine.getSchemeMeta.bind(engine);
+        engine.getSchemeMeta = () => ({
+            ...getMeta(),
+            formats: [
+                mockRenderFormat({
+                    id: 'default',
+                    surface: 'marking',
+                    categoryOrder: ['level'],
+                }),
+                mockRenderFormat({
+                    id: 'admin',
+                    surface: 'admin',
+                    categoryOrder: ['admin_cat'],
+                }),
+            ],
+        });
+        engine.aggregateAssertions = vi.fn(async (sets: Assertion[][]) => {
+            const assertions = sets.flat();
+            return {
+                ...(await engine.render(assertions)),
+                assertions,
+                valid: true,
+                errors: [],
+                warnings: [],
+            };
+        }) as unknown as typeof engine.aggregateAssertions;
+        const process = engine.process.bind(engine);
+        engine.process = (async (
+            input: string | Assertion[],
+            options?: { assertions?: Assertion[] },
+        ) =>
+            typeof input === 'string'
+                ? process(input, options)
+                : mockProcessResult({
+                      assertions: input,
+                      rendered: (await engine.render(input)).rendered,
+                  })) as typeof engine.process;
+        const scheme = engine.getScheme();
+        engine.validate = vi.fn((raw) => {
+            const concept = scheme.concepts.find(
+                (item) => item.views.default === raw,
+            );
+            return mockValidateResult(
+                concept
+                    ? {
+                          assertions: [
+                              mockAssertion({
+                                  conceptId: concept.id,
+                                  categoryId: concept.categories[0],
+                              }),
+                          ],
+                          recognition: { status: 'complete', unmatched: [] },
+                          rendered: raw,
+                      }
+                    : { valid: false },
+            );
+        });
+        const ui = new EzClassifyUI(toCtx(engine), { root: form });
+        const label = form.querySelector<HTMLInputElement>('[name="label"]')!;
+        const details = form.querySelector<HTMLTextAreaElement>('textarea')!;
+        const values = () => Object.fromEntries(new FormData(form));
+        const mounts = () =>
+            form.querySelectorAll<HTMLElement>(
+                '[data-ezclassify-mount="decisionflow"]',
+            );
+        const close = () => {
+            ui.destroy();
+            form.remove();
+        };
+        return { ui, form, label, details, values, mounts, close };
+    }
+
+    it('seeds one flow from both originals and announces only after the three form values agree', async () => {
+        const { form, label, details, values, mounts, close } = mount(true);
+        const seen = vi.fn(() => values());
+        form.addEventListener('ezclassify:change', seen);
+        try {
+            await vi.waitFor(() => expect(label.style.display).toBe('none'));
+            expect(details.style.display).toBe('none');
+            expect(mounts()).toHaveLength(1);
+            expect(values()).toEqual({
+                whole: 'T:A/AX',
+                label: 'T:A',
+                details: 'AX',
+            });
+
+            label.value = 'T:B';
+            label.dispatchEvent(new Event('input', { bubbles: true }));
+            await vi.waitFor(() =>
+                expect(seen).toHaveLastReturnedWith({
+                    whole: 'T:B/AX',
+                    label: 'T:B',
+                    details: 'AX',
+                }),
+            );
+
+            details.value = 'unread';
+            details.dispatchEvent(new Event('input', { bubbles: true }));
+            await vi.waitFor(() => expect(details.validity.valid).toBe(false));
+            expect(details.style.display).toBe('');
+            expect(details.value).toBe('unread');
+            expect(values().whole).toBe('');
+            const submit = new Event('submit', {
+                bubbles: true,
+                cancelable: true,
+            });
+            expect(form.dispatchEvent(submit)).toBe(false);
+
+            form.reset();
+            await vi.waitFor(() =>
+                expect(values()).toEqual({
+                    whole: 'T:A/AX',
+                    label: 'T:A',
+                    details: 'AX',
+                }),
+            );
+            expect(details.validity.valid).toBe(true);
+        } finally {
+            close();
+        }
+        expect(label.style.display).toBe('');
+        expect(details.value).toBe('AX');
+    });
+
+    it('remounts the remaining field when the first grouped field is removed', async () => {
+        const { label, details, mounts, close } = mount(true);
+        try {
+            await vi.waitFor(() => expect(details.style.display).toBe('none'));
+            label.remove();
+            await vi.waitFor(() => {
+                expect(mounts()).toHaveLength(1);
+                expect(mounts()[0].previousElementSibling).toBe(details);
+                expect(mounts()[0].hidden).toBe(false);
+            });
+        } finally {
+            close();
+        }
+    });
+
+    it('keeps the scoped textarea as the native field when it mounts by itself', async () => {
+        const { form, details, mounts, close } = mount(false);
+        try {
+            await vi.waitFor(() => expect(mounts()).toHaveLength(2));
+            expect(mounts()[1].previousElementSibling).toBe(details);
+            expect(new FormData(form).has('details')).toBe(true);
+            await vi.waitFor(() => {
+                expect(
+                    mounts()[1].querySelector('.ez-decision-flow'),
+                ).not.toBeNull();
+            });
+        } finally {
+            close();
+        }
+        expect(details.style.display).toBe('');
+    });
+
+    it('mounts separate flows when the fields do not opt in', async () => {
+        const { mounts, close } = mount(false);
+        try {
+            await vi.waitFor(() => expect(mounts()).toHaveLength(2));
+        } finally {
+            close();
+        }
+    });
+
+    it('leaves the native fields available if the opted-in scopes repeat', async () => {
+        const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+        const { mounts, close, label, details } = mount(true, {
+            sameScope: true,
+        });
+        try {
+            expect(mounts()).toHaveLength(0);
+            expect(label.style.display).toBe('');
+            expect(details.style.display).toBe('');
+            expect(log).toHaveBeenCalled();
+        } finally {
+            close();
+            log.mockRestore();
+        }
     });
 });

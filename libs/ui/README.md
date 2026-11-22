@@ -679,6 +679,63 @@ rewrites that portion's mark and no other.
 Read-only views report state and do not judge it. `banner` shows the marking,
 or its empty state when there is nothing to render, and never a rule error.
 
+## Native choice controls
+
+Use `data-ezclassify-controller="select"` on an existing single-value
+`<select>` to keep the element, its label, and its form identity. The runtime
+populates its choices while mounted. The original options return when the
+controller is destroyed. Existing text-input hosts and the cards mode remain
+supported.
+
+For an independent Category Selector or Category Checklist, put native
+checkboxes with a shared `name` inside the controller's `<fieldset>` and set
+`data-ezclassify-category` on the fieldset. Give each checkbox its concept ID
+as its `value`. Checking a box changes the form value with or without
+EzClassify. During enhancement the library uses the Runtime's choices and
+reflects the selection in that same named group. Read the selected concept IDs
+with `FormData.getAll(name)`. An existing fieldset can also use a named hidden
+input for its rendered marking value. To let several category pickers edit
+one marking, use `data-ezclassify-facet-of` and point them at that marking.
+When a hidden marking is empty, enhancement starts from the native picker
+selections. For a populated marking, native edits replace only their own
+category. Use concept IDs as the values of native select options and checkboxes.
+
+Put `data-ezclassify-controller="decisionflow"` on a text input or textarea
+to guide the author through one scope. The original control keeps its name
+and submitted value.
+
+Add `data-ezclassify-decisionflow-combine` to each native field that should
+share one flow. The fields must be in the same form, use the same marking
+as their `data-ezclassify-bound-to` target, and each name a different
+`data-ezclassify-scope`. The flow appears at the first field. The native
+values initialize their scopes, and the runtime writes subsequent changes
+back to both native fields and the hidden whole.
+
+```html
+<input id="whole" type="hidden" name="marking" data-ezclassify-marking />
+
+<label for="classification">Classification marking</label>
+<input
+    id="classification"
+    name="classification"
+    data-ezclassify-controller="decisionflow"
+    data-ezclassify-decisionflow-combine
+    data-ezclassify-scope="classification"
+    data-ezclassify-bound-to="whole" />
+
+<label for="authority">Classification authority block</label>
+<textarea
+    id="authority"
+    name="authority"
+    data-ezclassify-controller="decisionflow"
+    data-ezclassify-decisionflow-combine
+    data-ezclassify-scope="authority"
+    data-ezclassify-bound-to="whole"></textarea>
+```
+
+Use the scope IDs from your marking language. A named hidden input can also
+host a standalone flow when the form only needs the rendered marking.
+
 ## Theming
 
 `applyTheme` returns a CSS rule scoped to `[data-theme="<name>"]`. Adopt it as a
@@ -715,12 +772,28 @@ injectDefaultStyles();
 
 ### Fit fields to a host form
 
-Style your native form controls as you normally would. Enhanced editors mirror
-their host's typography, padding, and border. Set tokens such as
-`--ez-color-primary`, `--ez-color-primary-contrast`, and `--ez-border-radius`
-on a form wrapper to style the library's buttons, panels, and focus indicators
-in that form. The picker also takes the field's theme when it opens in an
-overlay.
+Mounted components have their own default typography, spacing, and borders.
+Set theme variables on a form wrapper to apply them to the fields and their
+pickers. Style an original native control with ordinary CSS to adjust a single
+field. Enhanced editors mirror that control's typography, padding, and border.
+
+```css
+.case-form {
+    --ez-font-family: Georgia, serif;
+    --ez-font-size: 1rem;
+    --ez-color-background: #f6f7ff;
+    --ez-color-primary: #41368a;
+    --ez-color-primary-contrast: #fff;
+    --ez-color-border-focus: #41368a;
+    --ez-border-radius: 0.5rem;
+}
+```
+
+Use `--ez-focus-ring-width` and `--ez-focus-ring-offset` to adjust the field
+outline. Set `--ez-banner-background` and `--ez-banner-foreground` together to
+override a standard marking banner's scheme colors. Over-boundary alerts
+have their own `--ez-banner-over-boundary-bg` and
+`--ez-banner-over-boundary-text` tokens.
 
 ### Category colors
 
@@ -737,20 +810,32 @@ override to that form.
 }
 ```
 
-`--ez-category-accent` sets the MarkingField underline.
+`--ez-category-accent` sets the MarkingField underline and the accent for
+category choice buttons.
 `--ez-category-background` and `--ez-category-text` set the TagInput chip
 colors. Specify the chip colors together for readable contrast. Categories
-with no override keep their scheme or default palette. Category CSS affects
-display only. Runtime still supplies the marking, its rules, and whether
+with no override use their scheme colors when available. Other categories
+derive a shared palette from `--ez-color-primary`, `--ez-color-text`, and
+`--ez-color-background`. The same category uses a related underline and chip
+fill, and both update when those theme tokens change. Browsers without relative
+CSS colors use the stock palette. Category CSS affects display only. Runtime still supplies the marking, its rules, and whether
 a concept was inferred.
 
 ### Fonts
 
-Text you type into a field takes the font of the control it enhances, so the
-field reads like the rest of your form. The library's own chrome (pickers,
-lists, tooltips, banners, labels) takes the page font. Set `--ez-font-family`
-to give that chrome a different font. It leaves field text alone unless you
-opt into the library's styled inputs (`styleInputs: true`), which use it too.
+Set `--ez-font-family` on the form to change the font for controls and their
+pickers together. The controls follow the form's ordinary `font-size`.
+Set `--ez-font-size` to override that size for EzClassify alone.
+Primary values and choice labels use the same inherited size. Captions, help
+text, and other secondary labels use proportions of the same value.
+Use `rem` for the base so it follows the user's browser font setting.
+For a field-specific override, style its native control with ordinary CSS.
+TagInput uses the same font and size for its chips and search text. Use
+`--ez-tag-input-font-size` to adjust both. Touch devices keep a minimum of
+16px for those labels to avoid zooming when the search field receives focus.
+
+For an inline banner, set `data-ezclassify-banner-size="compact"` on the
+banner host. Use `--ez-banner-font-size` to adjust its marking label.
 
 ## Adapter capabilities used by the UI
 

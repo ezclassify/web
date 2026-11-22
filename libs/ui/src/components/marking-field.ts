@@ -30,7 +30,11 @@ import { resolveMarkingColor } from '../color-resolver';
 import { COMPONENT_CSS } from './component-utils';
 import { heightAtLeastFloor } from './dom-helpers';
 import { setStatusMarkFixes, statusMarkOwnsNode } from './status-mark';
-import { mountFieldChrome, type FieldChrome } from './field-chrome';
+import {
+    mountFieldChrome,
+    observeFieldTheme,
+    type FieldChrome,
+} from './field-chrome';
 import { t } from '../i18n';
 import { locateTokenSpans, type TokenNode } from '../token-tree/token-tree';
 import { derivedAssertion } from '../assertion-identity';
@@ -188,12 +192,14 @@ export class MarkingField extends ComposerFieldBase {
             );
         }
         this.injectComponentStyles(markingFieldCss);
+        this.styleNativeField(native);
 
         this.wrap = document.createElement('div');
         this.wrap.className = 'marking-field-wrap';
+        this.applyThemeTo(this.wrap);
         native.parentNode?.insertBefore(this.wrap, native);
         this.wrap.appendChild(native);
-        if (native.tagName === 'INPUT') this.createInputEditor(native);
+        if (native instanceof HTMLInputElement) this.createInputEditor(native);
         const host = this.host;
 
         host.classList.add('marking-field-host');
@@ -846,6 +852,14 @@ export class MarkingField extends ComposerFieldBase {
         }
     }
 
+    override setColorScheme(scheme: 'auto' | 'light' | 'dark'): void {
+        super.setColorScheme(scheme);
+        if (!this.wrap) return;
+        if (scheme === 'auto') this.wrap.removeAttribute('data-color-scheme');
+        else this.wrap.setAttribute('data-color-scheme', scheme);
+        this.captureAndMirrorStyles();
+    }
+
     /**
      * Watch the document root for theme attribute changes and re-sync the
      * display's color/background to match the re-themed (still-invisible) host.
@@ -854,22 +868,13 @@ export class MarkingField extends ComposerFieldBase {
     private installThemeObserver(): void {
         if (typeof MutationObserver === 'undefined') return;
         this._themeObserver?.disconnect();
-        const observer = new MutationObserver(() => {
-            // Input-specific host theme selectors remain authoritative when
-            // the visible editor is an owned textarea.
-            this.captureAndMirrorStyles();
-            if (this.hasFocus) this.syncHostHeight();
-        });
-        observer.observe(document.documentElement, {
-            attributes: true,
-            attributeFilter: [
-                'data-color-scheme',
-                'data-theme',
-                'data-bs-theme',
-                'class',
-            ],
-        });
-        this._themeObserver = observer;
+        this._themeObserver = observeFieldTheme(
+            this.enhancedInput ?? this.host,
+            () => {
+                this.captureAndMirrorStyles();
+                if (this.hasFocus) this.syncHostHeight();
+            },
+        );
     }
 
     private observeHostWidth(): void {
@@ -1025,6 +1030,13 @@ export class MarkingField extends ComposerFieldBase {
             // category color, so this is the sole color property a token needs.
             // Set on the outer span (inherited down to the word runs
             // paintTokenLabel creates below) rather than duplicated per run.
+            const hue = colors
+                ? undefined
+                : this.categoryHueOffset(token.categoryId);
+            if (hue !== undefined) {
+                span.setAttribute('data-ez-themed-category', '');
+                span.style.setProperty('--ez-category-hue-offset', String(hue));
+            }
             span.style.setProperty(
                 '--ez-token-underline',
                 colors?.background ?? this.getCategoryColor(token.categoryId),

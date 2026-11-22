@@ -27,7 +27,7 @@ import { bindMarkingToolsShortcut } from '../marking-tools';
 
 import { t } from '../../i18n';
 import { isMacPlatform } from '../dom-helpers';
-import { portalViewportOverlay } from '../overlay-portal';
+import { copyOverlayTheme, portalViewportOverlay } from '../overlay-portal';
 import type { AdoptedStyles } from '../../styles/adopt';
 import {
     isInternalScroll,
@@ -1051,14 +1051,19 @@ export class ComposerView {
      */
     private place(mayScroll = true): void {
         if (!this.controller.isOpen) return;
-        if (this.sheet && this.compact) {
-            // The whole band, whatever the content: nothing the user reads
-            // or scrolls changes its size (see positionCompactSheet).
-            positionCompactSheet(this.surface, this.scroller);
-            this.fitSheetTitle();
-        } else if (this.sheet) {
-            // Keep this open's height once it has one (see positionSheet).
-            positionSheet(this.surface, this.scroller, true);
+        if (this.sheet) {
+            copyOverlayTheme(
+                this.opts.anchor,
+                this.surface,
+                this.opts.field ?? this.opts.anchor,
+            );
+            if (this.compact) {
+                // The whole band, even when the user scrolls the list.
+                positionCompactSheet(this.surface, this.scroller);
+            } else {
+                // Keep this open's height once it has one.
+                positionSheet(this.surface, this.scroller, true);
+            }
             this.fitSheetTitle();
         } else {
             const width = this.popoverWidth();

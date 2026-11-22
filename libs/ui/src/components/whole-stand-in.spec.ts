@@ -234,28 +234,6 @@ function rowState(label: string): {
     };
 }
 
-/** Hover the field's chip and return the tooltip text it shows. */
-async function chipTooltip(host: HTMLTextAreaElement): Promise<string> {
-    await demoRuntimeSettled();
-    const chip = host
-        .closest('.marked-input-wrap, .marked-textarea-wrap')!
-        .querySelector<HTMLElement>(
-            '.marked-input-chip, .marked-textarea-chip',
-        );
-    expect(chip).not.toBeNull();
-    chip!.dispatchEvent(new Event('mouseenter'));
-    // The tooltip waits for the description the runtime answers, then shows.
-    await expect
-        .poll(
-            () =>
-                document.body.querySelector<HTMLElement>('.ez-tooltip')?.hidden,
-            { timeout: 5000 },
-        )
-        .toBe(false);
-    const tip = document.body.querySelector<HTMLElement>('.ez-tooltip');
-    return tip!.textContent ?? '';
-}
-
 describe.each(['marked-input', 'marked-textarea'] as const)(
     '%s: a part that writes SHARE for its whole partners',
     (kind) => {
@@ -264,13 +242,21 @@ describe.each(['marked-input', 'marked-textarea'] as const)(
             expect(partners(fieldAssertions(host))).toEqual(TAKEN);
         });
 
-        it('describes what the mark says on its chip, not the whole partners', async () => {
-            const host = await mountPart(kind, '(L//SHARE) Quarterly notes');
-            const tip = await chipTooltip(host);
-            expect(tip).toContain('Low');
-            expect(tip).toContain('Share');
-            expect(tip).not.toContain('Partner ALPHA');
-            expect(tip).not.toContain('Partner BRAVO');
+        it('names only concepts written on the portion chip', async () => {
+            await mountPart(kind, '(L//SHARE) Quarterly notes');
+            const chip = root.querySelector(
+                '.marked-input-chip, .marked-textarea-chip',
+            );
+            const hints = [...chip!.querySelectorAll<HTMLElement>('[title]')];
+            expect(
+                hints.map((hint) => [
+                    hint.textContent,
+                    hint.title.split('\n')[0],
+                ]),
+            ).toEqual([
+                ['L', 'Level: Low'],
+                ['SHARE', 'Handling: Share'],
+            ]);
         });
 
         it('lists the whole partners in its editor as rows to add, not as held', async () => {

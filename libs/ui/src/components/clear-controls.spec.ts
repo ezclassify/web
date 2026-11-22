@@ -487,7 +487,9 @@ it('can edit a new first portion after clearing an open textarea editor', async 
     const field = new MarkedTextArea();
     mounted = field;
     await field.init(root, await engine());
-    const input = root.querySelector<HTMLTextAreaElement>('textarea')!;
+    const input = root.querySelector<HTMLTextAreaElement>(
+        '.marked-textarea-input',
+    )!;
     await wait(250);
     input.focus();
     input.setSelectionRange(2, 2);
@@ -547,7 +549,9 @@ it('clears a new uncommitted textarea marking without leaving its wrapper on scr
     const field = new MarkedTextArea();
     mounted = field;
     await field.init(root, await engine());
-    const input = root.querySelector<HTMLTextAreaElement>('textarea')!;
+    const input = root.querySelector<HTMLTextAreaElement>(
+        '.marked-textarea-input',
+    )!;
     input.focus();
     press(input, 'Enter', { ctrlKey: true });
     await vi.waitFor(() =>

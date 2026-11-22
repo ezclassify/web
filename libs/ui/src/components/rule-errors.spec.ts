@@ -399,15 +399,15 @@ describe('RuleErrorList', () => {
         expect(children.map((c) => c.className)).toEqual([
             'ez-validation-errors__item',
             'ez-validation-errors__item',
-            'ez-validation-errors__fixes-heading',
             'ez-validation-errors__fixes',
         ]);
-        // The paths are one group, named by the heading above them.
-        expect(children[2].textContent).toBe('Ways to fix');
-        expect(children[3].getAttribute('role')).toBe('group');
-        expect(children[3].getAttribute('aria-labelledby')).toBe(
-            children[2].id,
+        const group = children[2];
+        const heading = group.querySelector(
+            '.ez-validation-errors__fixes-heading',
         );
+        expect(heading?.textContent).toBe('Ways to fix');
+        expect(group.getAttribute('role')).toBe('group');
+        expect(group.getAttribute('aria-labelledby')).toBe(heading?.id);
         expect(
             children
                 .slice(0, 2)
@@ -422,7 +422,7 @@ describe('RuleErrorList', () => {
             list.element.querySelectorAll('.ez-validation-errors__item button'),
         ).toHaveLength(0);
         const buttons = Array.from(
-            children[3].querySelectorAll<HTMLButtonElement>(
+            group.querySelectorAll<HTMLButtonElement>(
                 'button.ez-validation-errors__fix',
             ),
         );

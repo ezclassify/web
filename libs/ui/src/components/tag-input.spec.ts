@@ -714,7 +714,7 @@ describe('TagInput', () => {
         const here = dirname(fileURLToPath(import.meta.url));
         const css = readFileSync(join(here, 'field-chrome.css'), 'utf8');
         expect(css).toMatch(
-            /\.ez-field-frame:focus-within:not\(:has\(\.ez-field-chrome :focus\)\)\s*\{[^}]*outline-offset:\s*-2px/,
+            /\.ez-field-frame:focus-within:not\(:has\(\.ez-field-chrome :focus\)\)\s*\{[^}]*outline-offset:\s*var\(--ez-focus-ring-offset, -2px\)/,
         );
     });
 

@@ -17,7 +17,7 @@
     max-width: calc(100vw - 1rem);
     overflow: hidden;
     font-family: var(--ez-font-family, inherit);
-    font-size: 0.875rem;
+    font-size: calc(var(--ez-font-size, 1rem) * 0.875);
     line-height: 1.4;
     background: var(--ez-dropdown-background, var(--ez-color-background, #fff));
     color: var(--ez-dropdown-color, var(--ez-color-text, #1a1a2e));
@@ -87,7 +87,7 @@
     min-width: 0;
     overflow: hidden;
     /* The buttons' size, so the three share a baseline. */
-    font-size: 1rem;
+    font-size: var(--ez-font-size, 1rem);
     font-weight: 600;
     text-align: center;
     text-overflow: ellipsis;
@@ -99,7 +99,7 @@
     min-height: 2.75rem;
     padding: 0 0.625rem;
     font: inherit;
-    font-size: 1rem;
+    font-size: var(--ez-font-size, 1rem);
     line-height: 1.2;
     color: inherit;
     cursor: pointer;
@@ -113,7 +113,8 @@
     -webkit-tap-highlight-color: transparent;
 }
 .ez-composer__sheet-button:focus-visible {
-    outline: 2px solid var(--ez-color-border-focus, currentColor);
+    outline: var(--ez-focus-ring-width, 2px) solid
+        var(--ez-color-border-focus, var(--ez-color-primary, currentColor));
     outline-offset: -0.25rem;
 }
 /* Cancel's text lines up with the input's text below it and Done's drawn
@@ -180,15 +181,16 @@
     min-height: 2.75rem;
     padding: 0.5rem 0.625rem;
     font: inherit;
-    font-size: 1rem;
+    font-size: max(var(--ez-font-size, 1rem), 16px);
     color: inherit;
     background: var(--ez-color-background, #fff);
-    border: 1px solid var(--ez-color-border, #d1d5db);
+    border: var(--ez-border-width, 1px) solid var(--ez-color-border, #d1d5db);
     border-radius: var(--ez-border-radius, 0.375rem);
 }
 .ez-composer__sheet-input:focus {
-    outline: 2px solid var(--ez-color-border-focus, currentColor);
-    outline-offset: 1px;
+    outline: var(--ez-focus-ring-width, 2px) solid
+        var(--ez-color-border-focus, var(--ez-color-primary, currentColor));
+    outline-offset: var(--ez-focus-ring-offset, -2px);
 }
 
 /* ── Result row: what a commit stores ── */
@@ -225,7 +227,7 @@
     opacity: 0.6;
 }
 .ez-composer__result-label {
-    font-size: 0.6875rem;
+    font-size: calc(var(--ez-font-size, 1rem) * 0.6875);
     font-weight: 600;
     letter-spacing: 0.04em;
     text-transform: uppercase;
@@ -253,7 +255,7 @@
 }
 .ez-composer__change {
     padding: 0 0.375rem;
-    font-size: 0.6875rem;
+    font-size: calc(var(--ez-font-size, 1rem) * 0.6875);
     line-height: 1.5;
     border: 1px solid currentColor;
     border-radius: 999px;
@@ -273,7 +275,7 @@
 .ez-composer__result-rule,
 .ez-composer__result-warning {
     flex-basis: 100%;
-    font-size: 0.75rem;
+    font-size: calc(var(--ez-font-size, 1rem) * 0.75);
     color: var(--ez-composer-secondary);
 }
 .ez-composer__result-rule {
@@ -283,7 +285,7 @@
    are the first thing below the result. */
 .ez-composer__problems {
     flex-basis: 100%;
-    font-size: 0.75rem;
+    font-size: calc(var(--ez-font-size, 1rem) * 0.75);
 }
 .ez-composer__problems-summary {
     color: var(--ez-color-error, #b91c1c);
@@ -319,7 +321,7 @@
     border-bottom: 1px solid var(--ez-color-border, #d1d5db);
 }
 .ez-composer__needs-caption {
-    font-size: 0.6875rem;
+    font-size: calc(var(--ez-font-size, 1rem) * 0.6875);
     font-weight: 600;
     letter-spacing: 0.04em;
     text-transform: uppercase;
@@ -329,7 +331,7 @@
     min-height: 1.75rem;
     padding: 0.125rem 0.625rem;
     font: inherit;
-    font-size: 0.75rem;
+    font-size: calc(var(--ez-font-size, 1rem) * 0.75);
     color: inherit;
     cursor: pointer;
     background: transparent;
@@ -346,7 +348,7 @@
 
 .ez-composer__status {
     padding: 0.5rem 0.75rem;
-    font-size: 0.8125rem;
+    font-size: calc(var(--ez-font-size, 1rem) * 0.8125);
     font-style: italic;
     color: var(--ez-composer-secondary);
 }
@@ -365,7 +367,7 @@
     top: 0;
     z-index: 1;
     padding: 0.375rem 0.75rem;
-    font-size: 0.6875rem;
+    font-size: calc(var(--ez-font-size, 1rem) * 0.6875);
     font-weight: 600;
     letter-spacing: 0.04em;
     text-transform: uppercase;
@@ -437,7 +439,7 @@
 }
 .ez-composer__matched,
 .ez-composer__action {
-    font-size: 0.75rem;
+    font-size: calc(var(--ez-font-size, 1rem) * 0.75);
     white-space: nowrap;
     color: var(--ez-composer-secondary);
 }
@@ -451,7 +453,7 @@
     flex-shrink: 0;
     margin-left: auto;
     padding: 0 0.375rem;
-    font-size: 0.6875rem;
+    font-size: calc(var(--ez-font-size, 1rem) * 0.6875);
     white-space: nowrap;
     color: var(--ez-composer-secondary);
     border: 1px solid var(--ez-color-border, #d1d5db);
@@ -462,7 +464,7 @@
     grid-column: 2;
     min-width: 0;
     overflow: hidden;
-    font-size: 0.75rem;
+    font-size: calc(var(--ez-font-size, 1rem) * 0.75);
     text-overflow: ellipsis;
     white-space: nowrap;
     color: var(--ez-composer-secondary);
@@ -488,7 +490,7 @@
 .ez-composer__gated-caption {
     display: block;
     padding: 0.375rem 0.75rem 0.125rem;
-    font-size: 0.6875rem;
+    font-size: calc(var(--ez-font-size, 1rem) * 0.6875);
     font-weight: 600;
     letter-spacing: 0.04em;
     text-transform: uppercase;
@@ -531,7 +533,7 @@
 /* The invalid-draft note under a field whose last commit stored nothing. */
 .ez-composer-note {
     margin-top: 0.25rem;
-    font-size: 0.8125rem;
+    font-size: calc(var(--ez-font-size, 1rem) * 0.8125);
     color: var(--ez-color-error, #b91c1c);
 }
 .ez-composer-note[hidden] {
@@ -648,7 +650,7 @@
 }
 .ez-composer__category-arrow:focus-visible {
     outline: 0.125rem solid
-        var(--ez-color-border-focus, var(--ez-color-text, #111827));
+        var(--ez-color-border-focus, var(--ez-color-primary, #fdb827));
     outline-offset: -0.125rem;
 }
 @media (pointer: coarse) {

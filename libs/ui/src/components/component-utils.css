@@ -1,3 +1,67 @@
+/* Categories without an explicit color stay within the primary hue family.
+   Use a wider lightness range than hue range so nearby shades stay distinct.
+   Use the theme's foreground to give underlines weight and its background
+   to tint chip fills. Resolve in CSS so a theme switch updates both in place.
+   Without relative colors, the existing per-token and per-chip colors apply. */
+@supports (
+        color: oklch(
+                from red clamp(0.5, calc(0.72 + 1 / 27), 0.76)
+                    clamp(0, calc(c * 0.9), 0.16) calc(h + 1)
+            )
+    )
+    and (color: color(from red xyz-d65 max(0, sign(0.179 - y)) y z)) {
+    [data-ez-themed-category] {
+        --ez-theme-category-seed: oklch(
+            from var(--ez-color-primary, #fdb827)
+                clamp(
+                    0.5,
+                    calc(0.72 + var(--ez-category-hue-offset) / 27),
+                    0.76
+                )
+                clamp(
+                    0,
+                    calc(c * (0.9 + var(--ez-category-hue-offset) / 80)),
+                    0.16
+                )
+                calc(h + var(--ez-category-hue-offset))
+        );
+        --ez-theme-category-accent: color-mix(
+            in oklab,
+            var(--ez-theme-category-seed) 72%,
+            var(--ez-color-text, #0f172a)
+        );
+        --ez-theme-category-fill: color-mix(
+            in oklab,
+            oklch(from var(--ez-theme-category-seed) calc(l + 0.09) c h) 56%,
+            var(--ez-color-background, #fff)
+        );
+        --ez-contrast-fill: var(--ez-theme-category-fill);
+    }
+}
+
+@supports (color: color(from red xyz-d65 max(0, sign(0.179 - y)) y z)) {
+    [data-ez-themed-category],
+    .ez-choice-button--inferred {
+        /* XYZ Y is relative luminance. Use D65 white below the crossover
+           and black above it so tinted fills keep readable text. */
+        --ez-contrasting-text: color(
+            from var(--ez-contrast-fill) xyz-d65
+                calc(0.95047 * max(0, sign(0.179 - y))) max(0, sign(0.179 - y))
+                calc(1.08883 * max(0, sign(0.179 - y)))
+        );
+    }
+}
+
+/* MarkedInput and MarkedTextArea use one accent tint for a whole portion. */
+:where(.marked-input-chip, .marked-textarea-chip) {
+    background: var(--ez-color-surface-active, rgba(253, 184, 39, 0.25));
+    background: color-mix(
+        in oklab,
+        var(--ez-color-primary, #fdb827) 24%,
+        var(--ez-color-background, #fff)
+    );
+}
+
 /* ── Tag ──────────────────────────────────────────────── */
 /* A real pill: filled background in the concept's category color
    (--ez-tag-bg, set inline per chip by tag-factory.ts), with a
@@ -11,13 +75,22 @@
     padding: 0.1875rem 0.3125rem 0.1875rem 0.625rem;
     margin: 0;
     font: inherit;
-    font-size: 0.8125rem;
+    font-size: calc(var(--ez-font-size, 1rem) * 0.8125);
     border-radius: 999px;
     background: var(
         --ez-category-background,
-        var(--ez-tag-bg, var(--ez-color-surface-active, rgba(0, 0, 0, 0.08)))
+        var(
+            --ez-theme-category-fill,
+            var(
+                --ez-tag-bg,
+                var(--ez-color-surface-active, rgba(0, 0, 0, 0.08))
+            )
+        )
     );
-    color: var(--ez-category-text, var(--ez-tag-color, inherit));
+    color: var(
+        --ez-category-text,
+        var(--ez-contrasting-text, var(--ez-tag-color, inherit))
+    );
     border: none;
     cursor: default;
     user-select: none;
@@ -49,7 +122,10 @@
         in srgb,
         var(
                 --ez-category-background,
-                var(--ez-tag-bg, var(--ez-color-surface-active, #e5e7eb))
+                var(
+                    --ez-theme-category-fill,
+                    var(--ez-tag-bg, var(--ez-color-surface-active, #e5e7eb))
+                )
             )
             15%,
         var(--ez-color-surface, #f8fafc)
@@ -114,7 +190,7 @@
     position: relative;
     border: none;
     color: inherit;
-    font-size: 0.8125rem;
+    font-size: calc(var(--ez-font-size, 1rem) * 0.8125);
     cursor: pointer;
     padding: 0;
     margin-left: 0.0625rem;
@@ -159,7 +235,7 @@
 /* ── Preview ─────────────────────────────────────────── */
 .proto-preview {
     font-family: var(--ez-font-family, inherit);
-    font-size: 0.875rem;
+    font-size: calc(var(--ez-font-size, 1rem) * 0.875);
     font-weight: 600;
     padding: 0.5rem 0.75rem;
     background: var(--ez-color-background, #f8f9fa);
@@ -218,7 +294,7 @@
 .proto-dropdown-item {
     padding: 0.5rem 0.625rem;
     cursor: pointer;
-    font-size: 0.8125rem;
+    font-size: calc(var(--ez-font-size, 1rem) * 0.8125);
     display: flex;
     align-items: baseline;
     flex-wrap: wrap;
@@ -248,7 +324,7 @@
 }
 .proto-dropdown-item__desc {
     color: var(--ez-color-muted, #555);
-    font-size: 0.75rem;
+    font-size: calc(var(--ez-font-size, 1rem) * 0.75);
     white-space: normal;
     overflow-wrap: anywhere;
     flex: 1 1 12rem;
@@ -263,7 +339,7 @@
 /* ── Dropdown group header ───────────────────────────── */
 .proto-dropdown-group {
     padding: 0.375rem 0.5rem;
-    font-size: 0.75rem;
+    font-size: calc(var(--ez-font-size, 1rem) * 0.75);
     font-weight: 600;
     color: var(--ez-color-muted, #555);
     text-transform: uppercase;

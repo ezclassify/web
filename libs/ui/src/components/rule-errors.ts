@@ -204,7 +204,7 @@ export function buildRuleFixes(
     fixes: readonly RuleErrorFix[],
     onApply: (fix: Fix) => void,
     returnFocus?: (pointerType?: string) => void,
-): HTMLElement[] {
+): HTMLElement {
     adoptStylesOnce(ruleErrorsCss, doc);
     const heading = doc.createElement('div');
     heading.className = 'ez-validation-errors__fixes-heading';
@@ -212,6 +212,7 @@ export function buildRuleFixes(
     heading.textContent = t('fix.heading');
     const group = doc.createElement('div');
     group.className = 'ez-validation-errors__fixes';
+    group.appendChild(heading);
     for (const { fix, label } of fixes) {
         const button = doc.createElement('button');
         button.type = 'button';
@@ -243,7 +244,7 @@ export function buildRuleFixes(
     }
     group.setAttribute('role', 'group');
     group.setAttribute('aria-labelledby', heading.id);
-    return [heading, group];
+    return group;
 }
 
 /**
@@ -339,7 +340,7 @@ export class RuleErrorList {
             // Without a heading the buttons read as one per error, or as a
             // list to work through; each is a way to fix the marking.
             children.push(
-                ...buildRuleFixes(
+                buildRuleFixes(
                     doc,
                     report.fixes,
                     (previous) => {

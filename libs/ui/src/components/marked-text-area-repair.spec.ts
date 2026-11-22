@@ -381,6 +381,59 @@ describe('MarkedTextArea repair rendering', () => {
         ).toBeNull();
     });
 
+    it.each([true, false])(
+        'accepts an initial engine repair only for a valid, fully read mark (valid=%s)',
+        async (valid) => {
+            const fix = {
+                ruleId: 'sig-requires-orcon',
+                action: 'add',
+                add: [{ conceptId: 'ORCON', categoryId: 'dissem' }],
+                message: 'Added ORCON',
+            };
+            const read = (inner: string) => ({
+                assertions: [],
+                rendered: inner === 'TS//SI-G' ? 'TS//SI-G//OC' : inner,
+                valid: inner !== 'TS//SI-G' || valid,
+                errors: [],
+                warnings: [],
+                appliedFixes: inner === 'TS//SI-G' ? [fix] : [],
+                assessment: NO_LOSS,
+                recognition: { status: 'complete', unmatched: [] },
+            });
+            const engine = createMockEngine({
+                process: read,
+                scan: (text: string) =>
+                    scanned(
+                        Array.from(text.matchAll(/\(([^)]+)\)/g), (match) => ({
+                            start: match.index,
+                            end: match.index! + match[0].length,
+                            marking: match[0],
+                            inner: match[1],
+                            wrapped: true,
+                            result: read(match[1]),
+                        })),
+                    ),
+            });
+            const textarea = document.createElement('textarea');
+            textarea.value =
+                '(TS//SI-G) Reviewed the case.\n(U) Meeting notes.';
+            container.appendChild(textarea);
+            const mta = new MarkedTextArea();
+            try {
+                await mta.init(container, toCtx(engine));
+                const expected = valid ? '(TS//SI-G//OC)' : '(TS//SI-G)';
+                expect(textarea.value).toBe(
+                    expected + ' Reviewed the case.\n(U) Meeting notes.',
+                );
+                expect(
+                    mta.getSegments().map((segment) => segment.marking),
+                ).toEqual([expected, '(U)']);
+            } finally {
+                mta.destroy();
+            }
+        },
+    );
+
     it('applies a safe loaded-marking repair after opening and leaving the editor', async () => {
         const fix = {
             ruleId: 'repair-tsx',

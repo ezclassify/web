@@ -224,6 +224,45 @@ describe('Host Form Contract: native input events', () => {
         expect(events.length).toBeGreaterThan(0);
     });
 
+    it('marked-textarea uses an unnamed editor and preserves the original form control', async () => {
+        const engine = await createMarkedEngine();
+        root.innerHTML = `
+            <form>
+                <label for="ta">Notes</label>
+                <textarea id="ta" name="notes" data-ezclassify-controller="marked-textarea">Body text.</textarea>
+            </form>`;
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
+        const form = root.querySelector('form')!;
+        const field = root.querySelector<HTMLTextAreaElement>('#ta')!;
+        const editor = root.querySelector<HTMLTextAreaElement>(
+            '.marked-textarea-input',
+        )!;
+        try {
+            expect(field.hidden).toBe(true);
+            expect(editor).not.toBe(field);
+            expect(editor.name).toBe('');
+            expect(editor.value).toBe(field.value);
+            form.querySelector('label')!.click();
+            expect(document.activeElement).toBe(editor);
+            const events = collectFieldInputEvents(form, field);
+
+            editor.value = '';
+            editor.dispatchEvent(new Event('input', { bubbles: true }));
+            expect(new FormData(form).getAll('notes')).toEqual(['']);
+            expect(events).toHaveLength(1);
+
+            form.reset();
+            await wait(200);
+            expect(editor.value).toBe('Body text.');
+            expect(new FormData(form).getAll('notes')).toEqual(['Body text.']);
+        } finally {
+            forms.destroy();
+        }
+        expect(field.hidden).toBe(false);
+        expect(root.querySelector('#ta')).toBe(field);
+        expect(editor.isConnected).toBe(false);
+    });
+
     it('plain bind: the blur-commit reformat emits a native input event; unchanged value emits none', async () => {
         const engine = await createMarkedEngine();
         root.innerHTML = `<form id="f"><input id="p" data-ezclassify-marking type="text" value="u" /></form>`;

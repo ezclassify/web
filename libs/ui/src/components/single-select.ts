@@ -1,3 +1,4 @@
+import { isNativeSingleSelect } from '../native-control-host';
 import { bindTextToolsEdges } from './text-caret-edge';
 /**
  * Single-Select Component
@@ -107,6 +108,9 @@ export class SingleSelect extends ComponentBase {
     private isDropdownMode = true;
     /** The native <select> element used in dropdown mode. */
     private dropdownEl: HTMLSelectElement | null = null;
+    private releaseNativeDropdown: (() => void) | null = null;
+    private dropdownPlaceholder = '';
+    private nativeDefaultValue = '';
     /** Companion field region for concepts that require an entered value. */
     private dropdownSupplement: HTMLDivElement | null = null;
     /**
@@ -299,30 +303,63 @@ export class SingleSelect extends ComponentBase {
 
     /** Build the compact dropdown UI (mode="dropdown"). */
     private setupDropdown(): void {
-        const select = document.createElement('select');
-        select.className = 'select-dropdown';
-        select.setAttribute(
-            'aria-label',
-            `Select ${this.primaryCategory.label ?? 'tier'}`,
-        );
+        const host = getMountHost(this.container);
+        const native = isNativeSingleSelect(host) ? host : null;
+        const select =
+            native ?? this.container.ownerDocument.createElement('select');
+        const styleClass = native
+            ? 'select-dropdown-native'
+            : 'select-dropdown';
+        const hadClass = select.classList.contains(styleClass);
+        const hadClassAttribute = select.hasAttribute('class');
+        const addedLabel =
+            !select.labels?.length &&
+            !select.hasAttribute('aria-label') &&
+            !select.hasAttribute('aria-labelledby');
+        const originalOptions = Array.from(select.childNodes);
+        const originalSelectedIndex = select.selectedIndex;
+        const authoredValue = select.value;
+        const bound =
+            native?.hasAttribute('data-ezclassify-facet-of') ||
+            native?.hasAttribute('data-ezclassify-bound-to');
+        if (native && !bound) {
+            this.nativeDefaultValue =
+                Array.from(select.options).find(
+                    (option) => option.defaultSelected,
+                )?.value ??
+                select.options[0]?.value ??
+                '';
+        }
+        const originalParent = select.parentNode;
+        this.dropdownPlaceholder =
+            select.options[0]?.value === '' && select.options[0].text
+                ? select.options[0].text
+                : `Select ${this.primaryCategory.label ?? 'tier'}…`;
+        select.classList.add(styleClass);
+        if (addedLabel)
+            select.setAttribute(
+                'aria-label',
+                `Select ${this.primaryCategory.label ?? 'tier'}`,
+            );
 
-        // Blank placeholder option
-        const placeholder = document.createElement('option');
+        const placeholder = select.ownerDocument.createElement('option');
         placeholder.value = '';
-        placeholder.textContent = `Select ${this.primaryCategory.label ?? 'tier'}\u2026`;
-        select.appendChild(placeholder);
+        placeholder.textContent = this.dropdownPlaceholder;
+        select.replaceChildren(placeholder);
 
-        select.addEventListener('change', () => {
+        const onChange = () => {
             const val = select.value;
             if (!val) {
-                this.deselectCurrent();
+                if (this.primaryCategory.required) this.renderDropdown();
+                else this.deselectCurrent();
             } else {
                 const entry = this.cardConcepts.find(
                     (concept) => concept.conceptId === val,
                 );
                 if (entry) this.selectEntry(entry);
             }
-        });
+        };
+        select.addEventListener('change', onChange);
 
         this.dropdownEl = select;
         // The select sits in the suite's field frame, which takes the host
@@ -330,23 +367,72 @@ export class SingleSelect extends ComponentBase {
         // its trailing end.
         const field = document.createElement('div');
         field.className = 'select-dropdown-field';
-        this.applySuiteFrame(field);
+        if (native) {
+            field.classList.add('select-dropdown-field--native');
+            this.styleNativeField(select);
+            const form = select.form;
+            const onReset = (event: Event) => {
+                queueMicrotask(() => {
+                    if (event.defaultPrevented || this._destroyed) return;
+                    if (bound) this.renderDropdown();
+                    else onChange();
+                });
+            };
+            form?.addEventListener('reset', onReset);
+            this.releaseNativeDropdown = () => {
+                select.removeEventListener('change', onChange);
+                form?.removeEventListener('reset', onReset);
+                if (!hadClass) select.classList.remove(styleClass);
+                if (!hadClassAttribute && !select.className)
+                    select.removeAttribute('class');
+                if (addedLabel) select.removeAttribute('aria-label');
+                select.replaceChildren(...originalOptions);
+                select.selectedIndex = originalSelectedIndex;
+                if (select.parentNode === field && this.container.parentNode) {
+                    this.container.parentNode.insertBefore(
+                        select,
+                        this.container,
+                    );
+                } else if (
+                    !select.isConnected &&
+                    originalParent === this.container.parentNode
+                ) {
+                    this.container.remove();
+                }
+            };
+        } else {
+            this.applySuiteFrame(field);
+        }
         field.appendChild(select);
         this.container.appendChild(field);
         this.mountSuiteChrome(field, 'overlay');
-        this.stopHostFrame = mirrorHostFrame(
-            field,
-            getMountHost(this.container) ?? this.enhancedInput,
-            {
-                container: this.container,
-                styleInputs: this.options.styleInputs,
-                explicitPalette: () => !!this.options.theme,
-            },
-        );
+        if (!native) {
+            this.stopHostFrame = mirrorHostFrame(
+                field,
+                host ?? this.enhancedInput,
+                {
+                    container: this.container,
+                    styleInputs: this.options.styleInputs,
+                    explicitPalette: () => !!this.options.theme,
+                },
+            );
+        }
         this.dropdownSupplement = document.createElement('div');
         this.dropdownSupplement.className = 'select-dropdown-supplement';
         this.container.appendChild(this.dropdownSupplement);
         this.renderDropdown();
+        if (
+            native &&
+            !bound &&
+            !this.options.initialValue &&
+            !this.selectedConceptId()
+        ) {
+            const initial = this.cardConcepts.find(
+                (entry) =>
+                    entry.conceptId === authoredValue && !entry.textInput,
+            );
+            if (initial) this.selectEntry(initial);
+        }
     }
 
     /**
@@ -387,6 +473,8 @@ export class SingleSelect extends ComponentBase {
         this._destroyed = true;
         this.stopHostFrame();
         this.destroyClearButton();
+        this.releaseNativeDropdown?.();
+        this.releaseNativeDropdown = null;
         this.removeRuleErrors();
         this.pendingText = null;
         this.pendingTextErrors = [];
@@ -528,6 +616,7 @@ export class SingleSelect extends ComponentBase {
             for (const c of visible) {
                 const opt = document.createElement('option');
                 opt.value = c.conceptId;
+                opt.defaultSelected = c.conceptId === this.nativeDefaultValue;
                 opt.textContent = c.name;
                 this.attachConceptTitle(
                     opt,
@@ -539,7 +628,7 @@ export class SingleSelect extends ComponentBase {
         }
         this.dropdownEl.options[0].textContent = inferred
             ? inferred.name + t('aria.inferredSuffix')
-            : `Select ${this.primaryCategory.label ?? 'tier'}…`;
+            : this.dropdownPlaceholder;
         // An inferred value uses the placeholder so choosing its real native
         // option is an observable change and can state it explicitly.
         this.dropdownEl.value = explicit ?? '';

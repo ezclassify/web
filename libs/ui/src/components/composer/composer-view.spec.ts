@@ -925,6 +925,19 @@ describe('the sheet bar', () => {
         await wait(10);
     }
 
+    it('takes the current form font size when the sheet opens', async () => {
+        asPhone();
+        root.style.setProperty('--ez-font-size', '1rem');
+        mount();
+        root.style.setProperty('--ez-font-size', '1.25rem');
+
+        await openSheetAndType('SECRET');
+
+        expect(
+            openSurface()?.style.getPropertyValue('--ez-font-size').trim(),
+        ).toBe('1.25rem');
+    });
+
     it('hands first sheet Escape to the ongoing editor before hiding, preserving the Escape ladder without a blur commit', async () => {
         asPhone();
         port.value = {

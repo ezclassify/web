@@ -28,6 +28,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import type { RemoteContextSchemeEngineAdapter } from '@ezclassify/types';
 import { EzClassifyUI } from '../ezclassify-ui';
+import { setMountHost } from '../mount-host-registry';
 import { MarkingField } from './marking-field';
 import {
     openContext,
@@ -1415,7 +1416,7 @@ describe('MarkingField', () => {
         const here = dirname(fileURLToPath(import.meta.url));
         const css = readFileSync(join(here, 'marking-field.css'), 'utf8');
         expect(css).toMatch(
-            /\.marking-field-host:focus\s*\{[^}]*outline-offset:\s*-2px/,
+            /\.marking-field-host:focus\s*\{[^}]*outline-offset:\s*var\(--ez-focus-ring-offset, -2px\)/,
         );
     });
 
@@ -1459,7 +1460,60 @@ describe('MarkingField', () => {
         expect(token.style.getPropertyValue('--ez-token-underline')).not.toBe(
             '',
         );
+        const palette = Array.from(
+            display.querySelectorAll<HTMLElement>('.marking-field-token'),
+            (part) => part.style.getPropertyValue('--ez-category-hue-offset'),
+        );
+        expect(palette[0]).toBe('0');
+        expect(palette.every(Boolean)).toBe(true);
+        expect(palette.every((offset) => Math.abs(Number(offset)) <= 12)).toBe(
+            true,
+        );
+        expect(new Set(palette).size).toBe(2);
         expect(openSurface()).toBeNull();
+    });
+
+    it('carries component themes to a sibling field and respects explicit category colors', async () => {
+        const input = document.createElement('textarea');
+        input.value = 'SECRET//NOFORN';
+        const container = document.createElement('div');
+        root.append(input, container);
+        setMountHost(container, input);
+        const field = new MarkingField();
+        await field.init(container, await createTestEngine(), {
+            theme: { '--ez-color-primary': '#123456' },
+            colorScheme: 'dark',
+            categoryColors: { caveat: '#543210' },
+        });
+        try {
+            await field.setValue('SECRET//NOFORN');
+            const wrap = input.closest<HTMLElement>('.marking-field-wrap')!;
+            expect(wrap.parentElement).toBe(root);
+            expect(wrap.style.getPropertyValue('--ez-color-primary')).toBe(
+                '#123456',
+            );
+            expect(wrap.dataset.colorScheme).toBe('dark');
+            const tokens = wrap.querySelectorAll<HTMLElement>(
+                '.marking-field-token',
+            );
+            expect(Array.from(tokens, (token) => token.textContent)).toEqual([
+                'SECRET',
+                'NOFORN',
+            ]);
+            expect(tokens[0].hasAttribute('data-ez-themed-category')).toBe(
+                true,
+            );
+            expect(tokens[1].hasAttribute('data-ez-themed-category')).toBe(
+                false,
+            );
+            expect(
+                tokens[1].style.getPropertyValue('--ez-token-underline'),
+            ).toBe('#543210');
+            field.setColorScheme('auto');
+            expect(wrap.hasAttribute('data-color-scheme')).toBe(false);
+        } finally {
+            field.destroy();
+        }
     });
 
     it('underlines a multi-word token label word-by-word, never the space between the words', async () => {
