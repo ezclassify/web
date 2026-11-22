@@ -431,6 +431,32 @@ describe('HiddenAssertionField', () => {
 });
 
 describe('MarkedTextArea', () => {
+    it.each(['readonly', 'disabled'])(
+        'initializes an already %s textarea',
+        async (attribute) => {
+            const container = document.createElement('div');
+            const native = document.createElement('textarea');
+            native.setAttribute(attribute, '');
+            native.value = 'Existing text.';
+            container.appendChild(native);
+            root.appendChild(container);
+            const engine = createAsyncMockEngine({ scheme: createProfile() });
+            const field = new MarkedTextArea();
+
+            try {
+                await field.init(container, engine as never);
+                expect(textareaEditor(native).hasAttribute(attribute)).toBe(
+                    true,
+                );
+                expect(
+                    root.querySelector('.marked-textarea-display')?.textContent,
+                ).toContain('Existing text.');
+            } finally {
+                field.destroy();
+            }
+        },
+    );
+
     it('keeps the touch Add marking button above the transparent input hit layer', async () => {
         const engine = await createBareFormatEngine();
         root.innerHTML = `
