@@ -69,7 +69,7 @@
     padding: 0.625rem 0.75rem;
     border: 1px solid var(--ez-color-border, #d1d5db);
     border-radius: 0.375rem;
-    background: var(--ez-dropdown-background, #fff);
+    background: var(--ez-dropdown-background, var(--ez-color-background, #fff));
     line-height: 1.4;
 }
 .ez-favorites-panel__storage-actions

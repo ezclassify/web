@@ -77,78 +77,6 @@
             "method": "POST",
             "statusCode": 200
         },
-        "0534c5a2485cd284faee4ae6a88b243ea9737900462b89c03487ce58ff7d0c27": {
-            "body": {
-                "resolution": {
-                    "artifacts": [
-                        {
-                            "id": "multi-scope-regression",
-                            "kind": "scheme",
-                            "version": "1.0.0"
-                        }
-                    ],
-                    "contextId": "multi-scope-regression",
-                    "requestedVersion": "0.0.0",
-                    "resolvedVersion": "1.0.0"
-                },
-                "result": {
-                    "appliedFixes": [],
-                    "assertions": [
-                        {
-                            "categoryId": "level",
-                            "conceptId": "STUDENTS",
-                            "confidence": "certain",
-                            "source": "user"
-                        },
-                        {
-                            "categoryId": "from_school",
-                            "conceptId": "OUR_SCHOOL",
-                            "confidence": "certain",
-                            "source": "default"
-                        },
-                        {
-                            "categoryId": "filing_status",
-                            "conceptId": "FILED",
-                            "confidence": "certain",
-                            "source": "default"
-                        }
-                    ],
-                    "assessment": {
-                        "collapsed": [],
-                        "conflicts": [],
-                        "emitted": [
-                            { "categoryId": "level", "conceptId": "STUDENTS" }
-                        ],
-                        "omitted": [
-                            {
-                                "categoryId": "from_school",
-                                "conceptId": "OUR_SCHOOL"
-                            },
-                            {
-                                "categoryId": "filing_status",
-                                "conceptId": "FILED"
-                            }
-                        ],
-                        "unrepresentable": []
-                    },
-                    "displayColor": {
-                        "background": "#2e7d32",
-                        "text": "#ffffff"
-                    },
-                    "errors": [],
-                    "inputWasValid": true,
-                    "notices": [],
-                    "proposedFixes": [],
-                    "rendered": "ST",
-                    "renders": {},
-                    "valid": true,
-                    "warnings": []
-                }
-            },
-            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
-            "method": "POST",
-            "statusCode": 200
-        },
         "09e4793717f70cf13858fb167255d9fc745ad23be558461ddf74cc5f5cc7efbf": {
             "body": {
                 "resolution": {
@@ -634,7 +562,7 @@
             "method": "POST",
             "statusCode": 200
         },
-        "1945d013050bc7a6e7aa9751637a6112f5dcbc8cb1c7929344df811958b06165": {
+        "1835440d995d958fa44366cb31983af7f5c0dbae90ef9e5d477b7af9c211e289": {
             "body": {
                 "resolution": {
                     "artifacts": [
@@ -653,15 +581,15 @@
                     "assertions": [
                         {
                             "categoryId": "level",
-                            "conceptId": "STUDENTS",
+                            "conceptId": "DISTRICT_COORDINATORS",
                             "confidence": "certain",
-                            "source": "user"
+                            "source": "parse"
                         },
                         {
                             "categoryId": "from_school",
                             "conceptId": "OUR_SCHOOL",
                             "confidence": "certain",
-                            "source": "user"
+                            "source": "default"
                         },
                         {
                             "categoryId": "filing_status",
@@ -674,7 +602,10 @@
                         "collapsed": [],
                         "conflicts": [],
                         "emitted": [
-                            { "categoryId": "level", "conceptId": "STUDENTS" }
+                            {
+                                "categoryId": "level",
+                                "conceptId": "DISTRICT_COORDINATORS"
+                            }
                         ],
                         "omitted": [
                             {
@@ -689,14 +620,14 @@
                         "unrepresentable": []
                     },
                     "displayColor": {
-                        "background": "#2e7d32",
+                        "background": "#546e7a",
                         "text": "#ffffff"
                     },
                     "errors": [],
                     "inputWasValid": true,
                     "notices": [],
                     "proposedFixes": [],
-                    "rendered": "STUDENTS",
+                    "rendered": "DISTRICT COORDINATORS",
                     "renders": {},
                     "valid": true,
                     "warnings": []
@@ -1202,6 +1133,78 @@
             "method": "GET",
             "statusCode": 200
         },
+        "234dbe814c10f6935e3ec109c40c37b6432276a1e5b49aecfce3b272f7d368fd": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "multi-scope-regression",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "multi-scope-regression",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "STUDENTS",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "from_school",
+                            "conceptId": "OUR_SCHOOL",
+                            "confidence": "certain",
+                            "source": "default"
+                        },
+                        {
+                            "categoryId": "filing_status",
+                            "conceptId": "FILED",
+                            "confidence": "certain",
+                            "source": "default"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "STUDENTS" }
+                        ],
+                        "omitted": [
+                            {
+                                "categoryId": "from_school",
+                                "conceptId": "OUR_SCHOOL"
+                            },
+                            {
+                                "categoryId": "filing_status",
+                                "conceptId": "FILED"
+                            }
+                        ],
+                        "unrepresentable": []
+                    },
+                    "displayColor": {
+                        "background": "#2e7d32",
+                        "text": "#ffffff"
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "ST",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "23e6d9719d8a032d65ecc3bb7ebed557c7dd1f25691b959e4bb0f761714c409e": {
             "body": {
                 "resolution": {
@@ -1239,6 +1242,78 @@
                         "unrepresentable": []
                     },
                     "result": "DISTRICT COORDINATORS"
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "2406621a9814ebe79c5bb3e06b20cdabea50f1cf3d2f7bf3a202c9fdc4617620": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "multi-scope-regression",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "multi-scope-regression",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "STUDENTS",
+                            "confidence": "certain",
+                            "source": "user"
+                        },
+                        {
+                            "categoryId": "from_school",
+                            "conceptId": "OUR_SCHOOL",
+                            "confidence": "certain",
+                            "source": "default"
+                        },
+                        {
+                            "categoryId": "filing_status",
+                            "conceptId": "FILED",
+                            "confidence": "certain",
+                            "source": "default"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "STUDENTS" }
+                        ],
+                        "omitted": [
+                            {
+                                "categoryId": "from_school",
+                                "conceptId": "OUR_SCHOOL"
+                            },
+                            {
+                                "categoryId": "filing_status",
+                                "conceptId": "FILED"
+                            }
+                        ],
+                        "unrepresentable": []
+                    },
+                    "displayColor": {
+                        "background": "#2e7d32",
+                        "text": "#ffffff"
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "STUDENTS",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
                 }
             },
             "headers": { "x-ezclassify-resolved-version": "1.0.0" },
@@ -1778,6 +1853,81 @@
                     "notices": [],
                     "proposedFixes": [],
                     "rendered": "STUDENTS",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "38ec8488cf8949780028a3801a47172b64f0ccd7d9dab0cef3a7cbc89e1ca6f2": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "multi-scope-regression",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "multi-scope-regression",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "DISTRICT_COORDINATORS",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "from_school",
+                            "conceptId": "OUR_SCHOOL",
+                            "confidence": "certain",
+                            "source": "default"
+                        },
+                        {
+                            "categoryId": "filing_status",
+                            "conceptId": "FILED",
+                            "confidence": "certain",
+                            "source": "default"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "DISTRICT_COORDINATORS"
+                            }
+                        ],
+                        "omitted": [
+                            {
+                                "categoryId": "from_school",
+                                "conceptId": "OUR_SCHOOL"
+                            },
+                            {
+                                "categoryId": "filing_status",
+                                "conceptId": "FILED"
+                            }
+                        ],
+                        "unrepresentable": []
+                    },
+                    "displayColor": {
+                        "background": "#546e7a",
+                        "text": "#ffffff"
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "DISTRICT COORDINATORS",
+                    "renders": {},
                     "valid": true,
                     "warnings": []
                 }
@@ -2326,7 +2476,7 @@
             "method": "POST",
             "statusCode": 200
         },
-        "578e8b3fe91fe90bf902324efe3bdb33154a66017feb75f2b609a890df880a7c": {
+        "562599f0e160599f6c1ffb8469ca1e15d69bb525a48f06291e43818fcf486ae1": {
             "body": {
                 "resolution": {
                     "artifacts": [
@@ -2345,7 +2495,7 @@
                     "assertions": [
                         {
                             "categoryId": "level",
-                            "conceptId": "STUDENTS",
+                            "conceptId": "DISTRICT_COORDINATORS",
                             "confidence": "certain",
                             "source": "parse"
                         },
@@ -2353,7 +2503,7 @@
                             "categoryId": "from_school",
                             "conceptId": "OUR_SCHOOL",
                             "confidence": "certain",
-                            "source": "user"
+                            "source": "default"
                         },
                         {
                             "categoryId": "filing_status",
@@ -2366,7 +2516,10 @@
                         "collapsed": [],
                         "conflicts": [],
                         "emitted": [
-                            { "categoryId": "level", "conceptId": "STUDENTS" }
+                            {
+                                "categoryId": "level",
+                                "conceptId": "DISTRICT_COORDINATORS"
+                            }
                         ],
                         "omitted": [
                             {
@@ -2381,14 +2534,14 @@
                         "unrepresentable": []
                     },
                     "displayColor": {
-                        "background": "#2e7d32",
+                        "background": "#546e7a",
                         "text": "#ffffff"
                     },
                     "errors": [],
                     "inputWasValid": true,
                     "notices": [],
                     "proposedFixes": [],
-                    "rendered": "STUDENTS",
+                    "rendered": "DISTRICT COORDINATORS",
                     "renders": {},
                     "valid": true,
                     "warnings": []
@@ -2863,93 +3016,6 @@
             "method": "POST",
             "statusCode": 200
         },
-        "6f40b6e125f27719ce685ec44023906e9e57489c4217f33f1cb65520746e1e04": {
-            "body": {
-                "resolution": {
-                    "artifacts": [
-                        {
-                            "id": "multi-scope-regression",
-                            "kind": "scheme",
-                            "version": "1.0.0"
-                        }
-                    ],
-                    "contextId": "multi-scope-regression",
-                    "requestedVersion": "0.0.0",
-                    "resolvedVersion": "1.0.0"
-                },
-                "result": {
-                    "appliedFixes": [],
-                    "assertions": [
-                        {
-                            "categoryId": "level",
-                            "conceptId": "STUDENTS",
-                            "confidence": "certain",
-                            "source": "user",
-                            "value": "REFUSE"
-                        },
-                        {
-                            "categoryId": "from_school",
-                            "conceptId": "OUR_SCHOOL",
-                            "confidence": "certain",
-                            "source": "default"
-                        },
-                        {
-                            "categoryId": "filing_status",
-                            "conceptId": "FILED",
-                            "confidence": "certain",
-                            "source": "default"
-                        }
-                    ],
-                    "assessment": {
-                        "collapsed": [],
-                        "conflicts": [],
-                        "emitted": [],
-                        "omitted": [
-                            {
-                                "categoryId": "level",
-                                "conceptId": "STUDENTS",
-                                "value": "REFUSE"
-                            },
-                            {
-                                "categoryId": "from_school",
-                                "conceptId": "OUR_SCHOOL"
-                            },
-                            {
-                                "categoryId": "filing_status",
-                                "conceptId": "FILED"
-                            }
-                        ],
-                        "unrepresentable": [
-                            {
-                                "conceptId": "STUDENTS",
-                                "detail": "this concept has no codec in this field.",
-                                "reason": "value-lossy"
-                            }
-                        ]
-                    },
-                    "displayColor": {
-                        "background": "#2e7d32",
-                        "text": "#ffffff"
-                    },
-                    "errors": [
-                        {
-                            "constraintId": "_invalid_render",
-                            "message": "`long` could not write `STUDENTS` (value-lossy): this concept has no codec in this field."
-                        }
-                    ],
-                    "inputWasValid": false,
-                    "notices": [],
-                    "proposedFixes": [],
-                    "rendered": "[unrepresentable:value-lossy]",
-                    "renders": {},
-                    "valid": false,
-                    "warnings": []
-                }
-            },
-            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
-            "method": "POST",
-            "statusCode": 200
-        },
         "7910f774b288770906a62aca7a9a9207f5f29ef2ce2941d22f57c1271aca104e": {
             "body": {
                 "resolution": {
@@ -3110,81 +3176,6 @@
                         "unmatched": []
                     },
                     "rendered": "DC",
-                    "renders": {},
-                    "valid": true,
-                    "warnings": []
-                }
-            },
-            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
-            "method": "POST",
-            "statusCode": 200
-        },
-        "7deb3ce47af14705995e9968460177187ee2a1d3912ccf0f74a0a0a9e6cdd8da": {
-            "body": {
-                "resolution": {
-                    "artifacts": [
-                        {
-                            "id": "multi-scope-regression",
-                            "kind": "scheme",
-                            "version": "1.0.0"
-                        }
-                    ],
-                    "contextId": "multi-scope-regression",
-                    "requestedVersion": "0.0.0",
-                    "resolvedVersion": "1.0.0"
-                },
-                "result": {
-                    "appliedFixes": [],
-                    "assertions": [
-                        {
-                            "categoryId": "level",
-                            "conceptId": "DISTRICT_COORDINATORS",
-                            "confidence": "certain",
-                            "source": "user"
-                        },
-                        {
-                            "categoryId": "from_school",
-                            "conceptId": "OUR_SCHOOL",
-                            "confidence": "certain",
-                            "source": "default"
-                        },
-                        {
-                            "categoryId": "filing_status",
-                            "conceptId": "FILED",
-                            "confidence": "certain",
-                            "source": "default"
-                        }
-                    ],
-                    "assessment": {
-                        "collapsed": [],
-                        "conflicts": [],
-                        "emitted": [
-                            {
-                                "categoryId": "level",
-                                "conceptId": "DISTRICT_COORDINATORS"
-                            }
-                        ],
-                        "omitted": [
-                            {
-                                "categoryId": "from_school",
-                                "conceptId": "OUR_SCHOOL"
-                            },
-                            {
-                                "categoryId": "filing_status",
-                                "conceptId": "FILED"
-                            }
-                        ],
-                        "unrepresentable": []
-                    },
-                    "displayColor": {
-                        "background": "#546e7a",
-                        "text": "#ffffff"
-                    },
-                    "errors": [],
-                    "inputWasValid": true,
-                    "notices": [],
-                    "proposedFixes": [],
-                    "rendered": "DISTRICT COORDINATORS",
                     "renders": {},
                     "valid": true,
                     "warnings": []
@@ -3589,6 +3580,78 @@
                     "notices": [],
                     "proposedFixes": [],
                     "rendered": "//OAKWOOD STUDENTS",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "879c542ec1f959457e00769e6dd924cbfc0078f866ea33286865a298debf51f9": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "multi-scope-regression",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "multi-scope-regression",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "STUDENTS",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "from_school",
+                            "conceptId": "OUR_SCHOOL",
+                            "confidence": "certain",
+                            "source": "default"
+                        },
+                        {
+                            "categoryId": "filing_status",
+                            "conceptId": "FILED",
+                            "confidence": "certain",
+                            "source": "default"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "STUDENTS" }
+                        ],
+                        "omitted": [
+                            {
+                                "categoryId": "from_school",
+                                "conceptId": "OUR_SCHOOL"
+                            },
+                            {
+                                "categoryId": "filing_status",
+                                "conceptId": "FILED"
+                            }
+                        ],
+                        "unrepresentable": []
+                    },
+                    "displayColor": {
+                        "background": "#2e7d32",
+                        "text": "#ffffff"
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "STUDENTS",
                     "renders": {},
                     "valid": true,
                     "warnings": []
@@ -6263,81 +6326,6 @@
             "method": "POST",
             "statusCode": 200
         },
-        "ae6b90a9623e4431bbfe780aa79a36eec6a52dfc17b6ec1729b0c7b5f0f98e3c": {
-            "body": {
-                "resolution": {
-                    "artifacts": [
-                        {
-                            "id": "multi-scope-regression",
-                            "kind": "scheme",
-                            "version": "1.0.0"
-                        }
-                    ],
-                    "contextId": "multi-scope-regression",
-                    "requestedVersion": "0.0.0",
-                    "resolvedVersion": "1.0.0"
-                },
-                "result": {
-                    "appliedFixes": [],
-                    "assertions": [
-                        {
-                            "categoryId": "level",
-                            "conceptId": "DISTRICT_COORDINATORS",
-                            "confidence": "certain",
-                            "source": "user"
-                        },
-                        {
-                            "categoryId": "from_school",
-                            "conceptId": "OUR_SCHOOL",
-                            "confidence": "certain",
-                            "source": "default"
-                        },
-                        {
-                            "categoryId": "filing_status",
-                            "conceptId": "FILED",
-                            "confidence": "certain",
-                            "source": "default"
-                        }
-                    ],
-                    "assessment": {
-                        "collapsed": [],
-                        "conflicts": [],
-                        "emitted": [
-                            {
-                                "categoryId": "level",
-                                "conceptId": "DISTRICT_COORDINATORS"
-                            }
-                        ],
-                        "omitted": [
-                            {
-                                "categoryId": "from_school",
-                                "conceptId": "OUR_SCHOOL"
-                            },
-                            {
-                                "categoryId": "filing_status",
-                                "conceptId": "FILED"
-                            }
-                        ],
-                        "unrepresentable": []
-                    },
-                    "displayColor": {
-                        "background": "#546e7a",
-                        "text": "#ffffff"
-                    },
-                    "errors": [],
-                    "inputWasValid": true,
-                    "notices": [],
-                    "proposedFixes": [],
-                    "rendered": "DISTRICT COORDINATORS",
-                    "renders": {},
-                    "valid": true,
-                    "warnings": []
-                }
-            },
-            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
-            "method": "POST",
-            "statusCode": 200
-        },
         "aeadd4a6e6c3e978a1dfbc833b71611a1e1837cd73d58feaa276892fc3813a37": {
             "body": {
                 "resolution": {
@@ -6532,6 +6520,78 @@
             "method": "POST",
             "statusCode": 200
         },
+        "b23eeb1070f3f914ba58db632b51342fadbae0c9aab12c9d92b52d0b86cd4f06": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "multi-scope-regression",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "multi-scope-regression",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "STUDENTS",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "from_school",
+                            "conceptId": "OUR_SCHOOL",
+                            "confidence": "certain",
+                            "source": "default"
+                        },
+                        {
+                            "categoryId": "filing_status",
+                            "conceptId": "FILED",
+                            "confidence": "certain",
+                            "source": "default"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "STUDENTS" }
+                        ],
+                        "omitted": [
+                            {
+                                "categoryId": "from_school",
+                                "conceptId": "OUR_SCHOOL"
+                            },
+                            {
+                                "categoryId": "filing_status",
+                                "conceptId": "FILED"
+                            }
+                        ],
+                        "unrepresentable": []
+                    },
+                    "displayColor": {
+                        "background": "#2e7d32",
+                        "text": "#ffffff"
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "STUDENTS",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "b551fa330569bb73cdfb46db1218d69134bdaa8a3321f2af6ef02ce21ddc5d42": {
             "body": {
                 "resolution": {
@@ -6567,6 +6627,81 @@
                         ]
                     },
                     "result": "[unrepresentable:value-lossy]"
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "b5bc8e1c0f7ef351174e1c1f9879da987e2a262a5b660355393e0263e1652315": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "multi-scope-regression",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "multi-scope-regression",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "DISTRICT_COORDINATORS",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "from_school",
+                            "conceptId": "OUR_SCHOOL",
+                            "confidence": "certain",
+                            "source": "default"
+                        },
+                        {
+                            "categoryId": "filing_status",
+                            "conceptId": "FILED",
+                            "confidence": "certain",
+                            "source": "default"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "DISTRICT_COORDINATORS"
+                            }
+                        ],
+                        "omitted": [
+                            {
+                                "categoryId": "from_school",
+                                "conceptId": "OUR_SCHOOL"
+                            },
+                            {
+                                "categoryId": "filing_status",
+                                "conceptId": "FILED"
+                            }
+                        ],
+                        "unrepresentable": []
+                    },
+                    "displayColor": {
+                        "background": "#546e7a",
+                        "text": "#ffffff"
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "DC",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
                 }
             },
             "headers": { "x-ezclassify-resolved-version": "1.0.0" },
@@ -7462,81 +7597,6 @@
             "method": "POST",
             "statusCode": 200
         },
-        "d08c8674c7cdc56ace402aa76588e22e2a57ebf4d8464f00b727bc1c2683fbf2": {
-            "body": {
-                "resolution": {
-                    "artifacts": [
-                        {
-                            "id": "multi-scope-regression",
-                            "kind": "scheme",
-                            "version": "1.0.0"
-                        }
-                    ],
-                    "contextId": "multi-scope-regression",
-                    "requestedVersion": "0.0.0",
-                    "resolvedVersion": "1.0.0"
-                },
-                "result": {
-                    "appliedFixes": [],
-                    "assertions": [
-                        {
-                            "categoryId": "level",
-                            "conceptId": "DISTRICT_COORDINATORS",
-                            "confidence": "certain",
-                            "source": "parse"
-                        },
-                        {
-                            "categoryId": "from_school",
-                            "conceptId": "OUR_SCHOOL",
-                            "confidence": "certain",
-                            "source": "user"
-                        },
-                        {
-                            "categoryId": "filing_status",
-                            "conceptId": "FILED",
-                            "confidence": "certain",
-                            "source": "default"
-                        }
-                    ],
-                    "assessment": {
-                        "collapsed": [],
-                        "conflicts": [],
-                        "emitted": [
-                            {
-                                "categoryId": "level",
-                                "conceptId": "DISTRICT_COORDINATORS"
-                            }
-                        ],
-                        "omitted": [
-                            {
-                                "categoryId": "from_school",
-                                "conceptId": "OUR_SCHOOL"
-                            },
-                            {
-                                "categoryId": "filing_status",
-                                "conceptId": "FILED"
-                            }
-                        ],
-                        "unrepresentable": []
-                    },
-                    "displayColor": {
-                        "background": "#546e7a",
-                        "text": "#ffffff"
-                    },
-                    "errors": [],
-                    "inputWasValid": true,
-                    "notices": [],
-                    "proposedFixes": [],
-                    "rendered": "DISTRICT COORDINATORS",
-                    "renders": {},
-                    "valid": true,
-                    "warnings": []
-                }
-            },
-            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
-            "method": "POST",
-            "statusCode": 200
-        },
         "d24100a85c48f464bd0e07fc0810102387c77e2f6dd6db03dbe977acc60630f3": {
             "body": {
                 "colorFrom": "level",
@@ -7695,81 +7755,6 @@
                     "notices": [],
                     "proposedFixes": [],
                     "rendered": "STUDENTS",
-                    "valid": true,
-                    "warnings": []
-                }
-            },
-            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
-            "method": "POST",
-            "statusCode": 200
-        },
-        "d9dab0d9690cce3dc4909b9a5f5be84743d251aca6db9d78588dc26555e9e915": {
-            "body": {
-                "resolution": {
-                    "artifacts": [
-                        {
-                            "id": "multi-scope-regression",
-                            "kind": "scheme",
-                            "version": "1.0.0"
-                        }
-                    ],
-                    "contextId": "multi-scope-regression",
-                    "requestedVersion": "0.0.0",
-                    "resolvedVersion": "1.0.0"
-                },
-                "result": {
-                    "appliedFixes": [],
-                    "assertions": [
-                        {
-                            "categoryId": "level",
-                            "conceptId": "DISTRICT_COORDINATORS",
-                            "confidence": "certain",
-                            "source": "user"
-                        },
-                        {
-                            "categoryId": "from_school",
-                            "conceptId": "OUR_SCHOOL",
-                            "confidence": "certain",
-                            "source": "default"
-                        },
-                        {
-                            "categoryId": "filing_status",
-                            "conceptId": "FILED",
-                            "confidence": "certain",
-                            "source": "default"
-                        }
-                    ],
-                    "assessment": {
-                        "collapsed": [],
-                        "conflicts": [],
-                        "emitted": [
-                            {
-                                "categoryId": "level",
-                                "conceptId": "DISTRICT_COORDINATORS"
-                            }
-                        ],
-                        "omitted": [
-                            {
-                                "categoryId": "from_school",
-                                "conceptId": "OUR_SCHOOL"
-                            },
-                            {
-                                "categoryId": "filing_status",
-                                "conceptId": "FILED"
-                            }
-                        ],
-                        "unrepresentable": []
-                    },
-                    "displayColor": {
-                        "background": "#546e7a",
-                        "text": "#ffffff"
-                    },
-                    "errors": [],
-                    "inputWasValid": true,
-                    "notices": [],
-                    "proposedFixes": [],
-                    "rendered": "DC",
-                    "renders": {},
                     "valid": true,
                     "warnings": []
                 }

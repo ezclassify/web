@@ -1872,78 +1872,6 @@
             "method": "GET",
             "statusCode": 200
         },
-        "9c3510ae625ad66d4bf9164487913acb1d0b3fb858f7408e37d13468a9130134": {
-            "body": {
-                "resolution": {
-                    "artifacts": [
-                        {
-                            "id": "multi-scope-regression",
-                            "kind": "scheme",
-                            "version": "1.0.0"
-                        }
-                    ],
-                    "contextId": "multi-scope-regression",
-                    "requestedVersion": "0.0.0",
-                    "resolvedVersion": "1.0.0"
-                },
-                "result": {
-                    "appliedFixes": [],
-                    "assertions": [
-                        {
-                            "categoryId": "level",
-                            "conceptId": "STUDENTS",
-                            "confidence": "certain",
-                            "source": "user"
-                        },
-                        {
-                            "categoryId": "from_school",
-                            "conceptId": "OUR_SCHOOL",
-                            "confidence": "certain",
-                            "source": "default"
-                        },
-                        {
-                            "categoryId": "filing_status",
-                            "conceptId": "FILED",
-                            "confidence": "certain",
-                            "source": "default"
-                        }
-                    ],
-                    "assessment": {
-                        "collapsed": [],
-                        "conflicts": [],
-                        "emitted": [
-                            { "categoryId": "level", "conceptId": "STUDENTS" }
-                        ],
-                        "omitted": [
-                            {
-                                "categoryId": "from_school",
-                                "conceptId": "OUR_SCHOOL"
-                            },
-                            {
-                                "categoryId": "filing_status",
-                                "conceptId": "FILED"
-                            }
-                        ],
-                        "unrepresentable": []
-                    },
-                    "displayColor": {
-                        "background": "#2e7d32",
-                        "text": "#ffffff"
-                    },
-                    "errors": [],
-                    "inputWasValid": true,
-                    "notices": [],
-                    "proposedFixes": [],
-                    "rendered": "STUDENTS",
-                    "renders": {},
-                    "valid": true,
-                    "warnings": []
-                }
-            },
-            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
-            "method": "POST",
-            "statusCode": 200
-        },
         "9c712d6672f746e7716f8448cd89145bb92a98c1e92da6481df7e553193664a3": {
             "body": {
                 "resolution": {
@@ -2647,6 +2575,78 @@
                     "notices": [],
                     "proposedFixes": [],
                     "rendered": "STUDENTS",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "b23eeb1070f3f914ba58db632b51342fadbae0c9aab12c9d92b52d0b86cd4f06": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "multi-scope-regression",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "multi-scope-regression",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "STUDENTS",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "from_school",
+                            "conceptId": "OUR_SCHOOL",
+                            "confidence": "certain",
+                            "source": "default"
+                        },
+                        {
+                            "categoryId": "filing_status",
+                            "conceptId": "FILED",
+                            "confidence": "certain",
+                            "source": "default"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "STUDENTS" }
+                        ],
+                        "omitted": [
+                            {
+                                "categoryId": "from_school",
+                                "conceptId": "OUR_SCHOOL"
+                            },
+                            {
+                                "categoryId": "filing_status",
+                                "conceptId": "FILED"
+                            }
+                        ],
+                        "unrepresentable": []
+                    },
+                    "displayColor": {
+                        "background": "#2e7d32",
+                        "text": "#ffffff"
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "STUDENTS",
+                    "renders": {},
                     "valid": true,
                     "warnings": []
                 }

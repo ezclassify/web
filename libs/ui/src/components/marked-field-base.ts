@@ -40,7 +40,11 @@ import { isMacPlatform } from './dom-helpers';
 import { takenFromWhole } from '../assertion-identity';
 import { renderViewRefused } from '../render-refusal';
 import { t } from '../i18n';
-import { templateDelimiters, wrapPartMark } from './marked-text-area-logic';
+import {
+    markAttention,
+    templateDelimiters,
+    wrapPartMark,
+} from './marked-text-area-logic';
 import { adoptStylesOnce } from '../styles/adopt';
 import { attachTooltip, COMPONENT_CSS } from './component-utils';
 import {
@@ -64,12 +68,18 @@ import {
     schemeChangeWords,
     type ChangeWords,
 } from './status-mark';
-import type { InlineMarkingEditor } from './inline-marking-editor';
+import {
+    InlineMarkingEditor,
+    type InlineMarkingEditorOptions,
+} from './inline-marking-editor';
 import { writtenFactTest, type ShownForm } from '../written-facts';
-import { createClearButton, type ClearButton } from './clear-button';
+import type { ClearButton } from './clear-button';
 import { isUndoChord, MarkingUndo } from './marking-undo';
 import { announce, createAnnouncer } from './accessibility-helpers';
 import { mountFieldChrome, type FieldChrome } from './field-chrome';
+import { FieldComponentBase } from './field-component-base';
+import type { FavoritesPanelHost } from './favorites-panel';
+import { markingTarget } from './marking-target';
 
 /**
  * CSS class-name set a concrete field uses. Keeps the shared scaffolding (wrap,
@@ -96,7 +106,10 @@ export interface MarkedFieldClassNames {
  */
 export abstract class MarkedFieldBase<
     H extends HTMLInputElement | HTMLTextAreaElement,
-> implements ComponentInstance {
+>
+    extends FieldComponentBase
+    implements ComponentInstance
+{
     protected engine!: ComponentSchemeEngine;
     /**
      * Read a saved marking (a favorite) in this field's scan format, the way
@@ -120,6 +133,29 @@ export abstract class MarkedFieldBase<
             appliedFixes: result.appliedFixes,
         };
     }
+    protected markedFavoritesHost(
+        actions: Pick<
+            FavoritesPanelHost,
+            'getCurrent' | 'onApply' | 'focusField' | 'describeTarget'
+        >,
+    ): FavoritesPanelHost {
+        const { getCurrent, ...rest } = actions;
+        return {
+            root: this.container,
+            schemeId: this.schemeId,
+            scope: this.options.scope,
+            formatId: this.scanFormat,
+            scheme: this.scheme,
+            config: this.options.favorites,
+            read: (marking) => this.readForFavorites(marking),
+            applyPreset: (presetId) =>
+                this.callApplyPreset(presetId, this.scanFormat),
+            ...markingTarget(this),
+            ...rest,
+            getCurrent: () => markingTarget(this)?.getCurrent() ?? getCurrent(),
+        };
+    }
+
     /** Expand a named scheme preset through the bound adapter. */
     protected callApplyPreset(presetId: string, outputFormat?: string) {
         const options = outputFormat ? { outputFormat } : undefined;
@@ -206,6 +242,9 @@ export abstract class MarkedFieldBase<
     /** Start tracking presses on the host (see {@link pressing}). */
     protected watchPresses(): void {
         this.host.addEventListener('mousedown', this.beginPress);
+        this.wrap.addEventListener('pointermove', this.forwardSegmentHover);
+        this.wrap.addEventListener('pointerleave', this.clearSegmentHover);
+        this.wrap.addEventListener('pointerdown', this.clearSegmentHover, true);
         document.addEventListener('mouseup', this.endPress, true);
         window.addEventListener('blur', this.endPress);
     }
@@ -213,6 +252,14 @@ export abstract class MarkedFieldBase<
     /** Stop tracking presses. */
     protected unwatchPresses(): void {
         this.host.removeEventListener('mousedown', this.beginPress);
+        this.wrap.removeEventListener('pointermove', this.forwardSegmentHover);
+        this.wrap.removeEventListener('pointerleave', this.clearSegmentHover);
+        this.wrap.removeEventListener(
+            'pointerdown',
+            this.clearSegmentHover,
+            true,
+        );
+        this.clearSegmentHover();
         document.removeEventListener('mouseup', this.endPress, true);
         window.removeEventListener('blur', this.endPress);
         this.pressing = false;
@@ -537,7 +584,7 @@ export abstract class MarkedFieldBase<
             root: this.container,
             align: this.chromeAlign,
         });
-        this.clearControl = createClearButton({
+        this.clearControl = this.createFieldClear({
             label: t('aria.clearText'),
             host: this.host,
             empty: () => this.host.value.length === 0,
@@ -735,7 +782,82 @@ export abstract class MarkedFieldBase<
      * this after its own teardown and drops its editor if it changed, so a
      * stale editor never mounts or takes focus from the current one.
      */
-    protected pickerOpenSeq = 0;
+    private pickerOpenSeq = 0;
+
+    protected async mountPicker(
+        inner: string,
+        mountClass: string,
+        options: Pick<
+            InlineMarkingEditorOptions,
+            | 'assertions'
+            | 'caret'
+            | 'draft'
+            | 'label'
+            | 'onChange'
+            | 'onExit'
+            | 'onLineMove'
+            | 'openList'
+            | 'resolveParts'
+            | 'sheetTools'
+            | 'textToolsEdges'
+        >,
+        finishBlur: () => void,
+    ): Promise<boolean> {
+        const openSeq = this.pickerOpenSeq;
+        const mount = this.host.ownerDocument.createElement('span');
+        mount.className = mountClass;
+        mount.style.display = 'inline';
+        const picker = new InlineMarkingEditor();
+        await picker.init(
+            mount as unknown as HTMLDivElement,
+            this.engineSource,
+            inner,
+            {
+                ...options,
+                formatId: this.scanFormat,
+                scope: this.options.scope,
+                scopes: this.options.scopes,
+                resolveContext: this.options.resolveContext,
+                tooltips: this.options.tooltips,
+                tooltipConceptProperty: this.options.tooltipConceptProperty,
+                onBlurCommit: (outcome) => {
+                    if (outcome !== 'invalid' && this.picker === picker)
+                        finishBlur();
+                },
+                onCancel: (fromSheet) => this.escapeClosePicker(fromSheet),
+                focusTarget: this.wrap,
+                isFieldChrome: (node) => this.isFieldChrome(node),
+                root: this.container,
+            },
+        );
+        if (openSeq !== this.pickerOpenSeq) {
+            picker.destroy();
+            return false;
+        }
+        this.picker = picker;
+        this.pickerMount = mount;
+        this.suppressFieldReport(true);
+        this.container.classList.add(this.classNames.pickerActive);
+        this.renderDisplay();
+        picker.focus();
+        return true;
+    }
+
+    /** A superseded or invalid session cannot write a mark to the host. */
+    protected async commitPicker(): Promise<boolean> {
+        const picker = this.picker;
+        if (!picker) return false;
+        const outcome = await picker.commit();
+        return this.picker === picker && outcome !== 'invalid';
+    }
+
+    /** Carry the editor's facts into the next read of the same written mark. */
+    protected pickerReading(picker: InlineMarkingEditor) {
+        return {
+            marking: this.wrapRendered(picker.getRendered().trim()).trimEnd(),
+            assertions: picker.getAssertions(),
+        };
+    }
 
     protected destroyPicker(): void {
         this.pickerOpenSeq++;
@@ -989,24 +1111,104 @@ export abstract class MarkedFieldBase<
         return blocks.join('\n\n');
     }
 
-    /**
-     * Attach the segment's concept-description tooltip to its chip element. It
-     * describes what the mark says: a value taken from the whole for a word in
-     * the mark is the whole's, so the chip does not describe it.
-     */
-    protected attachSegmentTooltip(
-        el: HTMLElement,
-        assertions: Assertion[],
-    ): void {
-        const written = assertions.filter((a) => !takenFromWhole(a));
-        if (written.length === 0) return;
-        attachTooltip(
-            el,
-            () => this.describeSegment(written),
-            this.container,
-            () => this.shouldShowTooltip(),
-        );
+    protected segmentAttention(segment: {
+        valid: boolean;
+        errors: readonly string[];
+        warnings?: readonly string[];
+    }) {
+        if (!segment.valid && segment.errors.length)
+            return markAttention('invalid', segment.errors);
+        if (segment.valid && segment.warnings?.length)
+            return markAttention('warning', segment.warnings);
+        return null;
     }
+
+    /** Paint segment feedback and keep the native text surface interactive. */
+    protected attachSegmentFeedback(
+        chip: HTMLElement,
+        className: string,
+        segment: {
+            valid: boolean;
+            errors: readonly string[];
+            warnings?: readonly string[];
+            assertions: readonly Assertion[];
+        },
+        open?: (event: Event) => void,
+    ) {
+        const attention = this.segmentAttention(segment);
+        chip.className = !segment.valid
+            ? `${className} ${className}--invalid`
+            : attention
+              ? `${className} ${className}--warning`
+              : className;
+        if (attention && open) {
+            chip.tabIndex = 0;
+            chip.setAttribute('role', 'button');
+            chip.setAttribute('aria-label', attention.label);
+            chip.addEventListener('mousedown', open);
+            chip.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter' || event.key === ' ') open(event);
+            });
+        }
+        if (!this.shouldShowTooltip()) return attention;
+        const written = segment.valid
+            ? segment.assertions.filter(
+                  (assertion) => !takenFromWhole(assertion),
+              )
+            : [];
+        if (!attention && written.length === 0) return null;
+        chip.dataset.ezSegmentTooltip = '';
+        attachTooltip(
+            chip,
+            () => attention?.tooltip ?? this.describeSegment(written),
+            this.container,
+            () => chip.isConnected && this.shouldShowTooltip(),
+            undefined,
+            undefined,
+            () => ({ clearOf: this.wrap }),
+        );
+        return attention;
+    }
+
+    private hoveredSegment: HTMLElement | undefined;
+
+    private readonly clearSegmentHover = () => {
+        this.hoveredSegment?.dispatchEvent(new MouseEvent('mouseleave'));
+        this.hoveredSegment = undefined;
+    };
+
+    /**
+     * The native editor owns the pointer so it can place the caret and select
+     * text. Hover alone can inspect the painted mark beneath that editor.
+     */
+    private readonly forwardSegmentHover = (event: PointerEvent): void => {
+        if (
+            event.pointerType !== 'mouse' ||
+            event.buttons ||
+            event.target !== this.host ||
+            this.picker ||
+            !this.shouldShowTooltip()
+        ) {
+            this.clearSegmentHover();
+            return;
+        }
+        const { clientX: x, clientY: y } = event;
+        const contains = (chip: HTMLElement) =>
+            [...chip.getClientRects()].some(
+                ({ left, right, top, bottom }) =>
+                    x >= left && x <= right && y >= top && y <= bottom,
+            );
+        if (this.hoveredSegment?.isConnected && contains(this.hoveredSegment))
+            return;
+        this.clearSegmentHover();
+        const chip = [
+            ...this.display.querySelectorAll<HTMLElement>(
+                '[data-ez-segment-tooltip]',
+            ),
+        ].find(contains);
+        chip?.dispatchEvent(new MouseEvent('mouseenter'));
+        this.hoveredSegment = chip;
+    };
 
     /**
      * Close the picker. The two fields save editor assertions and (for the

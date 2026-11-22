@@ -8,7 +8,7 @@
  * The engine is a stand-in: a marking that names LOW gains STD, and one that
  * names HIGH gains STD and ANCHOR, each by a rule the text then writes.
  */
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Assertion, Change, ScanResult } from '@ezclassify/types';
 import { schemeOnlyContext } from '../../test-fixtures/context-doubles';
 import { mockRenderFormats } from '../render-format-layout-mock';
@@ -194,6 +194,7 @@ async function markList(root: Element): Promise<string[]> {
 let container: HTMLDivElement;
 let field: MarkedTextArea | undefined;
 let textarea: HTMLTextAreaElement;
+let runtime: ReturnType<typeof engine>;
 
 beforeEach(async () => {
     container = document.createElement('div');
@@ -201,7 +202,8 @@ beforeEach(async () => {
     textarea = document.createElement('textarea');
     container.appendChild(textarea);
     field = new MarkedTextArea();
-    await field.init(container, schemeOnlyContext(engine() as never));
+    runtime = engine();
+    await field.init(container, schemeOnlyContext(runtime as never));
     await wait();
 });
 
@@ -241,6 +243,179 @@ describe("a MarkedTextArea's status mark", () => {
             `# ${marks[1]}`,
             'Added STD to handling.',
         ]);
+    });
+
+    it('keeps independent corrections for identical markings', async () => {
+        await write('(LOW) First paragraph.\n(LOW) Second paragraph.');
+        expect(
+            container.querySelector('.ez-status-mark__count')?.textContent,
+        ).toBe('2');
+        const marking = textarea.value.match(/\([^)]+\)/)?.[0];
+        expect(await markList(container)).toEqual([
+            '2 changes made by marking rules',
+            `# ${marking}`,
+            'Added STD to handling.',
+            `# ${marking}`,
+            'Added STD to handling.',
+        ]);
+    });
+
+    it('keeps a surviving paragraph’s corrections when a peer is removed', async () => {
+        await write('(LOW) First paragraph.\n(HIGH) Second paragraph.');
+        await write(textarea.value.split('\n')[1]);
+        expect(await markList(container)).toEqual([
+            '2 changes made by marking rules',
+            'Added STD to handling.',
+            'Added ANCHOR to handling.',
+        ]);
+    });
+
+    it('keeps both surviving histories when a middle paragraph has the same marking', async () => {
+        await write(
+            '(LOW) First paragraph.\n(LOW) Middle paragraph.\n(LOW) Last paragraph.',
+        );
+        const [first, , last] = textarea.value.split('\n');
+        const [firstEntry, , lastEntry] = field!
+            .getSegments()
+            .map((mark) => mark.entryId);
+        await write(`${first}\n${last}`);
+        expect(field!.getSegments().map((mark) => mark.entryId)).toEqual([
+            firstEntry,
+            lastEntry,
+        ]);
+        const marking = textarea.value.match(/\([^)]+\)/)?.[0];
+        expect(await markList(container)).toEqual([
+            '2 changes made by marking rules',
+            `# ${marking}`,
+            'Added STD to handling.',
+            `# ${marking}`,
+            'Added STD to handling.',
+        ]);
+    });
+
+    async function draftAtEnd(value: string): Promise<HTMLInputElement> {
+        textarea.focus();
+        const end = textarea.value.length;
+        textarea.setSelectionRange(end, end);
+        textarea.dispatchEvent(
+            new KeyboardEvent('keydown', {
+                key: 'Enter',
+                ctrlKey: true,
+                bubbles: true,
+            }),
+        );
+        const input = await vi.waitFor(() => {
+            const editor = container.querySelector<HTMLInputElement>(
+                '.inline-editor-input',
+            );
+            expect(editor).not.toBeNull();
+            return editor!;
+        });
+        input.value = value;
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        return input;
+    }
+
+    function submit(input: HTMLInputElement): void {
+        input.dispatchEvent(
+            new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }),
+        );
+    }
+
+    function deferScan(truncated = false) {
+        const scan = runtime.scan.bind(runtime);
+        let finish!: () => void;
+        let didScan!: () => void;
+        const began = new Promise<void>((resolve) => {
+            didScan = resolve;
+        });
+        vi.spyOn(runtime, 'scan').mockImplementationOnce((text) => {
+            const full = scan(text);
+            const outcome = truncated
+                ? {
+                      results: [],
+                      unread: [],
+                      limits: {
+                          status: 'truncated' as const,
+                          regionsFound: full.results.length,
+                          regionsCapped: true,
+                      },
+                  }
+                : full;
+            return new Promise<typeof outcome>((resolve) => {
+                finish = () => resolve(outcome);
+                didScan();
+            }) as unknown as typeof outcome;
+        });
+        return { began, release: () => finish() };
+    }
+
+    it.each(['superseded', 'truncated'] as const)(
+        'keeps a committed mark through prose changes after its scan is %s',
+        async (scanState) => {
+            const editor = await draftAtEnd('LOW');
+            const deferred = deferScan(scanState === 'truncated');
+            submit(editor);
+            await deferred.began;
+            const process = vi.spyOn(runtime, 'process');
+
+            if (scanState === 'truncated') {
+                deferred.release();
+                await vi.waitFor(() =>
+                    expect(textarea.getAttribute('aria-invalid')).toBe('true'),
+                );
+            }
+            textarea.value = `New preface.\n${textarea.value}`;
+            textarea.dispatchEvent(new Event('input', { bubbles: true }));
+            textarea.value = `${textarea.value.trimEnd()} Updated prose.`;
+            textarea.dispatchEvent(new Event('input', { bubbles: true }));
+
+            await vi.waitFor(() =>
+                expect(process).toHaveBeenCalledWith(
+                    '',
+                    expect.objectContaining({
+                        assertions: expect.arrayContaining([
+                            expect.objectContaining({ conceptId: 'LOW' }),
+                        ]),
+                    }),
+                ),
+            );
+            if (scanState === 'superseded') deferred.release();
+            expect(await markList(container)).toEqual([
+                '1 change made by a marking rule',
+                'Added STD to handling.',
+            ]);
+        },
+    );
+
+    it('keeps two committed mark readings while the first scan is still pending', async () => {
+        const first = await draftAtEnd('LOW');
+        const deferred = deferScan();
+        submit(first);
+        await deferred.began;
+
+        textarea.value += 'First body.\n';
+        textarea.dispatchEvent(new Event('input', { bubbles: true }));
+        const second = await draftAtEnd('HIGH');
+        const process = vi.spyOn(runtime, 'process');
+        submit(second);
+
+        await vi.waitFor(() => {
+            for (const conceptId of ['LOW', 'HIGH']) {
+                expect(process).toHaveBeenCalledWith(
+                    '',
+                    expect.objectContaining({
+                        assertions: expect.arrayContaining([
+                            expect.objectContaining({ conceptId }),
+                        ]),
+                    }),
+                );
+            }
+            expect(
+                container.querySelector('.ez-status-mark__count')?.textContent,
+            ).toBe('3');
+        });
+        deferred.release();
     });
 
     it('names no marking when only one has changes', async () => {

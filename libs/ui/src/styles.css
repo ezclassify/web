@@ -34,9 +34,10 @@
  * shadow the ancestor's vars at every component container and break the
  * nested-card "nearest theme ancestor wins" guarantee.
  *
- * The `.ez-root, [data-ezclassify]` block below is therefore restricted to
- * tokens that don't have light/dark variants: typography, spacing, z-index,
- * transitions, and aliases that resolve other vars at consumption time.
+ * Layout defaults also belong at the root, so a form can override them on
+ * its own wrapper and the generated mounts inherit those overrides.
+ * The low-specificity defaults also allow ordinary page CSS to set tokens
+ * on the same element as a theme attribute.
  */
 
 /* ── Light-palette defaults at the document root ─────────── */
@@ -44,7 +45,7 @@
  * A nested ancestor with [data-theme="dark"] / [data-color-scheme="dark"]
  * shadows them for its subtree; a nested ancestor with [data-theme="light"]
  * shadows back to light. */
-:root {
+:where(:root) {
     --ez-color-text: inherit;
     --ez-color-background: #ffffff;
     --ez-color-border: #d1d5db;
@@ -95,11 +96,7 @@
     --ez-dropdown-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     --ez-dropdown-item-hover: #f3f4f6;
     --ez-dropdown-group-bg: rgba(0, 0, 0, 0.04);
-    /* A var()-based alias resolves at its declaration site. Redeclare these
-       aliases in every theme block so nested themes use their local palette.
-       :root supplies the fallback for consumers without a theme ancestor. */
-    --ez-dropdown-background: var(--ez-color-background);
-    --ez-dropdown-color: var(--ez-color-text);
+    /* State accents use the palette at the nearest theme declaration. */
     --ez-dropdown-highlight: color-mix(
         in srgb,
         var(--ez-color-primary, #3b82f6) 20%,
@@ -136,50 +133,9 @@
        field's own text color on a light palette. */
     --ez-status-mark-color: #9ca3af;
     --ez-status-mark-strong-color: currentColor;
-}
-
-.ez-root,
-[data-ezclassify] {
-    /* Typography: inherit from host. Theme-invariant. */
-    --ez-font-family: inherit;
-    --ez-font-size: inherit;
-    --ez-font-weight: inherit;
-    --ez-line-height: inherit;
-
-    /* Select-card aliases resolve against the component's nearest palette.
-       SingleSelect appends cards into its data-ezclassify container.
-       Dropdown and focus aliases also serve standalone inputs, so those
-       are declared in :root and the dark/light theme blocks instead. */
-    --ez-select-active-border: var(--ez-color-primary, #3b82f6);
-    --ez-select-active-bg: color-mix(
-        in srgb,
-        var(--ez-color-primary, #3b82f6) 6%,
-        transparent
-    );
-
-    /* Spacing: theme-invariant. --ez-spacing-sm/-md also live at :root (see
-       the :root Border/spacing/transition block above) for the standalone
-       `.ez-input.ez-styled` consumer; --ez-spacing-xs/-lg have no consumer
-       outside a component wrapper, so they stay scoped here only. */
+    /* Host layout overrides inherit through the mount and into its portals. */
     --ez-spacing-xs: 0.25rem;
-    --ez-spacing-sm: 0.5rem;
-    --ez-spacing-md: 0.75rem;
     --ez-spacing-lg: 1rem;
-
-    /* Border: theme-invariant. Also declared at :root; see the same note
-       above. */
-    --ez-border-radius: 0.375rem;
-    --ez-border-width: 1px;
-
-    /* Transitions: theme-invariant. Also declared at :root; see the same
-       note above. */
-    --ez-transition: 150ms ease;
-
-    /* Z-index layers: theme-invariant. A portaled panel cannot inherit these,
-       so overlay-portal copies them onto the portal element; the values here
-       are what a host reads and shadows. The tooltip layer sits above the
-       portaled picker's own fallback, which is why it is not on the same scale
-       as the in-flow dropdown. */
     --ez-z-dropdown: 1000;
     --ez-z-tooltip: 10002;
 }
@@ -190,10 +146,12 @@
  * an outer ancestor's nearer light siblings). CSS custom property
  * inheritance carries these values into the subtree, so a nested
  * `[data-theme="light"]` ancestor cleanly shadows back to light. */
-[data-color-scheme='dark'],
-[data-theme='dark']:not([data-color-scheme='light']),
-[data-bs-theme='dark']:not([data-color-scheme='light']),
-.dark:not([data-color-scheme='light']) {
+:where(
+    [data-color-scheme='dark'],
+    [data-theme='dark']:not([data-color-scheme='light']),
+    [data-bs-theme='dark']:not([data-color-scheme='light']),
+    .dark:not([data-color-scheme='light'])
+) {
     /* Structural */
     --ez-color-text: #e5e7eb;
     --ez-color-background: #1f2937;
@@ -226,8 +184,6 @@
     --ez-dropdown-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
     --ez-dropdown-group-sticky-bg: #1f2937;
     /* Resolve aliases against this dark block's local palette. */
-    --ez-dropdown-background: var(--ez-color-background);
-    --ez-dropdown-color: var(--ez-color-text);
     --ez-dropdown-highlight: color-mix(
         in srgb,
         var(--ez-color-primary, #3b82f6) 20%,
@@ -258,9 +214,11 @@
  * a nested `[data-theme="light"]` correctly shadows an outer dark theme.
  * Component-pinned light (`[data-color-scheme="light"]`) re-applies the
  * same vars on the component itself, winning over any ancestor. */
-[data-color-scheme='light'],
-[data-theme='light']:not([data-color-scheme='dark']),
-[data-bs-theme='light']:not([data-color-scheme='dark']) {
+:where(
+    [data-color-scheme='light'],
+    [data-theme='light']:not([data-color-scheme='dark']),
+    [data-bs-theme='light']:not([data-color-scheme='dark'])
+) {
     --ez-color-text: inherit;
     --ez-color-background: #ffffff;
     --ez-color-border: #d1d5db;
@@ -289,8 +247,6 @@
     --ez-dropdown-group-sticky-bg: initial;
     /* Resolve aliases against this light block's local palette, including
        light islands nested inside a dark ancestor. */
-    --ez-dropdown-background: var(--ez-color-background);
-    --ez-dropdown-color: var(--ez-color-text);
     --ez-dropdown-highlight: color-mix(
         in srgb,
         var(--ez-color-primary, #3b82f6) 20%,
@@ -322,14 +278,14 @@
     line-height: var(--ez-line-height);
     color: var(--ez-color-text);
     background: var(--ez-color-background);
-    border: var(--ez-border-width) solid var(--ez-color-border);
-    border-radius: var(--ez-border-radius);
-    padding: var(--ez-spacing-sm) var(--ez-spacing-md);
+    border: var(--ez-border-width, 0.0625rem) solid var(--ez-color-border);
+    border-radius: var(--ez-border-radius, 0.375rem);
+    padding: var(--ez-spacing-sm, 0.5rem) var(--ez-spacing-md, 0.75rem);
     width: 100%;
     box-sizing: border-box;
     transition:
-        border-color var(--ez-transition),
-        box-shadow var(--ez-transition);
+        border-color var(--ez-transition, 150ms ease),
+        box-shadow var(--ez-transition, 150ms ease);
     outline: none;
 }
 
@@ -361,7 +317,7 @@
 .ez-validation {
     font-family: var(--ez-font-family);
     font-size: calc(var(--ez-font-size) - 0.125rem);
-    margin-top: var(--ez-spacing-xs);
+    margin-top: var(--ez-spacing-xs, 0.25rem);
 }
 
 .ez-validation--error {

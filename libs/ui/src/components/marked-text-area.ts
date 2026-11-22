@@ -28,7 +28,6 @@ import type {
 import type { ComponentEngineSource } from './component-base-readonly';
 import type { ComponentOptions } from './component-base-readonly';
 import { HiddenAssertionField } from './hidden-assertion-field';
-import { InlineMarkingEditor } from './inline-marking-editor';
 import { accessibleLabel } from './composer/composer-view';
 import { assertionFactKey, withoutTakenFromWhole } from '../assertion-identity';
 import { renderViewRefused } from '../render-refusal';
@@ -37,23 +36,15 @@ import { createAnnouncer } from './accessibility-helpers';
 import { getMountHost } from '../mount-host-registry';
 import { wholeSettled } from '../whole-read-gate';
 import { revealClearOfPinned } from './composer/composer-placement';
-import { replacesMarks } from './composer/composer-controller';
+import { AppliedFixHistory } from './applied-fix-history';
 import {
-    ensureStatusMark,
     statusMarkOwnsNode,
     statusMarkFavoriteApplyOwner,
-    recordAppliedFixes,
     setStatusMarkError,
     setStatusMarkGroups,
     type StatusMarkGroup,
 } from './status-mark';
 import {
-    ensureMarkingFavorites,
-    schemeOffersPresets,
-    type FavoritesPanel,
-} from './favorites-panel';
-import {
-    attachTooltip,
     cleanupTooltipForRoot,
     hideTooltip,
     showTooltip,
@@ -79,10 +70,15 @@ import {
     applyRepairs as applyRepairsLogic,
     editedMarkingIndices,
     fixesNeedingCorrection,
-    markAttention,
-    type MarkAttention,
     paragraphNumber,
 } from './marked-text-area-logic';
+
+interface PendingMarkReading {
+    start: number;
+    marking: string;
+    assertions: Assertion[];
+    changes: readonly Change[];
+}
 
 /** One marking found in the textarea plus the body text that follows it. */
 export interface MarkedSegment {
@@ -296,14 +292,13 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
      * transitions.
      */
     private activeSegmentIndex = -1;
-    private favoritesPanel: FavoritesPanel | null = null;
     private toolsButton: HTMLElement | null = null;
 
     protected override isFieldChrome(node: Node): boolean {
         return !!(
             (node === this.host && this.picker?.isToolsSuspended) ||
             statusMarkOwnsNode(this.toolsButton, node) ||
-            this.favoritesPanel?.contains(node)
+            this.fieldFavorites?.contains(node)
         );
     }
 
@@ -352,38 +347,18 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
      */
     private _resizeObserver: ResizeObserver | null = null;
 
-    /**
-     * Fixes the engine applied to each of the textarea's markings, by the facts
-     * the marking held once they were applied, each deduplicated by rule.
-     * Drives the field's single status mark (per the Enhancement Status
-     * Indicator contract there is one mark per field, never one star per
-     * repaired segment), whose list groups them by marking. Cleared when the
-     * textarea empties or a marking in it is replaced.
-     */
-    private _appliedFixes = new Map<
-        string,
-        { holds: readonly Assertion[]; fixes: Map<string, Change> }
-    >();
-    /**
-     * What each marking held when {@link _appliedFixes} was last written, one
-     * entry per marking, in no particular order.
-     */
-    private _fixesHeld: readonly (readonly Assertion[])[] = [];
-    /**
-     * Whether the last scan offered the whole text to recognition. A scan that
-     * stops early (a region cap, a work budget) returns the markings it reached
-     * and nothing past them, which reads exactly like prose with no markings
-     * left in it. The field says so instead: its status mark shows an error,
-     * the textarea is invalid, and its rollups are flagged stale.
-     */
+    /** Keep separate correction records for paragraphs with identical facts. */
+    private readonly appliedFixHistories = new Map<string, AppliedFixHistory>();
+    private pendingMarkReadings: {
+        text: string;
+        marks: PendingMarkReading[];
+    } | null = null;
+
+    /** Whether the Runtime read the whole text on the last scan. */
     private scanComplete = true;
     /** The completeness last reported to validity and the runtime. */
     private reportedScanComplete = true;
-    /**
-     * Whether the last scan failed outright. The next edit scans again even
-     * when it returns the text to what the last successful scan read, since
-     * only a scan that lands can clear the error the failure raised.
-     */
+    /** A failed scan must be retried even if the text returns to an old value. */
     private scanFailed = false;
     /** The custom validity message this field set, so it clears only its own. */
     private scanValidity: string | null = null;
@@ -571,58 +546,47 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
 
         // The field's single status mark (starless "enhanced" until the
         // engine applies a fix), in the field's inline chrome.
-        this.toolsButton = ensureStatusMark(this.chrome.status, {
-            tools: true,
-            onToolsOpen: () => {
-                if (document.activeElement === this.textarea)
-                    this._lastCaret = this.textarea.selectionStart;
-                this.toolsButton?.focus();
-                this.picker?.suspendForTools();
-            },
-            shape: 'chrome',
-            root: this.container,
-            shouldShowTooltip: () => this.shouldShowTooltip(),
-            words: this.changeWords(),
-        });
-        // Scheme presets remain available without a persistence provider;
-        // all actions still target only the caret's marking.
-        if (
-            this.options.favorites ||
-            schemeOffersPresets(this.scheme, this.options.scope)
-        ) {
-            this.favoritesPanel = ensureMarkingFavorites(this.chrome.status, {
-                root: this.container,
-                schemeId: this.schemeId,
-                scope: this.options.scope,
-                formatId: this.scanFormat,
-                scheme: this.scheme,
-                config: this.options.favorites,
-                read: (marking) => this.readForFavorites(marking),
-                applyPreset: (presetId) =>
-                    this.callApplyPreset(presetId, this.scanFormat),
-                describeTarget: () =>
-                    this.activeSegmentIndex >= 0
-                        ? t('favorites.editingMarking')
-                              .replace(
-                                  '{n}',
-                                  String(this.activeSegmentIndex + 1),
-                              )
-                              .replace('{total}', String(this.segments.length))
-                        : t('favorites.insertParagraph'),
-                ...markingTarget(this),
-                getCurrent: () =>
-                    markingTarget(this)?.getCurrent() ??
-                    this.currentFavoritesMarking(),
-                onApply: (marking, signal) => {
-                    const target = markingTarget(this);
-                    return target && this.favoriteEntryId()
-                        ? target.onApply(marking, signal)
-                        : this.applyFavorite(marking, signal);
+        this.toolsButton = this.mountFieldTools(
+            this.chrome.status,
+            {
+                correctionCategory: this.options.categoryId,
+                onToolsOpen: () => {
+                    if (document.activeElement === this.textarea)
+                        this._lastCaret = this.textarea.selectionStart;
+                    this.toolsButton?.focus();
+                    this.picker?.suspendForTools();
                 },
-                focusField: () =>
-                    this.picker ? this.picker.focus() : this.textarea.focus(),
-            });
-        }
+                root: this.container,
+                shouldShowTooltip: () => this.shouldShowTooltip(),
+                words: this.changeWords(),
+            },
+            () =>
+                this.markedFavoritesHost({
+                    describeTarget: () =>
+                        this.activeSegmentIndex >= 0
+                            ? t('favorites.editingMarking')
+                                  .replace(
+                                      '{n}',
+                                      String(this.activeSegmentIndex + 1),
+                                  )
+                                  .replace(
+                                      '{total}',
+                                      String(this.segments.length),
+                                  )
+                            : t('favorites.insertParagraph'),
+                    getCurrent: () => this.currentFavoritesMarking(),
+                    onApply: (marking, signal) => {
+                        const target = markingTarget(this);
+                        return target && this.favoriteEntryId()
+                            ? target.onApply(marking, signal)
+                            : this.applyFavorite(marking, signal);
+                    },
+                    focusField: () =>
+                        this.picker
+                            ? this.picker.focus()
+                            : this.textarea.focus(),
+                }),
+        );
 
         this.toolsButton?.addEventListener('keydown', this.onBrandDown, true);
 
@@ -1061,6 +1025,13 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         this.lastMarkingStrings = this.segments
             .filter((segment) => segment.entryId)
             .map((segment) => segment.marking);
+        this.pruneFixHistories();
+        for (const segment of this.segments) {
+            if (segment.entryId && !segment.readFailure)
+                this.appliedFixHistories
+                    .get(segment.entryId)
+                    ?.record(segment.assertions);
+        }
         this.applyingEntryState = true;
         try {
             this.setHostValue(projected.text);
@@ -1122,8 +1093,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
             this.onBrandDown,
             true,
         );
-        this.favoritesPanel?.destroy();
-        this.favoritesPanel = null;
+        this.destroyFieldTools();
         this.toolsButton = null;
         this.textarea.removeEventListener('input', this.boundInput);
         this.textarea.removeEventListener('keydown', this.boundKeydown);
@@ -1154,10 +1124,9 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         // Ignore the component's own setHostValue dispatch; the originating
         // code path already handles rendering and syncing.
         if (this._selfDispatch) return;
-        // User typing directly in the textarea bypasses the inline editor.
-        // Clear any saved editor assertions so the sync re-parses from text
-        // instead of applying stale assertions from a previously-edited part.
-        this._editorAssertions = null;
+        // Keep the editor's facts only while this exact mark remains. Body
+        // text may change during the scan that settles an earlier mark edit.
+        this.retainPendingMarks(this.textarea.value);
         this.userEditPending = true;
         this.renderDisplay();
         this.emitTextChange();
@@ -1191,6 +1160,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         const previousSegmentedText = this.lastSegmentedText;
         this.lastScannedText = text;
         const mySeq = ++this.scanSeq;
+        const pendingAtStart = this.pendingMarkReadings;
         // Empty text has no markings to read. Clear its published children even
         // when a remote adapter is unavailable, and invalidate the prior scan.
         if (!text) {
@@ -1199,9 +1169,8 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
             this.emptyEntries = [];
             this.lastMarkingStrings = [];
             this.lastSegmentedText = '';
-            this._editorAssertions = null;
-            this._appliedFixes.clear();
-            this._fixesHeld = [];
+            this.appliedFixHistories.clear();
+            this.pendingMarkReadings = null;
             this.activeRange = null;
             this.activeSegmentIndex = -1;
             this.scanComplete = true;
@@ -1217,6 +1186,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         const isCurrent = () =>
             !this.tornDown &&
             mySeq === this.scanSeq &&
+            this.pendingMarkReadings === pendingAtStart &&
             this.textarea.value === text;
         let scanOutcome;
         try {
@@ -1275,11 +1245,18 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         if (!isCurrent()) return;
         const ctx = this.options.resolveContext?.();
         const prevMarkings = this.lastMarkingStrings;
+        const saved = this.pendingMarksIn(text);
+        const savedByStart = new Map(saved.map((mark) => [mark.start, mark]));
+        const readingFor = (found: { start: number; marking: string }) => {
+            const reading = savedByStart.get(found.start);
+            return reading?.marking === found.marking ? reading : undefined;
+        };
         const changedIndices: number[] = [];
         for (let i = 0; i < embedded.length; i++) {
             if (
                 i >= prevMarkings.length ||
-                embedded[i].marking !== prevMarkings[i]
+                embedded[i].marking !== prevMarkings[i] ||
+                readingFor(embedded[i])
             ) {
                 changedIndices.push(i);
             }
@@ -1298,22 +1275,20 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                   )
                 : [],
         );
+        for (const index of changedIndices) {
+            if (readingFor(embedded[index])) edited.add(index);
+        }
 
-        // Process changed markings in parallel.
-        // If the inline editor just closed, use its saved assertions instead of
-        // re-parsing the rendered text; the text parser may not round-trip
-        // correctly for all marking formats (e.g. joint markings).
-        const savedAssertions = this._editorAssertions;
-        this._editorAssertions = null;
-
-        const readMarking = (found: { marking: string; inner?: string }) => {
+        // Seed the editor's own span with the committed assertions. Another
+        // paragraph with the same printed marking can hold different facts.
+        const readMarking = (found: {
+            start: number;
+            marking: string;
+            inner?: string;
+        }) => {
             // Use saved assertions if they match this marking
-            const stated =
-                savedAssertions &&
-                savedAssertions.marking === found.marking &&
-                savedAssertions.assertions.length > 0
-                    ? savedAssertions.assertions
-                    : null;
+            const assertions = readingFor(found)?.assertions;
+            const stated = assertions?.length ? assertions : null;
             // The scan reports what is inside the wrapper; the wrapper shape
             // is the scheme's, so the field never strips it itself.
             const input = stated ? '' : found.inner;
@@ -1364,14 +1339,6 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
             }
         }
 
-        this.recordMarksHeld(
-            embedded.map(
-                (r, i) => (processedResults.get(i) ?? r.result).assertions,
-            ),
-        );
-        // An emptied field returns to the starless "enhanced" state.
-        if (!text.trim()) this._appliedFixes.clear();
-
         let previousSegmentIndex = 0;
         const previousReadFailures = prevMarkings.map((marking) => {
             // Recognized spans can lack an entry ID after a failed empty read.
@@ -1382,6 +1349,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
             }
             return undefined;
         });
+        const editsByStart = new Map<number, readonly Change[]>();
         this.segments = embedded.map((r, i) => {
             const nextStart = embedded[i + 1]?.start ?? text.length;
             const bodyText = text
@@ -1400,8 +1368,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                       this.omittedFromFieldFormat(res),
                   );
             const unappliedFixes = corrections.length > 0;
-            if (isEdited)
-                this.recordMarkFixes(res.assertions, res.appliedFixes);
+            if (isEdited) editsByStart.set(r.start, res.appliedFixes);
             const errors = res.errors.map((e) => e.message);
             if (unappliedFixes) {
                 errors.push(
@@ -1512,6 +1479,55 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                 segment.assertions = previous.assertions;
             }
         });
+        // An edit that extends the end of a mark and also changes its body
+        // can replace the store span. Its unchanged start still anchors the
+        // local correction record. The history drops any fixes whose marking
+        // was substantively replaced when it reconciles the Runtime's facts.
+        const { prefix } = textEdit(previousSegmentedText, text);
+        const editedMark = previousSegments.find(
+            (mark) => mark.start < prefix && prefix < mark.end,
+        );
+        if (editedMark?.entryId && !ids.includes(editedMark.entryId)) {
+            const successor = owned.find(
+                (mark) => mark.start === editedMark.start && prefix < mark.end,
+            );
+            const history = this.appliedFixHistories.get(editedMark.entryId);
+            if (
+                successor?.entryId &&
+                history &&
+                !previousSegments.some(
+                    (mark) => mark.entryId === successor.entryId,
+                )
+            )
+                this.appliedFixHistories.set(successor.entryId, history);
+        }
+
+        // A kept segment past a partial scan's cut has no new reading.
+        // Leave its pending result staged until the Runtime actually reads it.
+        const processedStarts = new Set(
+            [...processedResults.keys()].map((index) => embedded[index].start),
+        );
+        for (const segment of owned) {
+            const reading = readingFor(segment);
+            if (reading && processedStarts.has(segment.start))
+                this.recordMarkChanges(
+                    segment.entryId!,
+                    reading.assertions,
+                    reading.changes,
+                );
+            if (!segment.readFailure) {
+                this.recordMarkChanges(
+                    segment.entryId!,
+                    segment.assertions,
+                    editsByStart.get(segment.start),
+                );
+            }
+        }
+        this.retainPendingMarks(
+            text,
+            saved.filter((mark) => !processedStarts.has(mark.start)),
+        );
+        this.pruneFixHistories();
         // Empty tokens still own their body. Keep their anchors through edits
         // outside the anchor; retire one replaced by an explicitly typed mark.
         this.emptyEntries = rebaseEntrySpans(
@@ -1566,65 +1582,73 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
      * What a segment's mark says about itself: its broken rules, or its
      * warnings when it is valid. Null for a valid mark with nothing to say.
      */
-    private attentionOf(seg: MarkedSegment): MarkAttention | null {
-        if (!seg.valid && seg.errors.length > 0)
-            return markAttention('invalid', seg.errors);
-        if (seg.valid && (seg.warnings?.length ?? 0) > 0)
-            return markAttention('warning', seg.warnings!);
-        return null;
-    }
-
-    /**
-     * The field's markings now hold `marks`. When one of them was replaced (a
-     * marking typed or pasted over, a later editing session, a favorite over an
-     * open marking) rather than only added to, the fix record describes a
-     * marking the field no longer holds: it starts over, the same rule a
-     * composer commit follows (see `replacesMarks`), and the fixes of the
-     * current reads refill it. Adding, moving or extending a marking keeps it.
-     *
-     * The record is one per field, so replacing one marking also drops what was
-     * said about the others; the next read records their repairs again.
-     *
-     * @param marks - What each marking in the field holds now
-     */
-    private recordMarksHeld(marks: readonly (readonly Assertion[])[]): void {
-        if (replacesMarks(this._fixesHeld, marks)) this._appliedFixes.clear();
-        this._fixesHeld = marks;
-    }
-
-    /**
-     * Record the fixes the engine applied to one marking, under the facts that
-     * marking holds with them applied, so the status mark can say which marking
-     * each change was made to.
-     */
-    private recordMarkFixes(
-        holds: readonly Assertion[],
-        fixes: readonly Change[] | undefined,
-    ): void {
-        if (!fixes?.length) return;
-        const key = holds.map(assertionFactKey).sort().join('|');
-        let record = this._appliedFixes.get(key);
-        if (!record) {
-            record = { holds, fixes: new Map() };
-            this._appliedFixes.set(key, record);
-        }
-        recordAppliedFixes(record.fixes, fixes);
-    }
-
-    /**
-     * What the field's markings hold once the marking that starts at `start`
-     * holds `holds` instead (or in addition, for a marking not yet scanned).
-     */
-    private marksWith(
+    private stageMarkReading(
         start: number,
-        holds: readonly Assertion[],
-    ): (readonly Assertion[])[] {
-        return [
-            ...this.segments
-                .filter((segment) => segment.start !== start)
-                .map((segment) => segment.assertions),
-            holds,
-        ];
+        marking: string,
+        assertions: Assertion[],
+        changes: readonly Change[],
+    ): void {
+        const text = this.textarea.value;
+        const marks = this.pendingMarksIn(text).filter(
+            (mark) => mark.start !== start,
+        );
+        if (marking && text.startsWith(marking, start))
+            marks.push({ start, marking, assertions, changes });
+        this.retainPendingMarks(text, marks);
+    }
+
+    private retainPendingMarks(
+        text: string,
+        marks = this.pendingMarksIn(text),
+    ): void {
+        const current = this.pendingMarkReadings;
+        if (text === current?.text && marks === current.marks) return;
+        this.pendingMarkReadings = marks.length ? { text, marks } : null;
+    }
+
+    private pendingMarksIn(text: string): PendingMarkReading[] {
+        const pending = this.pendingMarkReadings;
+        if (!pending) return [];
+        if (text === pending.text) return pending.marks;
+        const byStart = new Map(
+            pending.marks.map((mark) => [String(mark.start), mark]),
+        );
+        return rebaseEntrySpans(
+            pending.text,
+            pending.marks.map((mark) => ({
+                entryId: String(mark.start),
+                start: mark.start,
+                end: mark.start + mark.marking.length,
+            })),
+            text,
+        ).flatMap((span) => {
+            const mark = byStart.get(span.entryId!);
+            return mark && text.slice(span.start, span.end) === mark.marking
+                ? [{ ...mark, start: span.start }]
+                : [];
+        });
+    }
+
+    private recordMarkChanges(
+        entryId: string,
+        held: readonly Assertion[],
+        changes?: readonly Change[],
+    ): void {
+        let history = this.appliedFixHistories.get(entryId);
+        if (!history && changes?.length) {
+            history = new AppliedFixHistory();
+            this.appliedFixHistories.set(entryId, history);
+        }
+        history?.record(held, changes);
+    }
+
+    private pruneFixHistories(): void {
+        const owned = new Set(
+            this.committedPortions().map((segment) => segment.entryId),
+        );
+        for (const entryId of this.appliedFixHistories.keys()) {
+            if (!owned.has(entryId)) this.appliedFixHistories.delete(entryId);
+        }
     }
 
     /** Each marking in the field, in the format the field writes it in. */
@@ -1647,43 +1671,19 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         );
     }
 
-    /**
-     * Each marking in the text, in order, with the changes the engine made to
-     * it. A record goes to the marking that holds exactly its facts, or else to
-     * the first that holds them all and more: a marking added to since its
-     * earlier fixes. A record no marking holds any more describes nothing in
-     * the text.
-     */
+    /** Each marking in text order, with the changes recorded for its entry. */
     private markGroups(): StatusMarkGroup[] {
-        const segments = this.segments.filter(
-            (segment) => segment.assertions.length > 0,
-        );
-        const facts = segments.map(
-            (segment) => new Set(segment.assertions.map(assertionFactKey)),
-        );
-        const owned: Change[][] = segments.map(() => []);
-        const records = [...this._appliedFixes.values()];
-        const within = (holds: readonly Assertion[], index: number) =>
-            holds.every((a) => facts[index].has(assertionFactKey(a)));
-        const exact = records.map((record) =>
-            facts.findIndex(
-                (held, index) =>
-                    held.size ===
-                        new Set(record.holds.map(assertionFactKey)).size &&
-                    within(record.holds, index),
-            ),
-        );
-        records.forEach((record, at) => {
-            const index =
-                exact[at] >= 0
-                    ? exact[at]
-                    : facts.findIndex((_, i) => within(record.holds, i));
-            if (index >= 0) owned[index].push(...record.fixes.values());
-        });
-        return segments.map((segment, index) => ({
-            marking: segment.marking.trim(),
-            changes: this.textStatusChanges(owned[index], segment.assertions),
-        }));
+        return this.segments
+            .filter((segment) => segment.entryId && segment.assertions.length)
+            .map((segment) => ({
+                entryId: segment.entryId!,
+                marking: segment.marking.trim(),
+                changes: this.textStatusChanges(
+                    this.appliedFixHistories.get(segment.entryId!)?.values() ??
+                        [],
+                    segment.assertions,
+                ),
+            }));
     }
 
     /**
@@ -1847,6 +1847,28 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         );
 
         if (result.patched) {
+            // These are known disjoint edits. Keep each entry's identity even
+            // when a single prefix/suffix diff would treat the intervening
+            // paragraphs as one replacement.
+            let patchIndex = 0;
+            let drift = 0;
+            const spans = [
+                ...this.segments,
+                ...this.heldPortions,
+                ...this.emptyEntries,
+            ].sort((left, right) => left.start - right.start);
+            for (const span of spans) {
+                while (result.patches[patchIndex]?.end <= span.start)
+                    drift += result.patches[patchIndex++].change;
+                const patch = result.patches[patchIndex];
+                const endChange =
+                    patch?.start === span.start && patch.end === span.end
+                        ? patch.change
+                        : 0;
+                span.start += drift;
+                span.end += drift + endChange;
+            }
+            this.lastSegmentedText = result.value;
             // Auto-repair changes the field value: hosts observing ordinary
             // input events must see it (Host Form Contract).
             this.setHostValue(result.value);
@@ -2028,36 +2050,13 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         const appendChip = (seg: MarkedSegment) => {
             const chipText = text.slice(seg.start, seg.end);
             const chip = document.createElement('span');
-            const warning = seg.valid && (seg.warnings?.length ?? 0) > 0;
-            chip.className = !seg.valid
-                ? 'marked-textarea-chip marked-textarea-chip--invalid'
-                : warning
-                  ? 'marked-textarea-chip marked-textarea-chip--warning'
-                  : 'marked-textarea-chip';
             chip.dataset.start = String(seg.start);
             chip.dataset.end = String(seg.end);
-
-            // A mark with something to say (broken rules, or a warning on a
-            // valid marking) is a button: hover or focus gives the reason,
-            // activating it opens the editor, whose list shows the errors,
-            // the warnings and the ways to fix that portion.
-            const attention = this.attentionOf(seg);
-            if (attention) {
-                chip.tabIndex = 0;
-                chip.setAttribute('role', 'button');
-                chip.setAttribute('aria-label', attention.label);
-                // The tooltip sits outside the field, lined up with the mark,
-                // so it never covers the paragraph it describes.
-                attachTooltip(
-                    chip,
-                    () => attention.tooltip,
-                    this.container,
-                    () => this.shouldShowTooltip(),
-                    undefined,
-                    undefined,
-                    () => ({ clearOf: this.wrap }),
-                );
-                const openMark = (event: Event) => {
+            const attention = this.attachSegmentFeedback(
+                chip,
+                'marked-textarea-chip',
+                seg,
+                (event) => {
                     event.preventDefault();
                     event.stopPropagation();
                     this.textarea.setSelectionRange(
@@ -2066,16 +2065,8 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                     );
                     this.activeSegmentIndex = this.segments.indexOf(seg);
                     void this.openPicker(seg.start, seg.end);
-                };
-                chip.addEventListener('mousedown', openMark);
-                chip.addEventListener('keydown', (event) => {
-                    if (event.key === 'Enter' || event.key === ' ') {
-                        openMark(event);
-                    }
-                });
-            } else if (seg.valid) {
-                this.attachSegmentTooltip(chip, seg.assertions);
-            }
+                },
+            );
 
             const caretInChip =
                 !hasSelection && selStart > seg.start && selStart < seg.end;
@@ -2429,7 +2420,6 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         caret?: number,
     ): Promise<void> {
         this.destroyPicker();
-        const openSeq = this.pickerOpenSeq;
         // Escape cancels the edit. The Ctrl+Enter path snapshots before its
         // template insertion; the click/caret-driven opens snapshot here.
         this.capturePickerCancelState();
@@ -2461,28 +2451,14 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         const scanned = seg?.marking === raw ? seg.inner : undefined;
         const inner = draft ? '' : (scanned ?? this.extractInner(raw));
 
-        // Create an inline mount: renderDisplay will place it in the text flow
-        // where the chip would normally be, between the parentheses
-        const mount = document.createElement('span');
-        mount.className = 'marked-textarea-picker-mount';
-        mount.style.display = 'inline';
-
-        const picker = new InlineMarkingEditor();
-        await picker.init(
-            mount as unknown as HTMLDivElement,
-            this.engineSource,
+        await this.mountPicker(
             inner,
+            'marked-textarea-picker-mount',
             {
-                formatId: this.scanFormat,
-                scope: this.options.scope,
-                scopes: this.options.scopes,
                 assertions: existingAssertions,
                 draft,
                 openList,
                 caret,
-                resolveContext: this.options.resolveContext,
-                tooltips: this.options.tooltips,
-                tooltipConceptProperty: this.options.tooltipConceptProperty,
                 onChange: () => this.onPickerChange(),
                 onExit: (direction, fromSheet) => {
                     const range = this.activeRange;
@@ -2499,13 +2475,6 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                         this.revealCaret();
                     });
                 },
-                onBlurCommit: (outcome) => {
-                    // An invalid draft stays mounted and marked; anything
-                    // else was stored (or unchanged) and the editor closes.
-                    if (outcome === 'invalid' || this.picker !== picker) return;
-                    this._explicitClose = true;
-                    void this.closePicker().then(() => this.afterClose());
-                },
                 // Up and Down with the list closed move lines in the text, as
                 // they do everywhere else in it: the caret goes back to the
                 // same place in the textarea and the browser moves it a line.
@@ -2519,11 +2488,6 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                     this.textarea.focus();
                     this.textarea.setSelectionRange(pos, pos);
                 },
-                onCancel: (fromSheet) => this.escapeClosePicker(fromSheet),
-                focusTarget: this.wrap,
-                // Tools act on the open segment, so
-                // focus moving to it must not close the editor first.
-                isFieldChrome: (node) => this.isFieldChrome(node),
                 sheetTools: () => this.toolsButton,
                 // Which paragraph's mark this is, ahead of the field's own
                 // label, so the sheet's title says it even when it has to
@@ -2543,23 +2507,12 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                             .replace('{label}', field.text),
                     };
                 },
-                root: this.container,
+            },
+            () => {
+                this._explicitClose = true;
+                void this.closePicker().then(() => this.afterClose());
             },
         );
-
-        if (openSeq !== this.pickerOpenSeq) {
-            // A newer open (or a teardown) happened while this one awaited.
-            picker.destroy();
-            return;
-        }
-        this.picker = picker;
-        this.pickerMount = mount;
-
-        this.container.classList.add(this.classNames.pickerActive);
-
-        // Re-render display so the chip is replaced with the inline editor
-        this.renderDisplay();
-        picker.focus();
     }
 
     /**
@@ -2675,6 +2628,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         const segIdx = this.segments.findIndex((s) => s.start === start);
         if (segIdx >= 0) {
             const drift = newEnd - end;
+            this.lastSegmentedText = next;
             this.segments[segIdx] = {
                 ...this.segments[segIdx],
                 end: newEnd,
@@ -2712,37 +2666,14 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         // commit function: a draft that does not read completely stays open
         // and marked invalid rather than being dropped or written raw.
         if (this.picker && this.activeRange && !skipRender) {
-            const outcome = await this.picker.commit();
-            if (outcome === 'invalid') return;
+            if (!(await this.commitPicker())) return;
         }
 
-        // Save the editor's assertions before destroying it. syncFromTextarea
-        // will use these instead of re-parsing the rendered text, the engine's
-        // text parser can't always reconstruct assertions from the rendered form
-        // (e.g. joint markings like "//JOINT TIER 3 ALPHA BRAVO//NET-G//RL").
-        if (this.picker && this.activeRange) {
-            // Commit path: fixes the engine applied inside the editor belong
-            // to the committed value, so they join the field's mark record.
-            // (Escape-cancel never reaches here and discards them.)
-            this.recordMarksHeld(
-                this.marksWith(
-                    this.activeRange.start,
-                    this.picker.getAssertions(),
-                ),
-            );
-            this.recordMarkFixes(
-                this.picker.getAssertions(),
-                this.picker.getAppliedFixes(),
-            );
-            this.updateStatusMark();
-            const rendered = this.picker.getRendered().trim();
-            // The dedup key is the marking as the field writes it.
-            const wrappedRendered = this.wrapRendered(rendered).trimEnd();
-            this._editorAssertions = {
-                marking: wrappedRendered,
-                assertions: this.picker.getAssertions(),
-            };
-        }
+        let changes = this.picker?.getAppliedFixes() ?? [];
+        const reading =
+            this.picker && this.activeRange
+                ? this.pickerReading(this.picker)
+                : null;
 
         // Write the editor's current INPUT content to the textarea on close.
         // This handles: user typed text directly, or deleted concepts.
@@ -2795,22 +2726,22 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                 );
                 if (repaired.patched) {
                     this.setHostValue(repaired.value);
-                    this.recordMarkFixes(
-                        this.picker.getAssertions(),
-                        loadedSegment.pendingFixes,
-                    );
-                    this.updateStatusMark();
-                    const correctedMarking = this.wrapRendered(
-                        loadedSegment.rendered,
-                    ).trimEnd();
-                    this._editorAssertions = {
-                        marking: correctedMarking,
-                        assertions: this.picker.getAssertions(),
-                    };
+                    changes = [...changes, ...loadedSegment.pendingFixes!];
+                    if (reading)
+                        reading.marking = this.wrapRendered(
+                            loadedSegment.rendered,
+                        ).trimEnd();
                     this.lastScannedText = '';
                 }
             }
         }
+        if (reading && this.activeRange)
+            this.stageMarkReading(
+                this.activeRange.start,
+                reading.marking,
+                reading.assertions,
+                changes,
+            );
         if (this.picker && !skipRender) {
             // Opening a marking and leaving its editor is an edit transaction,
             // even when the author did not type. Preserve loaded text at rest,
@@ -2818,7 +2749,6 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
             // safe fixes are applied consistently on click-out/blur.
             this.userEditPending = true;
             this.lastScannedText = '';
-            this.lastMarkingStrings = [];
         }
         this.activeRange = null;
         this.activeSegmentIndex = -1;
@@ -2906,9 +2836,12 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
             const v = this.textarea.value;
             this.setHostValue(v.slice(0, start) + insert + v.slice(end));
             this.lastScannedText = '';
-            this.recordMarksHeld(this.marksWith(start, result.assertions));
-            this.recordMarkFixes(result.assertions, result.appliedFixes);
-            this.updateStatusMark();
+            this.stageMarkReading(
+                start,
+                insert,
+                result.assertions,
+                result.appliedFixes,
+            );
             // Tear the picker down WITHOUT its normal "write picker content
             // back" step (closePicker's non-skipRender path): the line above
             // already wrote the correct, final content, and re-reading the
@@ -2932,9 +2865,12 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         const inserted = prefix + insert;
         this.setHostValue(v.slice(0, insertAt) + inserted + v.slice(insertAt));
         this.lastScannedText = '';
-        this.recordMarksHeld(this.marksWith(-1, result.assertions));
-        this.recordMarkFixes(result.assertions, result.appliedFixes);
-        this.updateStatusMark();
+        this.stageMarkReading(
+            insertAt + prefix.length,
+            insert.trimEnd(),
+            result.assertions,
+            result.appliedFixes,
+        );
         const caretAfter = insertAt + inserted.length;
         this.focusAt(caretAfter);
         this._lastCaret = caretAfter;

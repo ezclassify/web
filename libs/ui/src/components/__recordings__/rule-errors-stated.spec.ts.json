@@ -175,67 +175,6 @@
             "method": "GET",
             "statusCode": 200
         },
-        "14e73f88b552447662f2aeb5cd07671484002e1968c746844d8a8584b2ef5b69": {
-            "body": {
-                "resolution": {
-                    "artifacts": [
-                        {
-                            "id": "stated-fix-test",
-                            "kind": "scheme",
-                            "version": "1.0.0"
-                        }
-                    ],
-                    "contextId": "stated-fix-test",
-                    "requestedVersion": "0.0.0",
-                    "resolvedVersion": "1.0.0"
-                },
-                "result": {
-                    "appliedFixes": [],
-                    "assertions": [
-                        {
-                            "categoryId": "level",
-                            "conceptId": "LOW",
-                            "confidence": "certain",
-                            "source": "parse"
-                        },
-                        {
-                            "categoryId": "caveat",
-                            "conceptId": "B",
-                            "confidence": "certain",
-                            "source": "parse"
-                        }
-                    ],
-                    "assessment": {
-                        "collapsed": [],
-                        "conflicts": [],
-                        "emitted": [
-                            { "categoryId": "level", "conceptId": "LOW" },
-                            { "categoryId": "caveat", "conceptId": "B" }
-                        ],
-                        "omitted": [],
-                        "unrepresentable": []
-                    },
-                    "errors": [],
-                    "inputWasValid": true,
-                    "notices": [],
-                    "proposedFixes": [],
-                    "recognition": {
-                        "corrections": [],
-                        "inputFormat": "default",
-                        "status": "complete",
-                        "surface": "marking",
-                        "unmatched": []
-                    },
-                    "rendered": "LOW//B",
-                    "renders": {},
-                    "valid": true,
-                    "warnings": []
-                }
-            },
-            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
-            "method": "POST",
-            "statusCode": 200
-        },
         "17d67ce19b5e5dbe51b3efeb746246291029f1295915685b9d5cac17788c12a1": {
             "body": {
                 "resolution": {
@@ -425,6 +364,48 @@
                     "rendered": "LOW//A/B/C",
                     "renders": {},
                     "valid": false,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "2662362ce2c4cbde62d5d30b0adedceed9212c7e68723142bfef4b032cf43b21": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "stated-fix-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "stated-fix-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "LOW",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "A",
+                            "confidence": "certain",
+                            "source": "user"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "LOW//A",
+                    "valid": true,
                     "warnings": []
                 }
             },
@@ -661,60 +642,6 @@
                     "rendered": "LOW//A/B",
                     "renders": {},
                     "valid": false,
-                    "warnings": []
-                }
-            },
-            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
-            "method": "POST",
-            "statusCode": 200
-        },
-        "4adcbde0edc75f512725b6461b3e828edb21723a5aeda798d88d166cfe87bb0d": {
-            "body": {
-                "resolution": {
-                    "artifacts": [
-                        {
-                            "id": "stated-fix-test",
-                            "kind": "scheme",
-                            "version": "1.0.0"
-                        }
-                    ],
-                    "contextId": "stated-fix-test",
-                    "requestedVersion": "0.0.0",
-                    "resolvedVersion": "1.0.0"
-                },
-                "result": {
-                    "appliedFixes": [],
-                    "assertions": [
-                        {
-                            "categoryId": "level",
-                            "conceptId": "LOW",
-                            "confidence": "certain",
-                            "source": "parse"
-                        },
-                        {
-                            "categoryId": "caveat",
-                            "conceptId": "B",
-                            "confidence": "certain",
-                            "source": "parse"
-                        }
-                    ],
-                    "assessment": {
-                        "collapsed": [],
-                        "conflicts": [],
-                        "emitted": [
-                            { "categoryId": "level", "conceptId": "LOW" },
-                            { "categoryId": "caveat", "conceptId": "B" }
-                        ],
-                        "omitted": [],
-                        "unrepresentable": []
-                    },
-                    "errors": [],
-                    "inputWasValid": true,
-                    "notices": [],
-                    "proposedFixes": [],
-                    "rendered": "LOW//B",
-                    "renders": {},
-                    "valid": true,
                     "warnings": []
                 }
             },
@@ -1358,6 +1285,60 @@
             "method": "POST",
             "statusCode": 200
         },
+        "8af22df03f0aadbb2bdd969a1469603d61d9a14490a4389aaef20b9fb96eb644": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "stated-fix-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "stated-fix-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "LOW",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "A",
+                            "confidence": "certain",
+                            "source": "user"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "LOW" },
+                            { "categoryId": "caveat", "conceptId": "A" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "LOW//A",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "8d4aa0782a9669f7f740328d758a241643eaf550ffa2d76cc5f17fb70f11fbdd": {
             "body": [
                 {
@@ -1386,48 +1367,6 @@
                 "contextId": "sbx-f38f1703f1c400ba7ff559c4ddbfe62b31ef20e464f41fad031a1788c3d8145e"
             },
             "method": "PUT",
-            "statusCode": 200
-        },
-        "8fda6d2333f1379c711f4bb33ec713e9005ee286bb3b907708505009ff4cc70c": {
-            "body": {
-                "resolution": {
-                    "artifacts": [
-                        {
-                            "id": "stated-fix-test",
-                            "kind": "scheme",
-                            "version": "1.0.0"
-                        }
-                    ],
-                    "contextId": "stated-fix-test",
-                    "requestedVersion": "0.0.0",
-                    "resolvedVersion": "1.0.0"
-                },
-                "result": {
-                    "appliedFixes": [],
-                    "assertions": [
-                        {
-                            "categoryId": "level",
-                            "conceptId": "LOW",
-                            "confidence": "certain",
-                            "source": "aggregate"
-                        },
-                        {
-                            "categoryId": "caveat",
-                            "conceptId": "B",
-                            "confidence": "certain",
-                            "source": "parse"
-                        }
-                    ],
-                    "errors": [],
-                    "notices": [],
-                    "proposedFixes": [],
-                    "rendered": "LOW//B",
-                    "valid": true,
-                    "warnings": []
-                }
-            },
-            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
-            "method": "POST",
             "statusCode": 200
         },
         "95e7de64b15183cb8ac28fe0edc2b0e5081cebec4e0a37099ebe65c5428f9b07": {
@@ -1682,6 +1621,48 @@
                     "rendered": "LOW//A/B",
                     "renders": {},
                     "valid": false,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "b146ebbe320adddcc116bc315d1dbb748bbcd1cd50d168e2ef5676c8ca83c228": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "stated-fix-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "stated-fix-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "LOW",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "B",
+                            "confidence": "certain",
+                            "source": "user"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "LOW//B",
+                    "valid": true,
                     "warnings": []
                 }
             },
@@ -2090,6 +2071,60 @@
             "method": "POST",
             "statusCode": 200
         },
+        "ca81f437ef343b1a89a189cefe6fa7d836ff28fe5dbefde7991ce5149b5ab942": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "stated-fix-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "stated-fix-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "LOW",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "B",
+                            "confidence": "certain",
+                            "source": "user"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "LOW" },
+                            { "categoryId": "caveat", "conceptId": "B" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "LOW//B",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "d29444847f1384b77678d467aae863b1ce6db7b2cab4b84c6bc1a2f16da366cb": {
             "body": {
                 "resolution": {
@@ -2238,6 +2273,60 @@
                     "notices": [],
                     "proposedFixes": [],
                     "rendered": "LOW",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "dbbd2928fa4eeb17c2fa36e1f637ffdcd40fcdfdb050a6c6bc0dbeadfb003cfc": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "stated-fix-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "stated-fix-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "LOW",
+                            "confidence": "certain",
+                            "source": "user"
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "B",
+                            "confidence": "certain",
+                            "source": "user"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "LOW" },
+                            { "categoryId": "caveat", "conceptId": "B" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "LOW//B",
+                    "renders": {},
                     "valid": true,
                     "warnings": []
                 }

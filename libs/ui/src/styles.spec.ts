@@ -15,7 +15,7 @@ describe('styles', () => {
             expect(typeof EZ_CSS_VARIABLES).toBe('string');
         });
 
-        it('defines dropdown row/header/checked colors in every theme block, not only :root', () => {
+        it('defines dropdown highlight and checked accents in each palette', () => {
             // MarkingField mounts beside its host, outside a component container.
             // Dropdown aliases therefore need :root fallbacks and dark/light
             // redeclarations so nested themes resolve their own palette.
@@ -28,13 +28,13 @@ describe('styles', () => {
                 'utf8',
             );
             const tokens = [
-                '--ez-dropdown-background',
-                '--ez-dropdown-color',
                 '--ez-dropdown-highlight',
                 '--ez-dropdown-selected',
             ];
 
-            const rootBlockMatch = css.match(/:root\s*\{([\s\S]*?)\n\}/);
+            const rootBlockMatch = css.match(
+                /:where\(:root\)\s*\{([\s\S]*?)\n\}/,
+            );
             expect(rootBlockMatch).not.toBeNull();
             const rootBlock = rootBlockMatch![1];
 
@@ -62,17 +62,6 @@ describe('styles', () => {
                     lightBlock,
                     `the light theme block must redeclare ${token} so a nested light island re-resolves against the light palette`,
                 ).toContain(token);
-            }
-
-            // Theme-sensitive aliases belong in the theme blocks, not solely in
-            // the theme-invariant component block.
-            const scopedBlockMatch = css.match(
-                /\.ez-root,\s*\n\[data-ezclassify\]\s*\{([\s\S]*?)\n\}/,
-            );
-            expect(scopedBlockMatch).not.toBeNull();
-            const scopedBlock = scopedBlockMatch![1];
-            for (const token of tokens) {
-                expect(scopedBlock).not.toContain(`${token}:`);
             }
         });
 
@@ -90,7 +79,9 @@ describe('styles', () => {
                 '--ez-focus-ring-shadow',
             ];
 
-            const rootBlockMatch = css.match(/:root\s*\{([\s\S]*?)\n\}/);
+            const rootBlockMatch = css.match(
+                /:where\(:root\)\s*\{([\s\S]*?)\n\}/,
+            );
             expect(rootBlockMatch).not.toBeNull();
             const rootBlock = rootBlockMatch![1];
 
@@ -119,43 +110,28 @@ describe('styles', () => {
                     `the light theme block must redeclare ${token} so a nested light island re-resolves against the light palette`,
                 ).toContain(token);
             }
-
-            // The component block alone cannot supply these theme-sensitive aliases.
-            const scopedBlockMatch = css.match(
-                /\.ez-root,\s*\n\[data-ezclassify\]\s*\{([\s\S]*?)\n\}/,
-            );
-            expect(scopedBlockMatch).not.toBeNull();
-            const scopedBlock = scopedBlockMatch![1];
-            for (const token of tokens) {
-                expect(scopedBlock).not.toContain(`${token}:`);
-            }
         });
 
-        it('leaves --ez-select-active-border/--ez-select-active-bg scoped to the component block (audited, no reachable gap)', () => {
-            // Counterpoint to the two tests above: these are the SAME shape
-            // of alias (var() over --ez-color-primary) and were reviewed by
-            // the same audit, but their only consumer (SingleSelect's
-            // `.select-card`) is always appended directly into
-            // `this.container`, which component-base-readonly.ts stamps
-            // with `data-ezclassify` in the same code path that creates it.
-            // It is never portaled (no overlay-portal usage in
-            // single-select.ts) or sibling-mounted the way MarkingField's
-            // wrap is, so there is no reachable gap to close. This guards
-            // against someone "fixing" them later under the assumption that
-            // every var(--ez-color-primary) alias in this block leaks out of
-            // its scope; it doesn't, unless a consumer actually escapes the
-            // scope.
+        it('lets host layout tokens inherit through every generated field mount', () => {
             const css = readFileSync(
                 join(dirname(fileURLToPath(import.meta.url)), 'styles.css'),
                 'utf8',
             );
-            const scopedBlockMatch = css.match(
-                /\.ez-root,\s*\n\[data-ezclassify\]\s*\{([\s\S]*?)\n\}/,
-            );
-            expect(scopedBlockMatch).not.toBeNull();
-            const scopedBlock = scopedBlockMatch![1];
-            expect(scopedBlock).toContain('--ez-select-active-border:');
-            expect(scopedBlock).toContain('--ez-select-active-bg:');
+            const root = css.match(/:where\(:root\)\s*\{([\s\S]*?)\n\}/)![1];
+            for (const token of [
+                '--ez-border-radius',
+                '--ez-border-width',
+                '--ez-spacing-xs',
+                '--ez-spacing-sm',
+                '--ez-spacing-md',
+                '--ez-spacing-lg',
+                '--ez-transition',
+                '--ez-z-dropdown',
+                '--ez-z-tooltip',
+            ]) {
+                expect(root).toContain(`${token}:`);
+                expect(css.match(new RegExp(`${token}:`, 'g'))).toHaveLength(1);
+            }
         });
 
         it('declares every layer token the package reads, so a host that sets the documented tokens can see each layer default', () => {

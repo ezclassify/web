@@ -273,6 +273,10 @@ export class RuleErrorList {
     constructor(
         doc: Document,
         private readonly returnFocus?: (pointerType?: string) => void,
+        private readonly options?: {
+            remediesOnly?: boolean;
+            beforeReplace?: () => void;
+        },
     ) {
         this.element = doc.createElement('div');
         this.element.className = 'ez-validation-errors';
@@ -300,12 +304,20 @@ export class RuleErrorList {
             // results can word the same change over different values.
             report.fixes.map((f) => [f.label, f.fix.rendered]),
         ]);
+        const showFixes =
+            onApply !== null &&
+            report.fixes.length > 0 &&
+            (this.options?.remediesOnly || report.messages.length > 0);
         this.hasContent =
-            report.messages.length > 0 || report.warnings.length > 0;
+            report.messages.length > 0 ||
+            report.warnings.length > 0 ||
+            Boolean(showFixes);
+        const changed = shown !== this.shown;
+        if (changed) this.options?.beforeReplace?.();
         this.element.hidden = this.suppressed || !this.hasContent;
         // Rebuilding identical content would make a screen reader announce
         // the same errors again on every keystroke that leaves them standing.
-        if (shown === this.shown) return;
+        if (!changed) return;
         this.shown = shown;
         const doc = this.element.ownerDocument;
         const row = (text: string, warning: boolean): HTMLElement => {
@@ -323,7 +335,7 @@ export class RuleErrorList {
             ...report.messages.map((text) => row(text, false)),
             ...report.warnings.map((text) => row(text, true)),
         ];
-        if (onApply && report.messages.length > 0 && report.fixes.length > 0) {
+        if (showFixes) {
             // Without a heading the buttons read as one per error, or as a
             // list to work through; each is a way to fix the marking.
             children.push(

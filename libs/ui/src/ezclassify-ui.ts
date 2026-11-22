@@ -17,6 +17,7 @@
  * design.
  */
 import { acceptedValue, judgedAsHeld } from './loaded-value';
+import { assertionOriginKey } from './assertion-identity';
 import { fixAssertions } from './components/rule-errors';
 import {
     type Assertion as EngineAssertion,
@@ -296,7 +297,8 @@ interface StoreBinding {
     lastSeenRendered: string;
     lastSeenViewSignature: string;
     viewRequest: number;
-    lastSeenFacetSig: string;
+    lastSeenAssertionSig: string;
+    lastSeenFactSig: string;
     /**
      * The view, a decision flow, states facts outside the scheme's default
      * scope. Text carries only the default scope, so from the first such
@@ -337,6 +339,14 @@ function signAssertions(
         .map((a) => `${a.conceptId}|${a.categoryId}|${a.value ?? ''}`)
         .sort()
         .join('::');
+}
+
+/**
+ * Views must see inferred choices become explicit even when their text stays
+ * the same.
+ */
+function signAssertionOrigins(assertions: readonly EngineAssertion[]): string {
+    return assertions.map(assertionOriginKey).sort().join('::');
 }
 
 /**
@@ -4240,7 +4250,8 @@ export class EzClassifyUI {
             lastSeenRendered: '',
             lastSeenViewSignature: '',
             viewRequest: 0,
-            lastSeenFacetSig: '',
+            lastSeenAssertionSig: '',
+            lastSeenFactSig: '',
             publishesFacts: false,
             publish: (assertions: EngineAssertion[], rendered: string) => {
                 // A torn-down runtime publishes nothing; the Context it read
@@ -4251,9 +4262,9 @@ export class EzClassifyUI {
                     const filtered = assertions.filter(
                         (a) => a.categoryId === cat,
                     );
-                    const sig = signAssertions(filtered);
-                    if (sig === handle.lastSeenFacetSig) return;
-                    handle.lastSeenFacetSig = sig;
+                    const sig = signAssertionOrigins(filtered);
+                    if (sig === handle.lastSeenAssertionSig) return;
+                    handle.lastSeenAssertionSig = sig;
                     const current = this.store.get(markingId);
                     const others = current.assertions.filter(
                         (a) => a.categoryId !== cat,
@@ -4291,17 +4302,26 @@ export class EzClassifyUI {
                             ),
                             ...assertions,
                         ];
-                        const sig = signAssertions(facts);
-                        if (sig === handle.lastSeenFacetSig) return;
-                        handle.lastSeenFacetSig = sig;
+                        const sig = signAssertionOrigins(facts);
+                        if (sig === handle.lastSeenAssertionSig) return;
+                        handle.lastSeenAssertionSig = sig;
                         handle.lastSeenRendered = rendered;
                         this.store
                             .publishAssertions(markingId, facts, token)
                             .catch(() => {});
                         return;
                     }
-                    if (rendered === handle.lastSeenRendered) return;
+                    const facts = signAssertions(assertions);
+                    const origins = signAssertionOrigins(assertions);
+                    if (
+                        rendered === handle.lastSeenRendered &&
+                        (facts !== handle.lastSeenFactSig ||
+                            origins === handle.lastSeenAssertionSig)
+                    )
+                        return;
                     handle.lastSeenRendered = rendered;
+                    handle.lastSeenFactSig = facts;
+                    handle.lastSeenAssertionSig = origins;
                     // A value the engine read in full goes to the store as
                     // its facts. Its text would be read again as stated
                     // throughout, so a value a rule added would reach every
@@ -4358,7 +4378,7 @@ export class EzClassifyUI {
      * is the store's identity sentinel for "no publish has landed", so a virgin
      * marking keeps the pre-existing mount behavior exactly, the view's own
      * initial value stands and the host seed still runs. Each caller's own
-     * dedup slot (`lastSeenRendered` / `lastSeenFacetSig`) is advanced by
+     * dedup slot (`lastSeenRendered` / `lastSeenAssertionSig`) is advanced by
      * `apply`, so hydrating never double-fires against the first real commit
      * and never fights an in-flight edit the view itself published.
      */
@@ -4399,19 +4419,10 @@ export class EzClassifyUI {
                 const filtered = state.assertions.filter(
                     (a) => a.categoryId === cat,
                 );
-                const sig = signAssertions(filtered);
-                if (sig === binding.lastSeenFacetSig) return;
-                binding.lastSeenFacetSig = sig;
-                // Promote to user/certain so the component's reprocess pass treats
-                // these as the user's intent and doesn't drop them as "inferred from
-                // somewhere else", a level=STUDENTS that the engine added by
-                // inference is still the slice this facet view exists to surface.
-                const promoted = filtered.map((a) => ({
-                    ...a,
-                    confidence: 'certain' as const,
-                    source: 'user' as const,
-                }));
-                component.setAssertions(promoted);
+                const sig = signAssertionOrigins(filtered);
+                if (sig === binding.lastSeenAssertionSig) return;
+                binding.lastSeenAssertionSig = sig;
+                component.setAssertions(filtered);
             } else if (boundGuide) {
                 // Copy writes the associated marking, while the checklist's
                 // computed result stays independent. Its own commit must
@@ -4422,9 +4433,9 @@ export class EzClassifyUI {
                 );
             } else if (binding.publishesFacts) {
                 // The view publishes facts, so its own echo is the same facts.
-                const sig = signAssertions(state.assertions);
-                if (sig === binding.lastSeenFacetSig) return;
-                binding.lastSeenFacetSig = sig;
+                const sig = signAssertionOrigins(state.assertions);
+                if (sig === binding.lastSeenAssertionSig) return;
+                binding.lastSeenAssertionSig = sig;
                 binding.lastSeenRendered = state.rendered;
                 if (!state.valid && component.applyStoreState) {
                     component.applyStoreState(state);
@@ -4434,7 +4445,16 @@ export class EzClassifyUI {
                     this.factsOfOwnScopes(host, state.assertions ?? []),
                 );
             } else {
-                if (state.rendered === binding.lastSeenRendered) return;
+                const facts = signAssertions(state.assertions);
+                const origins = signAssertionOrigins(state.assertions);
+                if (
+                    state.rendered === binding.lastSeenRendered &&
+                    (facts !== binding.lastSeenFactSig ||
+                        origins === binding.lastSeenAssertionSig)
+                )
+                    return;
+                binding.lastSeenFactSig = facts;
+                binding.lastSeenAssertionSig = origins;
                 // A refused state's text is the engine's marker. The field
                 // still holds its last value, so that stays the value this
                 // binding has seen and the field's echo of it publishes nothing.
@@ -4465,7 +4485,6 @@ export class EzClassifyUI {
                 // scheme's default scope when it lists none, whatever else the
                 // marking holds. Its echo of them states the same marking, so
                 // the facts guard absorbs it once its publish keeps the rest.
-                binding.lastSeenFacetSig = signAssertions(state.assertions);
                 component.setAssertions(
                     this.factsOfOwnScopes(host, state.assertions ?? []),
                 );

@@ -306,7 +306,7 @@ describe('MarkedInput keeps the author text and judges it', () => {
         expect(errorsHidden()).toBe(true);
     });
 
-    it('writes the marking the engine proved and reads it once', async () => {
+    it('writes the proposed marking and settles the assertion edit once', async () => {
         await mount(MARKED_INPUT('LOW//A/B'));
         const process = vi.spyOn(forms!.engine, 'process');
 
@@ -314,18 +314,21 @@ describe('MarkedInput keeps the author text and judges it', () => {
         await wait(120);
 
         expect(host().value).toBe('(LOW//B) report');
-        // The field reads the written text once; the store's publish of what
-        // it read and the page rollup's read of the aggregate, as a whole,
-        // follow as they do for any edit. Nothing settles the fix's facts on
-        // their own first.
-        const fieldReads = process.mock.calls.filter(
-            ([input, ...rest]) =>
-                input === 'LOW//B' &&
-                !(rest.at(-1) as { context?: unknown } | undefined)?.context,
-        );
-        expect(fieldReads).toHaveLength(1);
-        expect(process.mock.calls[0][0]).toBe('LOW//B');
-        expect(process.mock.calls.some(([input]) => input === '')).toBe(false);
+        expect(process.mock.calls[0]).toEqual([
+            '',
+            expect.objectContaining({
+                assertions: [
+                    expect.objectContaining({
+                        conceptId: 'LOW',
+                        source: 'user',
+                    }),
+                    expect.objectContaining({ conceptId: 'B', source: 'user' }),
+                ],
+            }),
+        ]);
+        expect(
+            process.mock.calls.filter(([input]) => input === ''),
+        ).toHaveLength(1);
     });
 });
 

@@ -1,4 +1,9 @@
-import type { ConceptTextInput, ValueEncoding } from '@ezclassify/types';
+import type {
+    Assertion,
+    AssertionRef,
+    ConceptTextInput,
+    ValueEncoding,
+} from '@ezclassify/types';
 
 /**
  * Apply browser constraints that can be represented faithfully by a concept's
@@ -35,4 +40,27 @@ function calendarPattern(
                 : String.raw`\d{4}-\d{2}-\d{2}`,
         )
         .join('|');
+}
+
+/** Describe native draft validity before publishing an assertion to Runtime. */
+export function capturedValueProblem(
+    input: HTMLInputElement,
+    field: ConceptTextInput,
+    requireValue = input.required,
+): string {
+    if (!input.value.trim()) return requireValue ? 'Required' : '';
+    if (input.validity.valid) return '';
+    return `Invalid format. Expected: ${field.placeholder ?? 'the required value format'}`;
+}
+
+/** Record a value the author supplied, replacing any prior rule attribution. */
+export function statedCapture(ref: AssertionRef, value: string): Assertion {
+    const assertion: Assertion = {
+        ...ref,
+        value,
+        confidence: 'certain',
+        source: 'user',
+    };
+    delete assertion.sourceRule;
+    return assertion;
 }

@@ -59,11 +59,39 @@ export function textEdit(before: string, after: string): TextEdit {
         before[before.length - suffix - 1] === after[after.length - suffix - 1]
     )
         suffix++;
-    return {
-        prefix,
-        oldEnd: before.length - suffix,
-        delta: after.length - before.length,
-    };
+    const delta = after.length - before.length;
+    const oldEnd = before.length - suffix;
+    if (delta > 0 && oldEnd === prefix) {
+        const inserted = textEdit(after, before);
+        return { prefix: inserted.prefix, oldEnd: inserted.prefix, delta };
+    }
+    // The greedy prefix can borrow part of the next paragraph's identical
+    // marking. Prefer a complete-paragraph deletion if its alignment is
+    // unique among the overlapping byte-for-byte equivalent deletions.
+    if (delta < 0 && oldEnd + delta === prefix) {
+        const removed = -delta;
+        let boundary: number | undefined;
+        for (let at = prefix; at >= 0; at--) {
+            if (
+                (at === 0 || before[at - 1] === '\n') &&
+                (at + removed === before.length ||
+                    before[at + removed - 1] === '\n')
+            ) {
+                if (boundary !== undefined) break;
+                boundary = at;
+            }
+            if (at === 0 || before[at - 1] !== before[at + removed - 1]) {
+                if (boundary !== undefined)
+                    return {
+                        prefix: boundary,
+                        oldEnd: boundary + removed,
+                        delta,
+                    };
+                break;
+            }
+        }
+    }
+    return { prefix, oldEnd, delta };
 }
 
 /**

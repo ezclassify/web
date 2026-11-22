@@ -310,6 +310,70 @@ for (const viewport of [
     test.describe(`README document form on ${viewport.name}`, () => {
         test.use({ viewport });
 
+        test('takes category colors and geometry from a host stylesheet', async ({
+            page,
+        }) => {
+            const observed = observe(page);
+            await page.goto('/');
+            const underline = page
+                .locator(
+                    '.marking-field-token[data-category-name="Protection"] .marking-field-token-run',
+                )
+                .first();
+            const chip = page
+                .locator('.proto-tag[data-category-id="level"]')
+                .first();
+            await expect(underline).toBeVisible();
+            await expect(chip).toBeVisible();
+            const mount = page
+                .locator('[data-ezclassify-mount="tags"]')
+                .first();
+            await expect(mount).toBeAttached();
+
+            const summary = page.locator('input[name="summaryMarking"]');
+            const summaryBefore = await summary.inputValue();
+
+            await page.addStyleTag({
+                content: `
+                form {
+                    --ez-border-radius: 1rem;
+                }
+                form .marking-field-token[data-category-name="Protection"] {
+                    --ez-category-accent: rgb(81, 68, 161);
+                }
+                form .proto-tag[data-category-id="level"] {
+                    --ez-category-background: rgb(238, 234, 255);
+                    --ez-category-text: rgb(52, 39, 117);
+                }
+            `,
+            });
+            await expect(underline).toHaveCSS(
+                'text-decoration-color',
+                'rgb(81, 68, 161)',
+            );
+            await expect(chip).toHaveCSS(
+                'background-color',
+                'rgb(238, 234, 255)',
+            );
+            await expect(chip).toHaveCSS('color', 'rgb(52, 39, 117)');
+            await expect
+                .poll(() =>
+                    mount.evaluate((element) =>
+                        getComputedStyle(element)
+                            .getPropertyValue('--ez-border-radius')
+                            .trim(),
+                    ),
+                )
+                .toBe('1rem');
+            await expect(
+                page.locator('input[name="documentMarking"]'),
+            ).toHaveValue('INTERNAL');
+            await expect(summary).toHaveValue(summaryBefore);
+            await settle(observed);
+            expect(observed.failures).toEqual([]);
+            expect(observed.errors).toEqual([]);
+        });
+
         test('runs the README path against the replay with no refused request', async ({
             page,
         }, info) => {

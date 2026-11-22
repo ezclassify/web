@@ -17,6 +17,7 @@ export function createTag(opts: {
     fullName?: string;
     conceptId: string;
     categoryId: string;
+    categoryName?: string;
     color: string;
     textColor?: string;
     /** The engine derived the fact: dashed, with no remove button. */
@@ -71,6 +72,7 @@ export function createTag(opts: {
     );
     tag.dataset.conceptId = opts.conceptId;
     tag.dataset.categoryId = opts.categoryId;
+    if (opts.categoryName) tag.dataset.categoryName = opts.categoryName;
     // A real pill: filled background in the category color, with the caller's
     // pre-resolved WCAG-contrast text color painted on top of it (getCategoryTextColor
     // / a scheme color rule's `text`, chosen by the caller same as every other

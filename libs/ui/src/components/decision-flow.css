@@ -179,18 +179,7 @@
     font: inherit;
     font-size: 0.8125rem;
 }
-/* A toggle of a multiple-choice step carries a check mark while chosen. */
-.ez-decision-flow__option[role='checkbox'][aria-checked='true']::before {
-    content: '\2713\FE0E';
-    margin-inline-end: 0.375rem;
-}
-.ez-decision-flow__option:is([aria-checked='true'], [aria-pressed='true']) {
-    background: var(--ez-color-primary, #fdb827);
-    color: var(--ez-color-primary-contrast, #1c1c1c);
-    border-color: var(--ez-color-primary, #fdb827);
-}
-/* A value in the marking's text that a rule added and the author has not
-   reviewed yet. */
+/* A value in the marking's text that Runtime inferred. */
 .ez-decision-flow__value-inferred {
     font-style: italic;
     text-decoration: underline dashed;
@@ -323,15 +312,6 @@
     border-color: var(--ez-color-error, #b91c1c);
 }
 
-/* An option the marking's current choices rule out: in its place, quieter,
-   and why under the options while it is pointed at, focused or tapped. */
-.ez-decision-flow__option[data-blocked] {
-    border-style: dashed;
-    color: var(--ez-color-muted, #6b7280);
-}
-.ez-decision-flow__option[data-blocked]:hover {
-    border-color: var(--ez-color-border, #d1d5db);
-}
 .ez-decision-flow__option-reason {
     margin-top: 0.375rem;
     font-size: 0.75rem;
@@ -447,12 +427,6 @@
 }
 
 @media (forced-colors: active) {
-    .ez-decision-flow__option:is([aria-checked='true'], [aria-pressed='true']) {
-        border-color: Highlight;
-        background: Highlight;
-        color: HighlightText;
-        forced-color-adjust: none;
-    }
     .ez-decision-flow__step-dot::before {
         border-color: ButtonText;
         forced-color-adjust: none;

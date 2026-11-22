@@ -61,9 +61,12 @@ export function createClearButton(options: {
             String(button.disabled || (mode === 'clear' && options.empty())),
         );
     };
-    button.addEventListener('pointerdown', (event) => {
-        // Keep a pointer press from blurring and committing the draft we are clearing.
+    // Prevent focus moving to the button while it clears a draft. Let touch
+    // pointer events complete so WebKit still delivers the activation click.
+    button.addEventListener('mousedown', (event) => {
         if (!button.disabled) event.preventDefault();
+    });
+    button.addEventListener('pointerdown', (event) => {
         event.stopPropagation();
     });
     button.addEventListener('click', (event) => {

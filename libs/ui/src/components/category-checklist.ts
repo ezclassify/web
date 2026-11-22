@@ -16,7 +16,12 @@ import type { ConceptView, Suggestion } from '@ezclassify/types';
 import type { ComponentEngineSource } from './component-base-readonly';
 import categoryChecklistCss from './category-checklist.css?inline';
 import { focusGridNeighbor } from './focus-grid';
-import { suggestionDepth } from './composer/suggestion-catalog';
+import {
+    ChoiceAvailability,
+    choiceOrigins,
+    type ChoiceOrigin,
+} from './choice-options';
+import { t } from '../i18n';
 
 const CATEGORY_CHECKLIST_CSS: string = categoryChecklistCss;
 
@@ -70,11 +75,7 @@ export class CategoryChecklist extends ComponentBase {
     private searchMode: 'always' | 'never' | 'overflow' = 'overflow';
     /** Rechecks the list's overflow when its box changes size. */
     private listResize: ResizeObserver | null = null;
-    /** Runtime suggestions from the store's facet subscription, in order. */
-    private baseline: ReadonlyMap<string, Suggestion> | null = null;
-    private liveSuggestions = new Map<string, Suggestion>();
-    private availabilityInput = '';
-    private availabilitySequence = 0;
+    private readonly availability = new ChoiceAvailability();
 
     protected override onAssertionsChanged(): void {
         super.onAssertionsChanged();
@@ -87,95 +88,32 @@ export class CategoryChecklist extends ComponentBase {
     }
 
     /** Ask the Runtime what it offers alongside the current checked choices. */
-    private async refreshAvailability(): Promise<void> {
+    private refreshAvailability(): Promise<void> {
+        const needsLive =
+            !this.availability.hasBaseline ||
+            this.assertions.some((a) => a.categoryId === this.categoryId);
         const live = [
             ...(this.options.resolveFacetSiblings?.() ?? []),
             ...this.assertions,
         ];
-        // Store facets offer replacements by removing their own category.
-        // Preserve that baseline and add what the current choices open up.
-        const needsLive =
-            this.baseline === null ||
-            this.assertions.some((a) => a.categoryId === this.categoryId);
-        const input = needsLive
-            ? JSON.stringify([live, this.getProcessingContext()])
-            : '';
-        if (input === this.availabilityInput) return;
-        this.availabilityInput = input;
-        const sequence = ++this.availabilitySequence;
-        let suggestions: Suggestion[] = [];
-        if (needsLive) {
-            try {
-                suggestions = await this.composerSuggestions(live);
-            } catch {
-                // Keep using the store's answer when live suggestions fail.
-            }
-        }
-        if (this._destroyed || sequence !== this.availabilitySequence) return;
-        this.liveSuggestions = this.categorySuggestions(
-            suggestions.filter((suggestion) => !suggestion.gated),
-        );
-        this.render();
-    }
-
-    private categorySuggestions(
-        suggestions: readonly Suggestion[],
-    ): Map<string, Suggestion> {
-        return new Map(
-            suggestions
-                .filter(
-                    (suggestion) => suggestion.categoryId === this.categoryId,
-                )
-                .map((suggestion) => [suggestion.conceptId, suggestion]),
+        return this.availability.refresh(
+            needsLive
+                ? JSON.stringify([live, this.getProcessingContext()])
+                : null,
+            () => this.composerSuggestions(live),
+            () => this.render(),
         );
     }
 
-    private depthOf(conceptId: string): number {
-        const suggestion =
-            this.liveSuggestions.get(conceptId) ??
-            this.baseline?.get(conceptId);
-        return (suggestion && suggestionDepth(suggestion)) ?? 0;
-    }
-
-    private availableConcepts(): ConceptView[] {
-        const baseline = this.baseline;
-        const live = this.liveSuggestions;
-        const selected = new Set(
-            this.assertions
-                .filter((a) => a.categoryId === this.categoryId)
-                .map((a) => a.conceptId),
-        );
-        const visible = new Map(
-            this.categoryConcepts
-                .filter(
-                    (concept) =>
-                        baseline === null ||
-                        baseline.has(concept.id) ||
-                        live.has(concept.id) ||
-                        selected.has(concept.id),
-                )
-                .map((concept) => [concept.id, concept]),
-        );
-        // A live tier listing puts newly offered children beside their parent,
-        // just as the shared picker does. A flat facet keeps its baseline
-        // replacement choices first, followed by additions in Runtime order.
-        const tiered = [...live.values()].some(
-            (suggestion) => suggestionDepth(suggestion) !== undefined,
-        );
-        const baselineIds = [...(baseline?.keys() ?? [])];
-        const liveIds = [...live.keys()];
-        const order = tiered
-            ? [...liveIds, ...baselineIds]
-            : [...baselineIds, ...liveIds];
-        const ordered: ConceptView[] = [];
-        for (const id of order) {
-            const visibleConcept = visible.get(id);
-            if (visibleConcept) {
-                ordered.push(visibleConcept);
-                visible.delete(id);
-            }
-        }
-        return [...ordered, ...visible.values()];
+    private availableChoices() {
+        return this.availability
+            .choices(
+                this.categoryId,
+                this.categoryConcepts,
+                (concept) => concept.id,
+                choiceOrigins(this.assertions, this.categoryId),
+            )
+            .filter((choice) => !choice.blocked);
     }
 
     override async init(
@@ -328,25 +266,14 @@ export class CategoryChecklist extends ComponentBase {
      * means no baseline choices, so show checked and live choices only.
      */
     applyAllowableOptions(options: Suggestion[] | null): void {
-        const baseline =
-            options === null ? null : this.categorySuggestions(options);
-        const signature = (
-            suggestions: ReadonlyMap<string, Suggestion> | null,
-        ) =>
-            suggestions &&
-            [...suggestions].map(([id, row]) => [id, suggestionDepth(row)]);
-        if (
-            JSON.stringify(signature(baseline)) ===
-            JSON.stringify(signature(this.baseline))
-        )
-            return;
-        this.baseline = baseline;
+        if (!this.availability.updateBaseline(options)) return;
         void this.refreshAvailability();
         this.render();
     }
 
     destroy(): void {
         this._destroyed = true;
+        this.availability.dispose();
         this.headerEl?.removeEventListener(
             'keydown',
             this.onHeaderKeydown,
@@ -444,10 +371,10 @@ export class CategoryChecklist extends ComponentBase {
             this.preview.textContent = this.getRendered();
         }
 
-        this.updateCount();
+        const available = this.availableChoices();
+        this.updateCount(available);
 
         // Keep the existing inputs when only their checked state changes.
-        const available = this.availableConcepts();
         const boxes = this.checkboxes();
         if (
             this.listEl.children.length > 0 &&
@@ -455,53 +382,50 @@ export class CategoryChecklist extends ComponentBase {
             available.length === boxes.length &&
             boxes.every(
                 (box, index) =>
-                    box.dataset.conceptId === available[index].id &&
+                    box.dataset.conceptId === available[index].concept.id &&
                     box.parentElement?.dataset.depth ===
-                        String(this.depthOf(available[index].id)),
+                        String(available[index].depth ?? 0),
             )
         ) {
-            this.syncCheckboxStates();
+            boxes.forEach((box, index) =>
+                this.updateChoiceState(box, available[index].origin),
+            );
             this.updateTabStop();
         } else {
             this.renderList();
         }
     }
 
-    /** Sync checkbox checked states and item classes without rebuilding the DOM */
-    private syncCheckboxStates(): void {
-        const selectedIds = new Set(
-            this.assertions
-                .filter((a) => a.categoryId === this.categoryId)
-                .map((a) => a.conceptId),
+    private updateChoiceState(
+        checkbox: HTMLInputElement,
+        origin: ChoiceOrigin | undefined,
+    ): void {
+        checkbox.checked = origin === 'stated';
+        const item = checkbox.closest('.category-checklist-item');
+        item?.classList.toggle(
+            'category-checklist-item--checked',
+            checkbox.checked,
         );
-        const checkboxes = this.listEl.querySelectorAll<HTMLInputElement>(
-            '.category-checklist-checkbox',
+        item?.classList.toggle(
+            'category-checklist-item--inferred',
+            origin === 'inferred',
         );
-        for (const cb of checkboxes) {
-            const conceptId = cb.dataset.conceptId;
-            if (!conceptId) continue;
-            const shouldBeChecked = selectedIds.has(conceptId);
-            if (cb.checked !== shouldBeChecked) cb.checked = shouldBeChecked;
-            const item = cb.closest('.category-checklist-item');
-            if (item) {
-                item.classList.toggle(
-                    'category-checklist-item--checked',
-                    shouldBeChecked,
-                );
-            }
-        }
+        if (origin === 'inferred') {
+            const name =
+                item?.querySelector('.category-checklist-label')?.textContent ??
+                '';
+            checkbox.setAttribute(
+                'aria-label',
+                name + t('aria.inferredSuffix'),
+            );
+        } else checkbox.removeAttribute('aria-label');
     }
 
-    /** Update the count */
-    private updateCount(): void {
-        const visible = this.availableConcepts();
-        const total = visible.length;
-        const selected = this.assertions.filter(
-            (a) =>
-                a.categoryId === this.categoryId &&
-                visible.some((c) => c.id === a.conceptId),
+    private updateCount(choices = this.availableChoices()): void {
+        const selected = choices.filter(
+            ({ origin }) => origin === 'stated',
         ).length;
-        this.countEl.textContent = `${selected} of ${total}`;
+        this.countEl.textContent = `${selected} of ${choices.length}`;
     }
 
     /**
@@ -629,10 +553,10 @@ export class CategoryChecklist extends ComponentBase {
         this.listEl.innerHTML = '';
 
         // Apply engine availability filter first, then user text filter
-        const available = this.availableConcepts();
+        const available = this.availableChoices();
         const filtered = this.filterText
             ? available.filter(
-                  (c) =>
+                  ({ concept: c }) =>
                       this.fuzzyMatch(this.filterText, c.name) > 0 ||
                       this.fuzzyMatch(
                           this.filterText,
@@ -650,27 +574,14 @@ export class CategoryChecklist extends ComponentBase {
             return;
         }
 
-        // Selected concept IDs
-        const selectedIds = new Set(
-            this.assertions
-                .filter((a) => a.categoryId === this.categoryId)
-                .map((a) => a.conceptId),
-        );
-
-        for (const concept of filtered) {
-            const isChecked = selectedIds.has(concept.id);
-
+        for (const { concept, depth = 0, origin } of filtered) {
             // The whole row is the checkbox's label, so a press anywhere on
             // it toggles the box. It labels the box it holds, not one found
             // by id: two checklists of a category share their ids. The native input keeps the semantics and
             // the focus; the box beside it is the library's own drawing, which
             // a host's input rules cannot repaint.
             const item = document.createElement('label');
-            item.className =
-                'category-checklist-item' +
-                (isChecked ? ' category-checklist-item--checked' : '');
-
-            const depth = this.depthOf(concept.id);
+            item.className = 'category-checklist-item';
             item.dataset.depth = String(depth);
             if (depth > 0)
                 item.style.setProperty(
@@ -682,7 +593,6 @@ export class CategoryChecklist extends ComponentBase {
             checkbox.type = 'checkbox';
             checkbox.className = 'category-checklist-checkbox';
             checkbox.id = `checklist-${this.categoryId}-${concept.id}`;
-            checkbox.checked = isChecked;
             checkbox.dataset.conceptId = concept.id;
             checkbox.addEventListener('focus', () => {
                 this.activeConceptId = concept.id;
@@ -707,10 +617,6 @@ export class CategoryChecklist extends ComponentBase {
                         `Deselected ${concept.views['default'] ?? concept.name}`,
                     );
                 }
-                item.classList.toggle(
-                    'category-checklist-item--checked',
-                    checkbox.checked,
-                );
                 this.updateCount();
                 this.updateTabStop();
             });
@@ -724,16 +630,11 @@ export class CategoryChecklist extends ComponentBase {
             const label = document.createElement('span');
             label.className = 'category-checklist-label';
             label.textContent = concept.views['default'] ?? concept.name;
-            this.attachConceptTitle(
-                checkbox,
-                concept.id,
-                this.categoryId,
-                undefined,
-                label.textContent,
-            );
+            this.attachConceptTitle(checkbox, concept.id, this.categoryId);
             if (checkbox.title) item.title = checkbox.title;
 
             item.append(checkbox, box, label);
+            this.updateChoiceState(checkbox, origin);
             this.listEl.appendChild(item);
         }
     }
@@ -741,36 +642,43 @@ export class CategoryChecklist extends ComponentBase {
     /** Select all currently-visible (allowed) concepts */
     private selectAll(): void {
         this.beginUserEdit();
-        const selectedIds = new Set(
+        const available = this.availableChoices();
+        const additions = available.filter(({ origin }) => origin !== 'stated');
+        const replacing = new Set(additions.map(({ concept }) => concept.id));
+        const held = new Map(
             this.assertions
-                .filter((a) => a.categoryId === this.categoryId)
-                .map((a) => a.conceptId),
+                .filter(({ categoryId }) => categoryId === this.categoryId)
+                .map((assertion) => [assertion.conceptId, assertion]),
         );
-        const available = this.availableConcepts();
-
-        for (const concept of available) {
-            if (!selectedIds.has(concept.id)) {
-                this.assertions.push({
-                    conceptId: concept.id,
-                    categoryId: this.categoryId,
-                    confidence: 'certain',
-                    source: 'user',
-                });
-            }
-        }
-
-        this.reprocess();
+        const authored = additions.map(({ concept }) => {
+            const previous = held.get(concept.id);
+            return {
+                conceptId: concept.id,
+                categoryId: this.categoryId,
+                confidence: 'certain' as const,
+                source: 'user' as const,
+                ...(previous?.value !== undefined
+                    ? { value: previous.value }
+                    : {}),
+            };
+        });
+        this.reprocessEdit([
+            ...this.assertions.filter(
+                ({ categoryId, conceptId }) =>
+                    categoryId !== this.categoryId || !replacing.has(conceptId),
+            ),
+            ...authored,
+        ]);
         announce(this.announcer, `Selected all ${available.length} items`);
     }
 
     /** Clear all selected concepts in this category */
     private clearAll(): void {
         this.beginUserEdit();
-        this.assertions = this.assertions.filter(
-            (a) => a.categoryId !== this.categoryId,
+        this.reprocessEdit(
+            this.assertions.filter((a) => a.categoryId !== this.categoryId),
+            { processEmpty: true, resetCorrections: true },
         );
-
-        void this.reprocessNow(true);
         announce(this.announcer, 'Cleared all selections');
     }
 }

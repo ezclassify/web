@@ -99,9 +99,16 @@
 
 /* ── Selected state ───────────────────────────────── */
 .select-card[aria-checked='true'] {
-    border-color: var(--ez-select-active-border, #3b82f6);
-    background: var(--ez-select-active-bg, rgba(59, 130, 246, 0.06));
-    box-shadow: 0 0 0 1px var(--ez-select-active-border, #3b82f6);
+    border-color: var(
+        --ez-select-active-border,
+        var(--ez-color-primary, #3b82f6)
+    );
+    background: var(
+        --ez-select-active-bg,
+        color-mix(in srgb, var(--ez-color-primary, #3b82f6) 6%, transparent)
+    );
+    box-shadow: 0 0 0 1px
+        var(--ez-select-active-border, var(--ez-color-primary, #3b82f6));
 }
 
 /* ── Color-mapped cards (colorMap): unselected ──── */
@@ -317,4 +324,8 @@
         color: ButtonText;
         forced-color-adjust: auto;
     }
+}
+
+.select-card[data-inferred] .select-card-label {
+    font-style: italic;
 }

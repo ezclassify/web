@@ -47,6 +47,19 @@ export function derivedAssertion(
 }
 
 /**
+ * Identity for edits that can change who stated a fact without changing its
+ * value.
+ */
+export function assertionOriginKey(assertion: Assertion): string {
+    const origin = takenFromWhole(assertion)
+        ? 'whole'
+        : derivedAssertion(assertion)
+          ? 'derived'
+          : 'stated';
+    return JSON.stringify([assertionFactKey(assertion), origin]);
+}
+
+/**
  * `assertions` without the values taken from a whole. Every call that hands a
  * part's assertions back to the engine sends these: the engine takes the
  * whole's values again from the whole supplied with that call, so a list the

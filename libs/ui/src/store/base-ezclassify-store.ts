@@ -47,6 +47,7 @@ import type {
 } from '@ezclassify/types';
 import {
     assertionFactKey,
+    assertionOriginKey,
     takenFromWhole,
     withoutTakenFromWhole,
 } from '../assertion-identity';
@@ -199,9 +200,8 @@ function assertionSetsEqual(left: Assertion[], right: Assertion[]): boolean {
 }
 
 /**
- * The category ids whose authored content differs between two assertion sets. A
- * category present in one set and absent from the other counts as changed,
- * which is how a cleared category is told apart from an untouched one.
+ * Categories whose facts or assertion origins changed. A category present in
+ * one set and missing from the other can be an explicit clear.
  */
 function changedCategories(base: Assertion[], next: Assertion[]): Set<string> {
     const signaturesByCategory = (
@@ -210,7 +210,7 @@ function changedCategories(base: Assertion[], next: Assertion[]): Set<string> {
         const byCategory = new Map<string, string[]>();
         for (const a of assertions) {
             const list = byCategory.get(a.categoryId);
-            const signature = assertionFactKey(a);
+            const signature = assertionOriginKey(a);
             if (list) list.push(signature);
             else byCategory.set(a.categoryId, [signature]);
         }

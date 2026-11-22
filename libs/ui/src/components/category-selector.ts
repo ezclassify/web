@@ -37,8 +37,13 @@ import { statedAssertions } from './composer/composer-controller';
 import { focusGridNeighbor, type FocusGridArrow } from './focus-grid';
 import { getMountHost } from '../mount-host-registry';
 import { createChoiceButton } from './choice-button';
-import { orderChoiceOptions, choiceBlockReason } from './choice-options';
-import { t } from '../i18n';
+import {
+    ChoiceAvailability,
+    choiceBlockReason,
+    choiceOrigins,
+    orderChoiceOptions,
+} from './choice-options';
+import { ChoiceExplanation } from './choice-explanation';
 import choiceButtonCss from './choice-button.css?inline';
 import categorySelectorCss from './category-selector.css?inline';
 
@@ -90,21 +95,14 @@ export class CategorySelector extends ComponentBase {
     /** Each category keeps its own native Tab stop and last focused choice. */
     private readonly rowFocus = new Map<string, string>();
     private lastCategory = '';
-    private reasonEl!: HTMLDivElement;
-    private reasonConcept = '';
-    private reasonInput = '';
-    private reasonSequence = 0;
+    private reason!: ChoiceExplanation;
     /**
      * Concept IDs currently allowed by the store's facet subscription. null =
      * show all.
      */
-    private _allowedConceptIds: Set<string> | null = null;
+    private readonly availability = new ChoiceAvailability();
     private categoryReport: RuleErrorReport = NO_RULE_ERRORS;
     private categoryReportInput = '';
-    private liveAllowed: Set<string> | null = null;
-    private availabilitySequence = 0;
-    private availabilityInput = '';
-    private availabilityLoading: Promise<void> = Promise.resolve();
     private fixSequence = 0;
     private fixLoading: Promise<void> = Promise.resolve();
     private fixApplyAbort: AbortController | null = null;
@@ -143,53 +141,22 @@ export class CategorySelector extends ComponentBase {
      * the composer.
      */
     private refreshAvailability(): Promise<void> {
-        const input = this.reportInput();
-        if (input === this.availabilityInput) return this.availabilityLoading;
-        this.availabilityInput = input;
-        const sequence = ++this.availabilitySequence;
-        const hasMultipleChoice = this.categoryRows.some(
-            (row) =>
-                row.category.single !== true &&
+        const needsLive = this.categoryRows.some(
+            ({ category }) =>
+                category.single !== true &&
                 this.assertions.some(
-                    (assertion) => assertion.categoryId === row.category.id,
+                    (assertion) => assertion.categoryId === category.id,
                 ),
         );
-        if (!hasMultipleChoice) {
-            const changed = this.liveAllowed !== null;
-            this.liveAllowed = null;
-            this.availabilityLoading = Promise.resolve();
-            if (changed) this.render();
-            return Promise.resolve();
-        }
-        this.availabilityLoading = this.composerSuggestions([
-            ...(this.options.resolveFacetSiblings?.() ?? []),
-            ...this.assertions,
-        ])
-            .then((suggestions) => {
-                if (
-                    this._destroyed ||
-                    sequence !== this.availabilitySequence ||
-                    input !== this.reportInput()
-                )
-                    return;
-                this.liveAllowed = new Set(
-                    suggestions
-                        .filter((suggestion) => !suggestion.gated)
-                        .map((suggestion) => suggestion.conceptId),
-                );
-                this.render();
-            })
-            .catch(() => {
-                if (
-                    this._destroyed ||
-                    sequence !== this.availabilitySequence ||
-                    input !== this.reportInput()
-                )
-                    return;
-                this.liveAllowed = null;
-                this.render();
-            });
-        return this.availabilityLoading;
+        return this.availability.refresh(
+            needsLive ? this.reportInput() : null,
+            () =>
+                this.composerSuggestions([
+                    ...(this.options.resolveFacetSiblings?.() ?? []),
+                    ...this.assertions,
+                ]),
+            () => this.render(),
+        );
     }
 
     /** A facet reports canonical errors attached to the categories it displays. */
@@ -252,6 +219,7 @@ export class CategorySelector extends ComponentBase {
         )
             this.loadWholeReport();
         else super.refreshFacetRefusal();
+        void this.refreshAvailability();
     }
 
     private loadWholeReport(knownErrors?: readonly ValidationError[]): void {
@@ -454,11 +422,11 @@ export class CategorySelector extends ComponentBase {
         this.bodyEl.addEventListener('keydown', this.onHeaderKeydown, true);
         this.applySuiteFrame(this.bodyEl);
         this.container.appendChild(this.bodyEl);
-        this.reasonEl = document.createElement('div');
-        this.reasonEl.className = 'ez-choice-reason';
-        this.reasonEl.setAttribute('role', 'status');
-        this.reasonEl.hidden = true;
-        this.container.appendChild(this.reasonEl);
+        this.reason = new ChoiceExplanation(
+            this.container.ownerDocument,
+            'ez-choice-reason',
+        );
+        this.container.appendChild(this.reason.element);
 
         // Announcer
         this.announcer = createAnnouncer();
@@ -485,40 +453,22 @@ export class CategorySelector extends ComponentBase {
      * available for this category (gated); show only selected.
      */
     applyAllowableOptions(options: Suggestion[] | null): void {
-        if (options === null) {
-            if (this._allowedConceptIds !== null) {
-                this._allowedConceptIds = null;
-                this.render();
-            }
-            return;
-        }
-        const selectedIds = new Set(this.assertions.map((a) => a.conceptId));
-        const newAllowed = new Set([
-            ...options.map((s) => s.conceptId),
-            ...selectedIds, // always keep selected visible so the user can deselect it
-        ]);
-        const prev = this._allowedConceptIds;
-        if (
-            prev !== null &&
-            prev.size === newAllowed.size &&
-            [...newAllowed].every((id) => prev.has(id))
-        )
-            return;
-        this._allowedConceptIds = newAllowed;
-        this.render();
+        if (this.availability.updateBaseline(options)) this.render();
     }
 
     destroy(): void {
         this.bodyEl?.removeEventListener('keydown', this.onHeaderKeydown, true);
         this._destroyed = true;
         this.fixApplyAbort?.abort();
+        this.availability.dispose();
+        this.reason?.hide();
         this.destroyClearButton();
         this.removeRuleErrors();
         this.container.innerHTML = '';
     }
 
     protected render(): void {
-        if (this.reasonInput !== this.reportInput()) this.hideChoiceReason();
+        this.reason?.resetIfChanged(this.reportInput());
         const focused = document.activeElement;
         const option =
             focused instanceof HTMLButtonElement &&
@@ -686,43 +636,28 @@ export class CategorySelector extends ComponentBase {
         const optionsEl = document.createElement('div');
         optionsEl.className = 'category-selector-options';
 
-        const categoryColor = this.getCategoryColor(row.category.id);
-
-        // Selected concept IDs for this category
-        const selectedIds = new Set(
-            this.assertions
-                .filter((a) => a.categoryId === row.category.id)
-                .map((a) => a.conceptId),
+        const options = this.availability.choices(
+            row.category.id,
+            row.concepts,
+            (concept) => concept.id,
+            choiceOrigins(this.assertions, row.category.id),
+            { restrictBeside: !isSingle },
         );
-
-        // Filter concepts to those currently allowed by the engine.
-        const visibleConcepts = orderChoiceOptions(
-            (this._allowedConceptIds !== null
-                ? row.concepts.filter(
-                      (concept) =>
-                          this._allowedConceptIds!.has(concept.id) ||
-                          this.liveAllowed?.has(concept.id),
-                  )
-                : row.concepts
-            ).map((concept) => ({ concept })),
-            this.scheme.concepts,
-        ).map(({ concept }) => concept);
-        const available = (concept: ConceptView) =>
-            selectedIds.has(concept.id) ||
-            isSingle ||
-            this.liveAllowed === null ||
-            this.liveAllowed.has(concept.id);
+        const visible = options.some((option) => option.depth !== undefined)
+            ? options
+            : orderChoiceOptions(options, this.scheme.concepts);
         const remembered = this.rowFocus.get(row.category.id);
-        const current = visibleConcepts.find(
-            (concept) => concept.id === remembered,
+        const current = visible.find(
+            ({ concept }) => concept.id === remembered,
         );
         if (remembered && !current) this.rowFocus.delete(row.category.id);
         const stop =
-            current ?? visibleConcepts.find(available) ?? visibleConcepts[0];
+            current ?? visible.find((option) => !option.blocked) ?? visible[0];
 
-        for (let colIdx = 0; colIdx < visibleConcepts.length; colIdx++) {
-            const concept = visibleConcepts[colIdx];
-            const isSelected = selectedIds.has(concept.id);
+        for (let colIdx = 0; colIdx < visible.length; colIdx++) {
+            const { concept, origin, blocked } = visible[colIdx];
+            const isSelected = origin === 'stated';
+            const isInferred = origin === 'inferred';
 
             const labelProp = opts.labelProperty ?? 'label';
             const labelText =
@@ -739,8 +674,9 @@ export class CategorySelector extends ComponentBase {
                     categoryId: row.category.id,
                 },
                 selected: isSelected,
-                blocked: !available(concept),
-                tabIndex: concept.id === stop?.id ? 0 : -1,
+                blocked,
+                inferred: isInferred,
+                tabIndex: concept.id === stop?.concept.id ? 0 : -1,
                 className:
                     'category-selector-btn' +
                     (isSelected ? ' category-selector-btn--selected' : ''),
@@ -749,24 +685,24 @@ export class CategorySelector extends ComponentBase {
                         concept.id,
                         row.category.id,
                         isSelected,
+                        isInferred,
                     ),
                 onExplainBlocked: () =>
-                    void this.showChoiceReason(concept, row.category.id),
+                    void this.showChoiceReason(
+                        concept.id,
+                        row.category.id,
+                        labelText,
+                    ),
                 onHideExplanation: () => {
-                    if (this.reasonConcept === concept.id)
-                        this.hideChoiceReason();
+                    if (
+                        this.reason.target ===
+                        JSON.stringify([row.category.id, concept.id])
+                    )
+                        this.reason.hide();
                 },
             });
             btn.dataset.rowIndex = String(rowIndex);
             btn.dataset.colIndex = String(colIdx);
-            if (isSelected) {
-                btn.style.setProperty('--category-btn-color', categoryColor);
-                btn.style.setProperty(
-                    '--category-btn-bg',
-                    categoryColor + '20',
-                );
-            }
-
             // Optional code badge
             if (opts.showCodes) {
                 const codeView =
@@ -780,13 +716,7 @@ export class CategorySelector extends ComponentBase {
             }
 
             // Tooltip
-            this.attachConceptTitle(
-                btn,
-                concept.id,
-                row.category.id,
-                undefined,
-                labelText,
-            );
+            this.attachConceptTitle(btn, concept.id, row.category.id);
 
             btn.addEventListener('focus', () => this.rememberOption(btn));
 
@@ -802,53 +732,33 @@ export class CategorySelector extends ComponentBase {
         return rowEl;
     }
 
-    private hideChoiceReason(): void {
-        ++this.reasonSequence;
-        this.reasonConcept = '';
-        if (this.reasonEl) this.reasonEl.hidden = true;
-    }
-
-    /**
-     * Ask DecisionFlow's canonical what-if question without accepting the
-     * blocked choice.
-     */
-    private async showChoiceReason(
-        concept: ConceptView,
+    private showChoiceReason(
+        conceptId: string,
         categoryId: string,
+        label: string,
     ): Promise<void> {
-        const input = this.reportInput();
-        const sequence = ++this.reasonSequence;
-        this.reasonInput = input;
-        this.reasonConcept = concept.id;
-        this.reasonEl.hidden = false;
-        this.reasonEl.textContent = '';
-        let reason = t('composer.unavailable');
-        try {
-            const result = await this.callWholeProcess([
-                ...(this.options.resolveFacetSiblings?.() ?? []),
-                ...this.assertions,
-                {
-                    conceptId: concept.id,
-                    categoryId,
-                    source: 'user',
-                    confidence: 'certain',
-                },
-            ]);
-            reason = choiceBlockReason(
-                result,
-                concept.id,
-                this.categoryReport.messages,
-            );
-        } catch {
-            /* An unavailable explanation never authorizes a choice. */
-        }
-        if (
-            this._destroyed ||
-            sequence !== this.reasonSequence ||
-            input !== this.reportInput()
-        )
-            return;
-        this.reasonEl.textContent = `${concept.views[(this.options as CategorySelectorOptions).labelProperty ?? 'label'] ?? concept.views.default ?? concept.name} is not available: ${reason}`;
+        return this.reason.show(
+            () => this.reportInput(),
+            JSON.stringify([categoryId, conceptId]),
+            label,
+            async () => {
+                const result = await this.callWholeProcess([
+                    ...(this.options.resolveFacetSiblings?.() ?? []),
+                    ...this.assertions,
+                    {
+                        conceptId,
+                        categoryId,
+                        source: 'user',
+                        confidence: 'certain',
+                    },
+                ]);
+                return choiceBlockReason(
+                    result,
+                    conceptId,
+                    this.categoryReport.messages,
+                );
+            },
+        );
     }
 
     /** Handle button selection */
@@ -856,6 +766,7 @@ export class CategorySelector extends ComponentBase {
         conceptId: string,
         categoryId: string,
         isSelected: boolean,
+        isInferred: boolean,
     ): void {
         if (
             this._destroyed ||
@@ -869,6 +780,7 @@ export class CategorySelector extends ComponentBase {
         const focused = document.activeElement;
         if (
             !isSelected &&
+            !isInferred &&
             row?.category.single !== true &&
             this.assertions.some(
                 (assertion) => assertion.categoryId === categoryId,
@@ -881,10 +793,7 @@ export class CategorySelector extends ComponentBase {
                     this.enhancedInput?.matches(':disabled, [readonly]')
                 )
                     return;
-                if (
-                    this.liveAllowed !== null &&
-                    !this.liveAllowed.has(conceptId)
-                )
+                if (!this.availability.canAddBeside(categoryId, conceptId))
                     return;
                 this.applySelection(
                     conceptId,

@@ -146,6 +146,37 @@
             "method": "POST",
             "statusCode": 200
         },
+        "19b5d27b7c27390becc1bae575305495015c5db8c5bea17b2c70b443c1749927": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "test-select",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "test-select",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "level-1" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "result": "L1"
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "1cb44f8505484bf9eb40e7e682cb125ae4aeb8055ea859d561f19407dd061f74": {
             "body": {
                 "resolution": {
@@ -444,6 +475,65 @@
             "method": "GET",
             "statusCode": 200
         },
+        "5375d272aa3f1c1bdb3d4c741133da82a8e58930aa2259b946bc1dfd7d5f1ce5": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "test-select",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "test-select",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "level": {
+                        "suggestions": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "level-1",
+                                "description": "Level 1",
+                                "group": "Level",
+                                "label": "L1",
+                                "name": "Level 1",
+                                "order": 1,
+                                "selected": false,
+                                "views": { "default": "L1" }
+                            },
+                            {
+                                "categoryId": "level",
+                                "conceptId": "level-2",
+                                "description": "Level 2",
+                                "group": "Level",
+                                "label": "L2",
+                                "name": "Level 2",
+                                "order": 2,
+                                "selected": false,
+                                "views": { "default": "L2" }
+                            },
+                            {
+                                "categoryId": "level",
+                                "conceptId": "level-3",
+                                "description": "Level 3",
+                                "group": "Level",
+                                "label": "L3",
+                                "name": "Level 3",
+                                "order": 3,
+                                "selected": false,
+                                "views": { "default": "L3" }
+                            }
+                        ],
+                        "warnings": []
+                    }
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "595a9c02e1689c14fa99b89dd29fd1c78778267086c78b11d31920f181b15393": {
             "body": {
                 "id": "test-select",
@@ -509,6 +599,42 @@
             ],
             "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
+            "statusCode": 200
+        },
+        "7a6dfc495467e5eb3437c27b448f61b194e95db1cb6eee7580ca2b38f3cd8683": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "test-select",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "test-select",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "level-1",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "L1",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
             "statusCode": 200
         },
         "7ca01bab083f9fce42ad1d539dd219c150d6207939e055ae2a52a3439d04c817": {

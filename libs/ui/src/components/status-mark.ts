@@ -368,6 +368,8 @@ export interface StatusMarkOptions {
      * MarkingField, TagInput, MarkedInput, and MarkedTextArea use 'chrome'.
      */
     shape: 'input' | 'chrome';
+    /** A category editor explains only changes to the category it owns. */
+    correctionCategory?: string;
     /** Root element for style injection and tooltip mounting. */
     root?: HTMLElement;
     /** Tooltip guard (the data-ezclassify-no-tooltips opt-out). */
@@ -379,12 +381,6 @@ export interface StatusMarkOptions {
      * marking-undo.ts), else null. The list ends with it.
      */
     undoLastEdit?: () => (() => void) | null;
-    /**
-     * Called when what the author has not yet reviewed changes, so a field that
-     * draws rule-added values differently (see {@link unreviewedAdditions}) can
-     * draw them again.
-     */
-    onReviewChange?: () => void;
 }
 
 /**
@@ -411,6 +407,28 @@ const markFixes = new WeakMap<HTMLElement, Map<string, Change>>();
 // The sheet can show a provisional reading of the marking. Keep its changes
 // separate so reviewing or canceling a draft cannot alter the field's record.
 const markDraftFixes = new WeakMap<HTMLElement, readonly Change[]>();
+
+function changesInCategory(
+    mark: HTMLElement,
+    changes: readonly Change[],
+): readonly Change[] {
+    const category = markOptions.get(mark)?.correctionCategory;
+    if (!category) return changes;
+    return changes.flatMap((change) => {
+        const add = (change.add ?? []).filter(
+            (ref) => ref.categoryId === category,
+        );
+        const remove = (change.remove ?? []).filter(
+            (ref) => ref.categoryId === category,
+        );
+        return add.length || remove.length ? [{ ...change, add, remove }] : [];
+    });
+}
+
+function draftFixesOf(mark: HTMLElement): readonly Change[] | undefined {
+    const fixes = markDraftFixes.get(mark);
+    return fixes && changesInCategory(mark, fixes);
+}
 
 export function setStatusMarkDraft(
     mark: HTMLElement,
@@ -444,7 +462,12 @@ function visibleError(mark: HTMLElement): string | undefined {
  * For a mark whose field holds several markings, the marking each of its
  * changes was made to, by the change's key in {@link markFixes}.
  */
-const markGroups = new WeakMap<HTMLElement, Map<string, string>>();
+interface StatusGroupLabel {
+    id: string;
+    label?: string;
+}
+
+const markGroups = new WeakMap<HTMLElement, Map<string, StatusGroupLabel>>();
 
 /**
  * The changes, by effect, that have actually been shown to the user (tooltip
@@ -535,7 +558,7 @@ function buildMarkSvg(): string {
 
 /** Derive the mark's current state from its fixes and acknowledgment set. */
 function deriveState(mark: HTMLElement): MarkState {
-    const draft = markDraftFixes.get(mark);
+    const draft = draftFixesOf(mark);
     if (draft) return draft.length ? 'unseen' : 'quiet';
     if (markErrors.has(mark)) return 'error';
     const fixes = markFixes.get(mark);
@@ -620,64 +643,24 @@ const markOptions = new WeakMap<HTMLElement, StatusMarkOptions>();
  */
 function linesOf(
     mark: HTMLElement,
-): { text: string; rule: string; group?: string }[] {
+): { text: string; rule: string; group?: StatusGroupLabel }[] {
     const words = markOptions.get(mark)?.words;
     const groups = markGroups.get(mark);
     const seen = new Set<string>();
-    const lines: { text: string; rule: string; group?: string }[] = [];
-    const draft = markDraftFixes.get(mark);
+    const lines: { text: string; rule: string; group?: StatusGroupLabel }[] =
+        [];
+    const draft = draftFixesOf(mark);
     const fixes = draft?.map((change) => [effectKey(change), change] as const);
     for (const [key, change] of fixes ?? markFixes.get(mark) ?? []) {
         const group = draft ? undefined : groups?.get(key);
         for (const text of changeLines(change, words)) {
-            const once = `${group ?? ''}\u0000${text}`;
+            const once = `${group?.id ?? ''}\u0000${text}`;
             if (seen.has(once)) continue;
             seen.add(once);
             lines.push({ text, rule: change.ruleId, group });
         }
     }
     return lines;
-}
-
-/** What each mark last told its field the unreviewed additions were. */
-const markUnreviewed = new WeakMap<HTMLElement, string>();
-
-/**
- * Tell the field when the values its unreviewed changes added differ from the
- * last time it heard, so it can draw them again.
- */
-function noteReview(mark: HTMLElement): void {
-    const key = JSON.stringify([...unreviewedKeys(mark)].sort());
-    if ((markUnreviewed.get(mark) ?? '[]') === key) return;
-    markUnreviewed.set(mark, key);
-    markOptions.get(mark)?.onReviewChange?.();
-}
-
-/** The refKeys of what the mark's not-yet-shown changes added. */
-function unreviewedKeys(mark: HTMLElement): Set<string> {
-    const keys = new Set<string>();
-    const acknowledged = markAcknowledged.get(mark);
-    for (const [effect, change] of markFixes.get(mark) ?? []) {
-        if (acknowledged?.has(effect)) continue;
-        for (const ref of change.add ?? []) keys.add(refKey(ref));
-    }
-    return keys;
-}
-
-/**
- * The values a marking rule added that the author has not reviewed yet: the
- * additions of the changes the wrap's mark has not yet shown. A field draws
- * these in the family's inferred style until they are reviewed.
- *
- * @param wrap - The wrapper the mark was mounted on
- * @returns Whether a value in a category is such an addition
- */
-export function unreviewedAdditions(
-    wrap: HTMLElement,
-): (ref: Pick<AssertionRef, 'categoryId' | 'conceptId'>) => boolean {
-    const mark = statusMarkOf(wrap);
-    const keys = mark ? unreviewedKeys(mark) : new Set<string>();
-    return (ref) => keys.has(refKey(ref));
 }
 
 /** The tooltip root each mark shows its applied-changes popover in. */
@@ -856,7 +839,6 @@ function acknowledgeMark(mark: HTMLElement): void {
         if (fixes.has(key)) acknowledged.add(key);
     }
     applyVisualState(mark, deriveState(mark));
-    noteReview(mark);
 }
 
 /**
@@ -1101,6 +1083,7 @@ export function setStatusMarkFixes(
 
 /** The changes made to one of the markings a field holds. */
 export interface StatusMarkGroup {
+    entryId: string;
     /** The marking as the field now writes it in its text. */
     marking: string;
     /** What {@link explainedChanges} gives for that marking. */
@@ -1124,18 +1107,19 @@ export function setStatusMarkGroups(
     const changed = groups.filter((group) => group.changes.length > 0);
     setMarkChanges(
         wrap,
-        changed.length > 1
-            ? changed.map(({ marking, changes }) => ({
-                  label: marking,
-                  changes,
-              }))
-            : changed.map(({ changes }) => ({ changes })),
+        changed.map(({ entryId, marking, changes }) => ({
+            group: {
+                id: entryId,
+                label: changed.length > 1 ? marking : undefined,
+            },
+            changes,
+        })),
     );
 }
 
 function setMarkChanges(
     wrap: HTMLElement,
-    groups: readonly { label?: string; changes: readonly Change[] }[],
+    groups: readonly { group?: StatusGroupLabel; changes: readonly Change[] }[],
 ): void {
     const mark = statusMarkOf(wrap);
     if (!mark) return;
@@ -1146,17 +1130,17 @@ function setMarkChanges(
     // A change is known by what it did, within its marking: the same change
     // made to two markings is two changes.
     const changes = new Map<string, Change>();
-    const labels = new Map<string, string>();
-    for (const { label, changes: list } of groups) {
-        for (const change of list) {
+    const labels = new Map<string, StatusGroupLabel>();
+    for (const { group, changes: list } of groups) {
+        for (const change of changesInCategory(mark, list)) {
             const effect = effectKey(change);
             const key =
-                label === undefined
+                group === undefined
                     ? effect
-                    : JSON.stringify(['marking', label, effect]);
+                    : JSON.stringify(['marking', group.id, effect]);
             if (changes.has(key)) continue;
             changes.set(key, change);
-            if (label !== undefined) labels.set(key, label);
+            if (group) labels.set(key, group);
         }
     }
     markFixes.set(mark, changes);
@@ -1173,12 +1157,11 @@ function setMarkChanges(
     }
 
     applyVisualState(mark, deriveState(mark));
-    noteReview(mark);
 }
 
 function correctionsContent(mark: HTMLElement): HTMLElement {
     const opts = markOptions.get(mark);
-    const draft = markDraftFixes.get(mark);
+    const draft = draftFixesOf(mark);
     const error = visibleError(mark);
     const count = draft?.length ?? markFixes.get(mark)?.size ?? 0;
     if (
@@ -1219,16 +1202,16 @@ function changeList(
     heading.textContent = changesLabel(lines.length);
     list.appendChild(heading);
     let items: HTMLUListElement | null = null;
-    let group: string | undefined;
+    let group: StatusGroupLabel | undefined;
     for (const line of lines) {
         // A field of several markings lists each marking's changes under the
         // marking, as its text now writes it.
-        if (!items || line.group !== group) {
+        if (!items || line.group?.id !== group?.id) {
             group = line.group;
-            if (group !== undefined) {
+            if (group?.label !== undefined) {
                 const name = document.createElement('div');
                 name.className = 'ez-status-list__marking';
-                name.textContent = group;
+                name.textContent = group.label;
                 list.appendChild(name);
             }
             items = document.createElement('ul');

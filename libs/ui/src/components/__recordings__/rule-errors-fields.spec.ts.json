@@ -2,60 +2,6 @@
     "engineVersion": "1.0.0-dev.30",
     "openapiVersion": "1.0.0-dev.30",
     "responses": {
-        "06b995028833317fc7ee3f2d583cfdeaf6886e47be7ae89f45150a7ce5e29946": {
-            "body": {
-                "resolution": {
-                    "artifacts": [
-                        {
-                            "id": "rule-errors-test",
-                            "kind": "scheme",
-                            "version": "1.0.0"
-                        }
-                    ],
-                    "contextId": "rule-errors-test",
-                    "requestedVersion": "0.0.0",
-                    "resolvedVersion": "1.0.0"
-                },
-                "result": {
-                    "appliedFixes": [],
-                    "assertions": [
-                        {
-                            "categoryId": "level",
-                            "conceptId": "LOW",
-                            "confidence": "certain",
-                            "source": "parse"
-                        }
-                    ],
-                    "assessment": {
-                        "collapsed": [],
-                        "conflicts": [],
-                        "emitted": [
-                            { "categoryId": "level", "conceptId": "LOW" }
-                        ],
-                        "omitted": [],
-                        "unrepresentable": []
-                    },
-                    "errors": [],
-                    "inputWasValid": true,
-                    "notices": [],
-                    "proposedFixes": [],
-                    "recognition": {
-                        "corrections": [],
-                        "inputFormat": "default",
-                        "status": "complete",
-                        "surface": "marking",
-                        "unmatched": []
-                    },
-                    "rendered": "LOW",
-                    "renders": {},
-                    "valid": true,
-                    "warnings": []
-                }
-            },
-            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
-            "method": "POST",
-            "statusCode": 200
-        },
         "114cb676a19d1667c6a8cf3fc3e22d168c6e9ecf3c8bbfd0054a51ce38118634": {
             "body": {
                 "resolution": {
@@ -307,6 +253,48 @@
             "method": "POST",
             "statusCode": 200
         },
+        "297d1b0ff49588da8c08f5ec9f8227428c707b256b717d3d39b1d696554dcf11": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "rule-errors-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "rule-errors-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "HIGH",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "HOLD",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "HIGH//HOLD",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "29907b3453becdcec2b4bb0c0aed3b0cd7b41ff616450a3d4dea72ab429d3f2c": {
             "body": {
                 "contextId": "sbx-03aa024b9ec553eec837198ae35b9dd5e1f01c638c00d68df0ad9f69dd2ea58e"
@@ -441,7 +429,13 @@
             "method": "GET",
             "statusCode": 200
         },
-        "733f3ad29c5d72c5d7a5fec1f792dc554ba37202c518890bc48931b96f65b7a2": {
+        "7c2ec297003611165143f27cabd5c927666834e8f5573314363cf57faa17d896": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "8b8a61c472aef5e99d16570914edc450721f1e9a22f32db861a098cedfaa0a97": {
             "body": {
                 "resolution": {
                     "artifacts": [
@@ -462,7 +456,7 @@
                             "categoryId": "level",
                             "conceptId": "HIGH",
                             "confidence": "certain",
-                            "source": "aggregate"
+                            "source": "user"
                         },
                         {
                             "categoryId": "caveat",
@@ -471,22 +465,28 @@
                             "source": "parse"
                         }
                     ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "HIGH" },
+                            { "categoryId": "caveat", "conceptId": "HOLD" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
                     "errors": [],
+                    "inputWasValid": true,
                     "notices": [],
                     "proposedFixes": [],
                     "rendered": "HIGH//HOLD",
+                    "renders": {},
                     "valid": true,
                     "warnings": []
                 }
             },
             "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
-            "statusCode": 200
-        },
-        "7c2ec297003611165143f27cabd5c927666834e8f5573314363cf57faa17d896": {
-            "body": [],
-            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
-            "method": "GET",
             "statusCode": 200
         },
         "8cf09a8f0c02e8082a43f7980f00c7635127fe50114b08229bf7c6499327879a": {
@@ -715,60 +715,6 @@
             "method": "POST",
             "statusCode": 200
         },
-        "bb7a44ea89d974213aea4b514934282b751033ea5b240fa456614041cde0ec2d": {
-            "body": {
-                "resolution": {
-                    "artifacts": [
-                        {
-                            "id": "rule-errors-test",
-                            "kind": "scheme",
-                            "version": "1.0.0"
-                        }
-                    ],
-                    "contextId": "rule-errors-test",
-                    "requestedVersion": "0.0.0",
-                    "resolvedVersion": "1.0.0"
-                },
-                "result": {
-                    "appliedFixes": [],
-                    "assertions": [
-                        {
-                            "categoryId": "level",
-                            "conceptId": "HIGH",
-                            "confidence": "certain",
-                            "source": "parse"
-                        },
-                        {
-                            "categoryId": "caveat",
-                            "conceptId": "HOLD",
-                            "confidence": "certain",
-                            "source": "parse"
-                        }
-                    ],
-                    "assessment": {
-                        "collapsed": [],
-                        "conflicts": [],
-                        "emitted": [
-                            { "categoryId": "level", "conceptId": "HIGH" },
-                            { "categoryId": "caveat", "conceptId": "HOLD" }
-                        ],
-                        "omitted": [],
-                        "unrepresentable": []
-                    },
-                    "errors": [],
-                    "inputWasValid": true,
-                    "notices": [],
-                    "proposedFixes": [],
-                    "rendered": "HIGH//HOLD",
-                    "renders": {},
-                    "valid": true,
-                    "warnings": []
-                }
-            },
-            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
-            "method": "POST",
-            "statusCode": 200
-        },
         "c32f9860374efcf34fd7b1a5e8deef75823d5b191ecd0375096516b0fdcbbb50": {
             "body": [
                 {
@@ -849,67 +795,6 @@
                 "status": "ok"
             },
             "method": "GET",
-            "statusCode": 200
-        },
-        "e933c16ff0d8a756c647cdaaf06e982f1e5901c273faab6515722bf6b43fb87f": {
-            "body": {
-                "resolution": {
-                    "artifacts": [
-                        {
-                            "id": "rule-errors-test",
-                            "kind": "scheme",
-                            "version": "1.0.0"
-                        }
-                    ],
-                    "contextId": "rule-errors-test",
-                    "requestedVersion": "0.0.0",
-                    "resolvedVersion": "1.0.0"
-                },
-                "result": {
-                    "appliedFixes": [],
-                    "assertions": [
-                        {
-                            "categoryId": "level",
-                            "conceptId": "HIGH",
-                            "confidence": "certain",
-                            "source": "parse"
-                        },
-                        {
-                            "categoryId": "caveat",
-                            "conceptId": "HOLD",
-                            "confidence": "certain",
-                            "source": "parse"
-                        }
-                    ],
-                    "assessment": {
-                        "collapsed": [],
-                        "conflicts": [],
-                        "emitted": [
-                            { "categoryId": "level", "conceptId": "HIGH" },
-                            { "categoryId": "caveat", "conceptId": "HOLD" }
-                        ],
-                        "omitted": [],
-                        "unrepresentable": []
-                    },
-                    "errors": [],
-                    "inputWasValid": true,
-                    "notices": [],
-                    "proposedFixes": [],
-                    "recognition": {
-                        "corrections": [],
-                        "inputFormat": "default",
-                        "status": "complete",
-                        "surface": "marking",
-                        "unmatched": []
-                    },
-                    "rendered": "HIGH//HOLD",
-                    "renders": {},
-                    "valid": true,
-                    "warnings": []
-                }
-            },
-            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
-            "method": "POST",
             "statusCode": 200
         }
     }

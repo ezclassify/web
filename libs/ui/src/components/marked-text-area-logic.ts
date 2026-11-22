@@ -205,11 +205,16 @@ export function applyRepairs(
     embeddedTemplate: string,
     embeddedPattern?: string,
     caret = 0,
-): { value: string; caret: number; patched: boolean } {
+): {
+    value: string;
+    caret: number;
+    patched: boolean;
+    patches: Array<{ start: number; end: number; change: number }>;
+} {
     let v = textareaValue;
     let drift = 0;
     let movedCaret = caret;
-    let patched = false;
+    const patches = [];
 
     for (const seg of segments) {
         if (!seg.repaired) continue;
@@ -226,10 +231,15 @@ export function applyRepairs(
         const change = corrected.length - (seg.end - seg.start);
         drift += change;
         if (seg.end <= caret) movedCaret += change;
-        patched = true;
+        patches.push({ start: seg.start, end: seg.end, change });
     }
 
-    return { value: v, caret: movedCaret, patched };
+    return {
+        value: v,
+        caret: movedCaret,
+        patched: patches.length > 0,
+        patches,
+    };
 }
 
 /** What a mark with something to say tells the user about itself. */

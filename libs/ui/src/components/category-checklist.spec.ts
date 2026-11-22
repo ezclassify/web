@@ -359,6 +359,43 @@ describe('CategoryChecklist', () => {
         await expect.poll(visibleChoices).toEqual(['item-a', 'item-b']);
     });
 
+    it('authors an inferred choice on its first native activation and hides inherited facts', async () => {
+        await init();
+        checklist.applyStoreState({
+            rendered: 'item-a,item-b',
+            renders: {},
+            valid: true,
+            errors: [],
+            assertions: [
+                {
+                    conceptId: 'item-a',
+                    categoryId: 'items',
+                    source: 'infer',
+                    confidence: 'inferred',
+                },
+                {
+                    conceptId: 'item-b',
+                    categoryId: 'items',
+                    source: 'context',
+                    confidence: 'certain',
+                },
+            ],
+        } as never);
+        const item = () =>
+            boxes().find((box) => box.dataset.conceptId === 'item-a')!;
+        expect(item().checked).toBe(false);
+        expect(item().getAttribute('aria-label')).toBe('Item Alpha (inferred)');
+        expect(visibleChoices()).not.toContain('item-b');
+        item().focus();
+        item().click();
+        expect(item().checked).toBe(true);
+        expect(item().hasAttribute('aria-label')).toBe(false);
+        expect(document.activeElement).toBe(item());
+        expect(checklist.getAssertions()).toContainEqual(
+            expect.objectContaining({ conceptId: 'item-a', source: 'user' }),
+        );
+    });
+
     it('uses the Runtime’s tier order and depth for the current suggestions', async () => {
         const tier = (id: string, depth: number) => ({
             ...suggestions([id])[0],
@@ -974,6 +1011,60 @@ describe('CategoryChecklist', () => {
             checklist.getAssertions().filter((a) => a.categoryId === 'items')
                 .length,
         ).toBe(0);
+    });
+
+    it('clears old corrections even if the Runtime fills the category again', async () => {
+        const process = vi.mocked(engine.process).getMockImplementation()!;
+        const initialFix = {
+            ruleId: 'old-addition',
+            action: 'add',
+            add: [{ conceptId: 'item-a', categoryId: 'items' }],
+            message: 'The rule added Alpha',
+        } as const;
+        const defaultItem = {
+            conceptId: 'item-a',
+            categoryId: 'items',
+            confidence: 'certain',
+            source: 'default',
+        } as const;
+        const sibling = {
+            conceptId: 'other-1',
+            categoryId: 'other',
+            confidence: 'certain',
+            source: 'user',
+        } as const;
+        await init({ facetOf: 'doc', resolveFacetSiblings: () => [sibling] });
+        checklist.applyStoreState({
+            rendered: 'item-a,other-1',
+            renders: {},
+            valid: true,
+            errors: [],
+            assertions: [
+                { ...defaultItem, source: 'infer', confidence: 'inferred' },
+            ],
+            appliedFixes: [initialFix],
+        } as never);
+        expect(checklist.getAppliedFixes()).toEqual([initialFix]);
+
+        vi.mocked(engine.process).mockImplementation((input, options) => ({
+            ...(process(input, options) as Awaited<ReturnType<typeof process>>),
+            rendered: 'item-a,other-1',
+            assertions: [defaultItem, sibling],
+        }));
+        container
+            .querySelector<HTMLButtonElement>(
+                '.category-checklist-toggle button:last-child',
+            )!
+            .click();
+
+        expect(checklist.getAppliedFixes()).toEqual([]);
+        expect(checklist.getAssertions()).toEqual([defaultItem]);
+        expect(engine.process).toHaveBeenCalledWith(
+            '',
+            expect.objectContaining({
+                assertions: [sibling],
+            }),
+        );
     });
 
     it('should call onChange when assertions change', async () => {

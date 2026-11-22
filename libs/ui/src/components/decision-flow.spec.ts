@@ -2610,11 +2610,11 @@ describe('DecisionFlow: compact layout', () => {
             '.ez-decision-flow__option[data-concept-id="SCOPE_PARTIAL"]',
         )!;
         expect(partial.textContent).toBe('S:P');
-        expect(partial.title).toBe('Partial');
+        expect(partial.title).toBe('Scope: Partial');
         expect(
             document.getElementById(partial.getAttribute('aria-describedby')!)
                 ?.textContent,
-        ).toBe('Partial.');
+        ).toBe('Scope: Partial.');
     });
 
     it('shows an option the current choices rule out in its place, unavailable, with the reason, and never takes it', async () => {
@@ -5696,9 +5696,11 @@ describe('DecisionFlow option labels', () => {
         await open();
         const keep = option('KEEP');
         expect(keep.textContent).toBe('KEEP');
-        expect(keep.title).toBe('Keep Inside the Office\nStays in the office.');
+        expect(keep.title).toBe(
+            'Control: Keep Inside the Office\nStays in the office.',
+        );
         expect(description(keep)).toBe(
-            'Keep Inside the Office. Stays in the office.',
+            'Control: Keep Inside the Office. Stays in the office.',
         );
     });
 
@@ -5716,18 +5718,17 @@ describe('DecisionFlow option labels', () => {
         await open();
         const unspelled = option('UNSPELLED');
         expect(unspelled.textContent).toBe('Never Spelled');
-        // The name is the label, so the tooltip does not repeat it.
-        expect(unspelled.hasAttribute('title')).toBe(false);
+        expect(unspelled.title).toBe('Control: Never Spelled');
     });
 
     it("reads another scope's option as that scope writes it, a sentence included, and a value option by its name", async () => {
         await open();
         await jumpTo('handling');
         expect(option('SHRED').textContent).toBe('Shred this copy after use.');
-        expect(option('SHRED').title).toBe('Shred');
+        expect(option('SHRED').title).toBe('Handling: Shred');
         const onDate = option('ON_DATE');
         expect(onDate.textContent).toBe('On a Date');
-        expect(onDate.title).toBe('Release on a date.');
+        expect(onDate.title).toBe('Handling: On a Date\nRelease on a date.');
     });
 
     it('names a choice on its dot and in the status mark the way its option reads', async () => {

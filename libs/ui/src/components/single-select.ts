@@ -18,6 +18,9 @@ import { bindTextToolsEdges } from './text-caret-edge';
  * `single: true`.
  */
 
+import { conceptHintHeading } from './concept-hint';
+import { ChoiceAvailability, choiceOrigins } from './choice-options';
+import { t } from '../i18n';
 import { ComponentBase } from './component-base';
 import { createAnnouncer, announce } from './component-utils';
 import { resolveMarkingColor } from '../color-resolver';
@@ -29,7 +32,11 @@ import type {
     Fix,
     Warning,
 } from '@ezclassify/types';
-import { applyTextInputAttributes } from './text-input-attributes';
+import {
+    applyTextInputAttributes,
+    capturedValueProblem,
+    statedCapture,
+} from './text-input-attributes';
 import { focusGridNeighbor, type FocusGridArrow } from './focus-grid';
 import singleSelectCss from './single-select.css?inline';
 import { mirrorHostFrame } from './field-chrome';
@@ -133,7 +140,7 @@ export class SingleSelect extends ComponentBase {
      * Concept IDs currently allowed by the store's facet subscription. null =
      * show all.
      */
-    private _allowedConceptIds: Set<string> | null = null;
+    private readonly availability = new ChoiceAvailability();
     /**
      * Per-instance salt for aria-labelledby IDs. Without this, every
      * SingleSelect on the same page produces `select-card-label-0`,
@@ -305,20 +312,6 @@ export class SingleSelect extends ComponentBase {
         placeholder.textContent = `Select ${this.primaryCategory.label ?? 'tier'}\u2026`;
         select.appendChild(placeholder);
 
-        // One option per concept (filtered list will be updated by _refreshAllowed later)
-        for (const c of this._visibleConcepts) {
-            const opt = document.createElement('option');
-            opt.value = c.conceptId;
-            opt.textContent = c.name;
-            select.appendChild(opt);
-        }
-
-        // Reflect any pre-existing assertion
-        const existing = this.assertions.find(
-            (a) => a.categoryId === this.primaryCategory.id,
-        );
-        if (existing) select.value = existing.conceptId;
-
         select.addEventListener('change', () => {
             const val = select.value;
             if (!val) {
@@ -361,96 +354,31 @@ export class SingleSelect extends ComponentBase {
      * store.
      */
     private get _visibleConcepts() {
-        if (this._allowedConceptIds === null) return this.cardConcepts;
-        return this.cardConcepts.filter((c) =>
-            this._allowedConceptIds!.has(c.conceptId),
-        );
+        const categoryId = this.primaryCategory.id;
+        return this.availability
+            .choices(
+                categoryId,
+                this.cardConcepts,
+                (entry) => entry.conceptId,
+                choiceOrigins(this.assertions, categoryId),
+                { pending: this.pendingText?.conceptId },
+            )
+            .filter((choice) => !choice.blocked)
+            .map(({ concept }) => concept);
     }
 
-    /**
-     * Apply the allowable concept set pushed from the store's facet
-     * subscription. Called by the runtime after each marking commit, the store
-     * runs suggest once for the whole marking and distributes per-category
-     * slices here.
-     *
-     * `null`: engine has no suggest; fall back to showing all concepts. `[]`,
-     * engine ran but this category has no available concepts (gated); show only
-     * already-selected concepts so they remain deselectable.
-     *
-     * Single-select special case: when all returned suggestions have `selected:
-     * true`; the engine is signaling "this category is committed, nothing new
-     * to add" (the single-select restriction). That doesn't mean the options
-     * are gated; it means the user already picked one. Treat this as show-all
-     * so the user can still switch their selection.
-     */
+    /** Receive the Runtime's replacement choices for the category. */
     applyAllowableOptions(options: Suggestion[] | null): void {
-        // setup() bails early when no matching category exists in the current scheme.
-        // Nothing to render; skip rather than crash on undefined cardsContainer / primaryCategory.
         if (!this.primaryCategory) return;
         const focusedConceptId =
             this._visibleConcepts[this.focusIndex]?.conceptId;
-        const alignFocus = () => {
-            this.focusIndex = focusedConceptId
-                ? this._visibleConcepts.findIndex(
-                      (entry) => entry.conceptId === focusedConceptId,
-                  )
-                : -1;
-        };
-        if (options === null) {
-            // Engine has no suggest: show all concepts unchanged.
-            if (this._allowedConceptIds !== null) {
-                this._allowedConceptIds = null;
-                alignFocus();
-                this.isDropdownMode
-                    ? this.renderDropdown()
-                    : this.renderCards();
-            }
-            return;
-        }
-        const selectedIds = new Set(
-            this.assertions
-                .filter((a) => a.categoryId === this.primaryCategory.id)
-                .map((a) => a.conceptId),
-        );
-        if (this.pendingText) selectedIds.add(this.pendingText.conceptId);
-        const ownCatOptions = options.filter(
-            (s) => s.categoryId === this.primaryCategory.id,
-        );
-
-        // When every returned suggestion for this category is marked selected:true,
-        // the engine is saying "this concept is already committed, nothing new to add"
-        // (the single-select restriction at work). Show all concepts so the user can
-        // still switch their selection to an alternative.
-        if (
-            ownCatOptions.length > 0 &&
-            ownCatOptions.every((s) => s.selected)
-        ) {
-            if (this._allowedConceptIds !== null) {
-                this._allowedConceptIds = null;
-                alignFocus();
-                this.isDropdownMode
-                    ? this.renderDropdown()
-                    : this.renderCards();
-            }
-            return;
-        }
-
-        const newAllowed = new Set([
-            ...ownCatOptions.map((s) => s.conceptId),
-            ...selectedIds, // always keep selected visible so the user can deselect it
-        ]);
-        // Diff: skip re-render if the allowed set is identical.
-        const prev = this._allowedConceptIds;
-        if (
-            prev !== null &&
-            prev.size === newAllowed.size &&
-            [...newAllowed].every((id) => prev.has(id))
-        )
-            return;
-        this._allowedConceptIds = newAllowed;
-        // Keep the same visible-list identity even while focus is outside.
-        alignFocus();
-        this.isDropdownMode ? this.renderDropdown() : this.renderCards();
+        if (!this.availability.updateBaseline(options)) return;
+        this.focusIndex = focusedConceptId
+            ? this._visibleConcepts.findIndex(
+                  (entry) => entry.conceptId === focusedConceptId,
+              )
+            : -1;
+        this.render();
     }
 
     destroy(): void {
@@ -531,12 +459,16 @@ export class SingleSelect extends ComponentBase {
         super.onAssertionsChanged();
     }
 
+    private inferredConceptId(): string | undefined {
+        const origins = choiceOrigins(this.assertions, this.primaryCategory.id);
+        return [...origins].find(([, origin]) => origin === 'inferred')?.[0];
+    }
+
     private selectedConceptId(): string | undefined {
+        const origins = choiceOrigins(this.assertions, this.primaryCategory.id);
         return (
             this.pendingText?.conceptId ??
-            this.assertions.find(
-                (assertion) => assertion.categoryId === this.primaryCategory.id,
-            )?.conceptId
+            [...origins].find(([, origin]) => origin === 'stated')?.[0]
         );
     }
 
@@ -551,7 +483,13 @@ export class SingleSelect extends ComponentBase {
             (assertion) => assertion.categoryId === this.primaryCategory.id,
         );
         if (selected?.conceptId === entry.conceptId) {
-            this.render();
+            if (this.inferredConceptId() === entry.conceptId && selected.value)
+                this.addAssertion(
+                    entry.conceptId,
+                    this.primaryCategory.id,
+                    selected.value,
+                );
+            else this.render();
             return;
         }
         this.pendingTextErrors = [];
@@ -567,41 +505,48 @@ export class SingleSelect extends ComponentBase {
      */
     private renderDropdown(): void {
         if (!this.dropdownEl) return;
-        const selected = this.assertions.find(
-            (a) => a.categoryId === this.primaryCategory.id,
-        );
-
-        // Rebuild options so filtered-out concepts disappear.
-        const existingValues = new Set(
-            Array.from(this.dropdownEl.options)
-                .slice(1)
-                .map((o) => o.value),
-        );
-        const visibleValues = new Set(
-            this._visibleConcepts.map((c) => c.conceptId),
-        );
+        const visible = this._visibleConcepts;
+        const explicit = this.selectedConceptId();
+        const inferred = explicit
+            ? undefined
+            : this.cardConcepts.find(
+                  (entry) => entry.conceptId === this.inferredConceptId(),
+              );
+        const existingValues = Array.from(this.dropdownEl.options)
+            .slice(1)
+            .map((option) => option.value);
         const needsRebuild =
-            existingValues.size !== visibleValues.size ||
-            [...existingValues].some((v) => !visibleValues.has(v));
+            existingValues.length !== visible.length ||
+            existingValues.some(
+                (value, index) => value !== visible[index].conceptId,
+            );
         if (needsRebuild) {
             this.dropdownEl.innerHTML = '';
             const placeholder = document.createElement('option');
             placeholder.value = '';
-            placeholder.textContent = `Select ${this.primaryCategory.label ?? 'tier'}…`;
             this.dropdownEl.appendChild(placeholder);
-            for (const c of this._visibleConcepts) {
+            for (const c of visible) {
                 const opt = document.createElement('option');
                 opt.value = c.conceptId;
                 opt.textContent = c.name;
+                this.attachConceptTitle(
+                    opt,
+                    c.conceptId,
+                    this.primaryCategory.id,
+                );
                 this.dropdownEl.appendChild(opt);
             }
         }
-        this.dropdownEl.value =
-            this.pendingText?.conceptId ?? selected?.conceptId ?? '';
+        this.dropdownEl.options[0].textContent = inferred
+            ? inferred.name + t('aria.inferredSuffix')
+            : `Select ${this.primaryCategory.label ?? 'tier'}…`;
+        // An inferred value uses the placeholder so choosing its real native
+        // option is an observable change and can state it explicitly.
+        this.dropdownEl.value = explicit ?? '';
 
-        const entry = this.cardConcepts.find(
-            (concept) => concept.conceptId === this.dropdownEl?.value,
-        );
+        const entry =
+            visible.find((concept) => concept.conceptId === explicit) ??
+            inferred;
         if (entry?.textInput && this.dropdownSupplement) {
             this.appendTextInput(entry, this.dropdownSupplement, true);
         } else this.dropdownSupplement?.replaceChildren();
@@ -628,15 +573,18 @@ export class SingleSelect extends ComponentBase {
         this.cardsContainer.innerHTML = '';
 
         const selectedConceptId = this.selectedConceptId();
+        const inferredConceptId = this.inferredConceptId();
         const categoryColor = this.getCategoryColor(this.primaryCategory.id);
         const visible = this._visibleConcepts;
 
         visible.forEach((entry, i) => {
             const isSelected = entry.conceptId === selectedConceptId;
+            const isInferred = entry.conceptId === inferredConceptId;
             const isFocused = i === this.focusIndex;
 
             const card = document.createElement('div');
             card.className = 'select-card';
+            card.toggleAttribute('data-inferred', isInferred);
             card.setAttribute('role', 'radio');
             card.setAttribute('aria-checked', isSelected ? 'true' : 'false');
             // Roving tabindex: follow the explicit focus position when set; otherwise
@@ -702,7 +650,9 @@ export class SingleSelect extends ComponentBase {
             const label = document.createElement('div');
             label.className = 'select-card-label';
             label.id = labelId;
-            label.textContent = entry.name;
+            label.textContent = isInferred
+                ? entry.name + t('aria.inferredSuffix')
+                : entry.name;
             content.appendChild(label);
 
             // Keep a per-option accessible description while rendering the
@@ -772,19 +722,20 @@ export class SingleSelect extends ComponentBase {
     /** Render the selected choice's help, temporarily overridden by hover/focus. */
     private renderDetail(): void {
         const selectedConceptId = this.selectedConceptId();
+        const currentConceptId = selectedConceptId ?? this.inferredConceptId();
         const currentInput = this.detailPanel.querySelector<HTMLInputElement>(
             '.select-card-text-field',
         );
         const editing = currentInput === document.activeElement;
         const detailConceptId = editing
-            ? selectedConceptId
-            : (this.previewConceptId ?? selectedConceptId);
+            ? currentConceptId
+            : (this.previewConceptId ?? currentConceptId);
         const entry = this._visibleConcepts.find(
             (concept) => concept.conceptId === detailConceptId,
         );
         const retained =
             entry?.textInput &&
-            entry.conceptId === selectedConceptId &&
+            entry.conceptId === currentConceptId &&
             currentInput?.dataset.conceptId === entry.conceptId
                 ? currentInput.closest<HTMLElement>('.select-card-text-input')
                 : null;
@@ -807,7 +758,10 @@ export class SingleSelect extends ComponentBase {
 
         const heading = document.createElement('div');
         heading.className = 'select-detail-heading';
-        heading.textContent = entry.name;
+        heading.textContent = conceptHintHeading(
+            this.primaryCategory.label ?? '',
+            entry.name,
+        );
         append(heading);
 
         const description = this.getShortDescription(entry);
@@ -820,7 +774,7 @@ export class SingleSelect extends ComponentBase {
 
         // A text value belongs to the selected choice, including its local
         // draft, not a transient hover preview.
-        if (entry.textInput && entry.conceptId === selectedConceptId) {
+        if (entry.textInput && entry.conceptId === currentConceptId) {
             this.appendTextInput(entry, this.detailPanel);
         }
     }
@@ -831,6 +785,9 @@ export class SingleSelect extends ComponentBase {
         showLabel = false,
     ): void {
         if (!entry.textInput) return;
+        const matchesEntry = (assertion: Assertion) =>
+            assertion.conceptId === entry.conceptId &&
+            assertion.categoryId === entry.categoryId;
         const existing = target.querySelector<HTMLInputElement>(
             '.select-card-text-field',
         );
@@ -838,10 +795,7 @@ export class SingleSelect extends ComponentBase {
             const value =
                 this.pendingText?.conceptId === entry.conceptId
                     ? this.pendingText.value
-                    : (this.assertions.find(
-                          (assertion) =>
-                              assertion.conceptId === entry.conceptId,
-                      )?.value ?? '');
+                    : (this.assertions.find(matchesEntry)?.value ?? '');
             if (existing.value !== value) existing.value = value;
             this.textValidators.get(existing)?.();
             return;
@@ -871,9 +825,7 @@ export class SingleSelect extends ComponentBase {
         );
         applyTextInputAttributes(textField, entry.textInput);
 
-        const existingAssertion = this.assertions.find(
-            (a) => a.conceptId === entry.conceptId,
-        );
+        const existingAssertion = this.assertions.find(matchesEntry);
         if (this.pendingText?.conceptId === entry.conceptId)
             textField.value = this.pendingText.value;
         else if (existingAssertion?.value)
@@ -891,13 +843,11 @@ export class SingleSelect extends ComponentBase {
             HTMLSelectElement | HTMLInputElement | null;
 
         const validateField = () => {
-            const value = textField.value.trim();
-            let error = '';
-            if (isRequired && !value) {
-                error = 'Required';
-            } else if (value && !textField.validity.valid) {
-                error = `Invalid format. Expected: ${entry.textInput!.placeholder ?? 'the required value format'}`;
-            }
+            const error = capturedValueProblem(
+                textField,
+                entry.textInput!,
+                isRequired,
+            );
             // Parent marking reports stay on the parent. A facet's unfinished
             // input has its own canonical reading, which cannot be published.
             const draftErrors =
@@ -941,18 +891,10 @@ export class SingleSelect extends ComponentBase {
                 value: textField.value,
             };
             const valid = validateField();
-            const assertion = this.assertions.find(
-                (a) => a.conceptId === entry.conceptId,
-            );
+            const assertion = this.assertions.find(matchesEntry);
             if (valid) {
                 if (assertion) {
-                    const edited: Assertion = {
-                        ...assertion,
-                        value: textField.value,
-                        source: 'user',
-                        confidence: 'certain',
-                    };
-                    delete edited.sourceRule;
+                    const edited = statedCapture(assertion, textField.value);
                     this.beginUserEdit();
                     this.assertions = this.assertions.map((current) =>
                         current === assertion ? edited : current,

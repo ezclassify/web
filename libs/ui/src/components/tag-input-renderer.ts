@@ -124,6 +124,9 @@ export function renderTagChips(ctx: TagChipRenderContext): HTMLElement[] {
         return [];
     }
 
+    const categoryNames = new Map(
+        ctx.scheme.categories.map((category) => [category.id, category.label]),
+    );
     const conceptMap = new Map(scheme.concepts.map((c) => [c.id, c]));
     const layout = getPublicFormatLayout(ctx.schemeMeta, ctx.formatId);
     const fmt = layout.format;
@@ -242,6 +245,7 @@ export function renderTagChips(ctx: TagChipRenderContext): HTMLElement[] {
                 fullName: concept?.name ?? label,
                 conceptId: a.conceptId,
                 categoryId: a.categoryId,
+                categoryName: categoryNames.get(a.categoryId),
                 color,
                 textColor,
                 inferred: isInferred,

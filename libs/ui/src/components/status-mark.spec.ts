@@ -18,6 +18,7 @@ import {
     explainedChanges,
     schemeChangeWords,
     setStatusMarkError,
+    setStatusMarkDraft,
     setStatusMarkFixes,
 } from './status-mark';
 import type { ConceptWriting } from '../written-concept';
@@ -384,6 +385,40 @@ describe('setStatusMarkFixes state machine', () => {
         expect(mark.tabIndex).toBe(0);
         expect(mark.getAttribute('aria-label')).toBe(
             'Enhanced by EzClassify. 1 change made by a marking rule, not yet reviewed.',
+        );
+    });
+
+    it('shows only the owned category’s corrections in the field and its draft', () => {
+        const mark = ensureStatusMark(wrap, {
+            shape: 'input',
+            tools: true,
+            correctionCategory: 'cat',
+        });
+        const foreign = { conceptId: 'FOREIGN', categoryId: 'other' };
+        const sample = makeFix('mixed', 'A mixed correction.', 'LOCAL');
+        const changes: Change[] = [
+            { ...sample, add: [...sample.add!, foreign] },
+            { ...makeFix('foreign'), add: [foreign] },
+        ];
+        const verify = () => {
+            expect(
+                mark.querySelector('.ez-status-mark__count')?.textContent,
+            ).toBe('1');
+            mark.click();
+            const tip = document.getElementById(
+                mark.getAttribute('aria-describedby') ?? '',
+            );
+            expect(tip?.textContent).toContain('LOCAL');
+            expect(tip?.textContent).not.toContain('FOREIGN');
+            mark.click();
+        };
+        setStatusMarkFixes(wrap, changes);
+        verify();
+        setStatusMarkDraft(mark, changes);
+        verify();
+        setStatusMarkDraft(mark, [changes[1]]);
+        expect(mark.querySelector('.ez-status-mark__count')?.textContent).toBe(
+            '',
         );
     });
 
@@ -1485,7 +1520,10 @@ describe('status mark tone', () => {
     });
 
     it('is the text color on a light palette and gold on a dark one', () => {
-        for (const light of [':root {', "[data-color-scheme='light'],"]) {
+        for (const light of [
+            ':where(:root) {',
+            "[data-color-scheme='light'],",
+        ]) {
             const block = paletteBlock(light);
             expect(block).toMatch(/--ez-status-mark-color:\s*#9ca3af;/);
             expect(block).toMatch(
