@@ -788,10 +788,9 @@ describe('DecisionFlow', () => {
         const arrows = [back, next].map((button) =>
             button.querySelector('[aria-hidden="true"]'),
         );
-        expect(arrows.map((arrow) => arrow?.textContent)).toEqual([
-            '\u2039\uFE0E',
-            '\u203a\uFE0E',
-        ]);
+        expect(arrows.every((arrow) => arrow instanceof HTMLSpanElement)).toBe(
+            true,
+        );
     });
 
     it('shows an unset marking on its line as a word, not a dash', async () => {
@@ -915,7 +914,7 @@ describe('DecisionFlow', () => {
         mixedContainer.remove();
     });
 
-    it('seeded marking with only required categories filled does not land on optional empty step', async () => {
+    it('opens a seeded flow at the first step and can jump to a later one', async () => {
         // Profile: scope required=true, impact required=false. Seed with scope only.
         const seededProfile = createStepProfile();
         (seededProfile.categories[0] as any).required = true;
@@ -957,11 +956,26 @@ describe('DecisionFlow', () => {
         });
         await enterFlow(seedContainer);
 
-        // Should land on last step (scope filled, impact optional = passable), not stuck on impact
-        const label = seedContainer.querySelector(
-            '.ez-decision-flow__question-label',
-        );
-        expect(label?.textContent).toContain('Impact');
+        const question = () =>
+            seedContainer.querySelector('.ez-decision-flow__question-label')
+                ?.textContent;
+        expect(question()).toBe('1 of 2 · Scope');
+
+        seedContainer
+            .querySelector<HTMLButtonElement>(
+                '.ez-decision-flow__step-dot[data-index="1"]',
+            )!
+            .click();
+        expect(question()).toBe('2 of 2 · Impact');
+
+        document.body.click();
+        seedContainer
+            .querySelector<HTMLElement>('.ez-decision-flow__values')!
+            .click();
+        expect(question()).toBe('1 of 2 · Scope');
+        expect(flow.getAssertions()).toEqual(initialAssertions);
+        flow.destroy();
+        seedContainer.remove();
     });
 });
 
@@ -4698,7 +4712,7 @@ describe('DecisionFlow: compact layout', () => {
         },
     );
 
-    it('focuses the first unanswered step when defaults already answer an earlier step', async () => {
+    it('focuses the first step even when a default already answers it', async () => {
         await flow.init(container, toCtx(createMockEngine()));
         flow.applyStoreState({
             rendered: 'S:F',
@@ -4733,10 +4747,10 @@ describe('DecisionFlow: compact layout', () => {
             .dispatchEvent(
                 new MouseEvent('click', { bubbles: true, detail: 1 }),
             );
-        expect(title()).toBe('2 of 2 · Impact');
-        expect((document.activeElement as HTMLElement).dataset.conceptId).toBe(
-            'IMPACT_LOW',
-        );
+        expect(title()).toBe('1 of 2 · Scope');
+        expect(
+            (document.activeElement as HTMLElement).dataset.conceptId,
+        ).toMatch(/^SCOPE_/);
     });
 
     it('skips unavailable options when a summary press opens the flow', async () => {
@@ -4772,12 +4786,12 @@ describe('DecisionFlow: compact layout', () => {
         );
     });
 
-    it('focuses the existing value input when opening its current step from the summary', async () => {
+    it('focuses the existing value input when opening the first step from the summary', async () => {
         const outside = document.createElement('button');
         document.body.appendChild(outside);
         container.setAttribute(
             'data-ezclassify-decisionflow-categories',
-            '["level","label"]',
+            '["label","level"]',
         );
         await flow.init(container, toCtx(createTextInputEngine()));
         flow.setAssertions([
@@ -6158,17 +6172,7 @@ describe('DecisionFlow: steps in written order', () => {
         expect(dotCategories()).toEqual(['level', 'sharing', 'owner', 'note']);
     });
 
-    it('opens on the first step with no value when the author has chosen nothing', async () => {
-        await mount(
-            ['owner', 'level', 'sharing', 'recipients'],
-            [defaultOwner],
-        );
-        await open();
-        expect(title()).toBe('2 of 4 · Level');
-        expect(dotFor('level').getAttribute('aria-current')).toBe('step');
-    });
-
-    it('opens where it was once the author has chosen something', async () => {
+    it('opens at the first step when the author has chosen something', async () => {
         await mount(
             ['owner', 'level', 'sharing', 'recipients'],
             [
@@ -6185,7 +6189,7 @@ describe('DecisionFlow: steps in written order', () => {
         expect(title()).toBe('1 of 4 \u00b7 Owner');
     });
 
-    it('passes over a step a default answers, shows it inferred, and still goes there from its dot', async () => {
+    it('opens on the first step with its default shown as inferred', async () => {
         await mount(
             ['owner', 'level', 'sharing', 'recipients'],
             [defaultOwner],
@@ -6197,10 +6201,8 @@ describe('DecisionFlow: steps in written order', () => {
             'Step 1 of 4, Owner: USA (inferred)',
         );
         await open();
-        expect(title()).toBe('2 of 4 · Level');
-        dotFor('owner').click();
-        await settle();
         expect(title()).toBe('1 of 4 · Owner');
+        expect(dotFor('owner').getAttribute('aria-current')).toBe('step');
         // The option the default holds reads as inferred, not chosen.
         const usa = host.querySelector<HTMLElement>(
             '.ez-decision-flow__option[data-concept-id="USA"]',

@@ -882,12 +882,14 @@ export abstract class ReadOnlyComponentBase
     protected callProcess(
         input: string | Assertion[],
         options?: ProcessOptions,
+        includeParts = true,
     ) {
         return this.processInput(
             input,
             this.options.scope
                 ? { ...options, surface: this.options.scope }
                 : options,
+            includeParts,
         );
     }
 
@@ -902,11 +904,14 @@ export abstract class ReadOnlyComponentBase
     private processInput(
         input: string | Assertion[],
         options?: ProcessOptions,
+        includeParts = true,
     ) {
         // Values taken from a whole are never sent back: the engine takes
         // them again from the whole this call supplies.
         const stated = withStatedAssertions(options);
-        const withParts = partsOption(this._resolveParts, stated);
+        const withParts = includeParts
+            ? partsOption(this._resolveParts, stated)
+            : stated;
         const read =
             typeof input === 'string' ? input : withoutTakenFromWhole(input);
         return this.engine.process(read, withParts);

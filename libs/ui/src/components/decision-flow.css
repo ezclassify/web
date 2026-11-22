@@ -199,9 +199,21 @@
     border-radius: var(--ez-border-radius, 0.25rem);
     background: transparent;
     color: var(--ez-color-text, inherit);
+    font: inherit;
     font-size: calc(var(--ez-font-size, 1em) * 1.25);
     line-height: 1;
     cursor: pointer;
+}
+.ez-decision-flow__nav-btn > span {
+    box-sizing: border-box;
+    inline-size: 0.6em;
+    block-size: 0.6em;
+    border-right: 0.125rem solid currentColor;
+    border-bottom: 0.125rem solid currentColor;
+    transform: rotate(-45deg);
+}
+.ez-decision-flow__nav-btn--start > span {
+    transform: rotate(135deg);
 }
 .ez-decision-flow__nav-btn:hover:not(:disabled) {
     border-color: var(--ez-color-border, #d1d5db);
@@ -398,7 +410,6 @@
         width: 2.75rem;
         min-height: 2.75rem;
         font-size: calc(var(--ez-font-size, 1em) * 2);
-        font-weight: 700;
     }
     /* A dot is a 24px square target with its disc inside, edge to edge
        with the next, so a two-scope flow fits one line beside the chrome on

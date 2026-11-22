@@ -57,9 +57,8 @@ import { focusTextCaretNeighbor } from './text-caret-edge';
  * shows only while the choice that heads it is made, in its place. The order is
  * inWrittenOrder's (written-concept.ts).
  *
- * Opening a flow the author has chosen nothing in yet goes to the first step
- * with no value at all. A step a default already answers is passed over, reads
- * as inferred, and its dot still goes to it.
+ * Opening the flow starts at its first step by default. The dots and links to
+ * missing values can open a specific step directly.
  *
  * Scopes: each step belongs to the scope its category declares, and every
  * engine call made for a step (its options, the choices it accepts) is made on
@@ -283,7 +282,9 @@ export class DecisionFlow extends ComponentBase {
                 return false;
             if (!offered) return true;
             return (
-                (this.open && step.categoryId === this._currentCategoryId) ||
+                (this.open &&
+                    !this.openingBeforeOptions &&
+                    step.categoryId === this._currentCategoryId) ||
                 offered.has(step.categoryId) ||
                 this.assertions.some((a) => a.categoryId === step.categoryId) ||
                 this.pendingText?.categoryId === step.categoryId
@@ -292,11 +293,7 @@ export class DecisionFlow extends ComponentBase {
     }
 
     private currentStep = 0;
-    /**
-     * Set when the flow opened before the engine said which steps it offers:
-     * the flow goes to the step the author is needed at once it has.
-     */
-    private placeOnOptions = false;
+    private openingBeforeOptions = false;
     /**
      * Category ID at the active step: the source of truth when step indices
      * shift.
@@ -521,9 +518,12 @@ export class DecisionFlow extends ComponentBase {
                     .map((s) => s.categoryId),
             ),
         );
-        if (this.placeOnOptions) {
-            this.placeOnOptions = false;
-            if (this.open && this.placeWhereNeeded() && !paint) this.render();
+        if (this.openingBeforeOptions) {
+            const previousCategory = this._currentCategoryId;
+            this.chooseOpeningStep(this.steps);
+            this.openingBeforeOptions = false;
+            if (!paint && this._currentCategoryId !== previousCategory)
+                this.render();
         }
         if (!paint) return;
         if (this.clearIrrelevantSteps()) return;
@@ -678,29 +678,6 @@ export class DecisionFlow extends ComponentBase {
             this._allSteps.flatMap((s) => (s.scope ? [s.scope] : [])),
             this.schemeMeta,
         );
-
-        // Determine starting step from existing assertions.
-        // When there are no assertions at all (fresh component), always start at step 0.
-        // When the component is seeded, advance past optional categories that have no
-        // assertion; they are skippable and don't block a valid partial/full marking.
-        const startStep = this.options.startStep ?? 0;
-        const hasAnyAssertions = this.assertions.length > 0;
-        const visibleSteps = this.steps; // use getter; reflects initial assertion state
-        const firstIncomplete = hasAnyAssertions
-            ? visibleSteps.findIndex(
-                  (s) =>
-                      !this.assertions.some(
-                          (a) => a.categoryId === s.categoryId,
-                      ) && s.required,
-              )
-            : 0;
-
-        this.currentStep =
-            firstIncomplete >= 0
-                ? Math.max(startStep, firstIncomplete)
-                : visibleSteps.length - 1;
-        this._currentCategoryId =
-            visibleSteps[this.currentStep]?.categoryId ?? '';
 
         // The flow in the suite's field frame: the header row, the open step
         // and one line per scope. The header and the preview overlay last the
@@ -1084,16 +1061,21 @@ export class DecisionFlow extends ComponentBase {
         const scopes: (string | undefined)[] = this.multiScope
             ? this.stepScopes
             : [this.options.scope];
+        const wholeScope = this.schemeMeta.defaultScope ?? scopes[0];
         try {
             const results: ProcessResult[] = await Promise.all(
                 scopes.map((scope) =>
                     Promise.resolve(
-                        this.callProcess('', {
-                            outputFormat: this.outputFor(scope),
-                            assertions: stated,
-                            context: this.getProcessingContext(),
-                            ...(scope ? { surface: scope } : {}),
-                        }),
+                        this.callProcess(
+                            '',
+                            {
+                                outputFormat: this.outputFor(scope),
+                                assertions: stated,
+                                context: this.getProcessingContext(),
+                                ...(scope ? { surface: scope } : {}),
+                            },
+                            !this.multiScope || scope === wholeScope,
+                        ),
                     ),
                 ),
             );
@@ -1185,6 +1167,7 @@ export class DecisionFlow extends ComponentBase {
 
     /** A new author edit cancels any earlier pending automatic step change. */
     protected override beginUserEdit(): void {
+        this.openingBeforeOptions = false;
         ++this.choiceSequence;
         super.beginUserEdit();
     }
@@ -1850,7 +1833,9 @@ export class DecisionFlow extends ComponentBase {
      */
     private setOpen(open: boolean): void {
         if (this.open === open || !this.stepEl) return;
-        const shown = this.shownCategories();
+        const steps = this.steps;
+        const shown = steps.map((step) => step.categoryId).join(' ');
+        const previousCategory = this._currentCategoryId;
         this.open = open;
         this.stepEl.hidden = !open;
         this.flowEl.tabIndex = open ? -1 : 0;
@@ -1858,11 +1843,11 @@ export class DecisionFlow extends ComponentBase {
         // Opening holds back what the author has not reached yet; at rest
         // everything missing shows. The open step's scope reads as current
         // on its caption.
+        this.openingBeforeOptions = open && this.offeredCategories === null;
         if (open) {
-            this.openWhereNeeded();
+            this.chooseOpeningStep(steps);
             this.furthestStep = Math.max(this.furthestStep, this.currentStep);
         } else {
-            this.placeOnOptions = false;
             this.focusAfterRuleFix = false;
             this._restoreFocusAfterRender = false;
         }
@@ -1873,55 +1858,23 @@ export class DecisionFlow extends ComponentBase {
             this.render();
             return;
         }
+        if (open && this._currentCategoryId !== previousCategory)
+            this.renderStep();
         this.refreshDots();
         this.renderValues();
+    }
+
+    private chooseOpeningStep(steps: StepDef[]): void {
+        this.currentStep = Math.min(
+            Math.max(0, this.options.startStep ?? 0),
+            Math.max(0, steps.length - 1),
+        );
+        this._currentCategoryId = steps[this.currentStep]?.categoryId ?? '';
     }
 
     /** The categories of the steps showing, as one key. */
     private shownCategories(): string {
         return this.steps.map((step) => step.categoryId).join(' ');
-    }
-
-    /**
-     * Opening a flow the author has chosen nothing in yet goes to the first
-     * step with no value at all, past any a default already answers. Only the
-     * step is drawn again here, so a dot pressed to open the flow is still
-     * there for its click. Opened before the engine has said which steps it
-     * offers, the flow goes there once it has, unless the author has moved by
-     * then.
-     */
-    private openWhereNeeded(): void {
-        if (this.offeredCategories === null) {
-            this.placeOnOptions = true;
-            return;
-        }
-        if (this.placeWhereNeeded()) this.renderStep();
-    }
-
-    /**
-     * Make the first offered step with no value current, when the author has
-     * chosen nothing yet.
-     *
-     * @returns Whether the current step changed
-     */
-    private placeWhereNeeded(): boolean {
-        if (
-            this.pendingText ||
-            this.assertions.some((a) => !derivedAssertion(a))
-        )
-            return false;
-        const offered = this.offeredCategories;
-        const target = this.steps.find(
-            (step) =>
-                this.chosenIn(step).size === 0 &&
-                (!offered || offered.has(step.categoryId)),
-        );
-        if (!target || target.categoryId === this._currentCategoryId)
-            return false;
-        this._currentCategoryId = target.categoryId;
-        // The step left may have shown only because the author was on it.
-        this.currentStep = this.steps.indexOf(target);
-        return true;
     }
 
     /** Keep the current option as this step's one native Tab stop. */
@@ -2671,7 +2624,7 @@ export class DecisionFlow extends ComponentBase {
         const steps = this.steps;
         if (index < 0 || index >= steps.length) return;
         this.pendingText = null;
-        this.placeOnOptions = false;
+        this.openingBeforeOptions = false;
         this.currentStep = index;
         this.furthestStep = Math.max(this.furthestStep, index);
         this._currentCategoryId = steps[index].categoryId;
@@ -2728,8 +2681,6 @@ export class DecisionFlow extends ComponentBase {
         button.className = `ez-decision-flow__nav-btn ez-decision-flow__nav-btn--${side}`;
         const glyph = document.createElement('span');
         glyph.setAttribute('aria-hidden', 'true');
-        // Text presentation (U+FE0E), so no platform swaps in an emoji.
-        glyph.textContent = `${side === 'start' ? '‹' : '›'}︎`;
         button.appendChild(glyph);
         if (side === 'start') {
             button.setAttribute('aria-label', 'Previous step');
