@@ -55,6 +55,12 @@ describe('component locator', () => {
             wrapperClass: 'marked-input-wrap',
             component: 'MarkedInput',
         },
+        {
+            tag: 'textarea',
+            controllerName: 'marked-textarea',
+            wrapperClass: 'marked-textarea-wrap',
+            component: 'MarkedTextArea',
+        },
     ])(
         'outlines the complete enhanced $tag $component without its host label or duplicate plumbing',
         ({ tag, controllerName, wrapperClass, component }) => {
@@ -68,14 +74,12 @@ describe('component locator', () => {
                 '[data-ezclassify-mount]',
             )!;
             setMountHost(mount, controller);
-            if (tag === 'input') controller.style.display = 'none';
+            const hiddenNative =
+                tag === 'input' || controllerName === 'marked-textarea';
+            if (hiddenNative) controller.style.display = 'none';
             rendered(target, 300, 200);
             rendered(wrapper, 240, 140);
-            rendered(
-                controller,
-                tag === 'input' ? 0 : 240,
-                tag === 'input' ? 0 : 48,
-            );
+            rendered(controller, hiddenNative ? 0 : 240, hiddenNative ? 0 : 48);
             rendered(mount, 240, 0);
             document.body.append(target);
             const locator = createComponentLocator({ target, active: true });

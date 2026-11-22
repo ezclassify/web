@@ -424,16 +424,16 @@ describe('tooltip-manager', () => {
             );
         });
 
-        it('keeps tools left-aligned below the field as sections grow and shrink', () => {
+        it('keeps tools aligned to the trailing field edge below the field as sections grow and shrink', () => {
             let height = 121;
             const tools = phoneTools(() => height);
             const { field: f, target } = field(box(24, 300, 366, 340));
             showTooltip(target, tools, root, { clearOf: f });
-            expect(shown().left).toBe('24px');
+            expect(shown().left).toBe('20px');
             expect(shown().top).toBe('346px');
             height = 700;
             repositionTooltip(target, root, { clearOf: f });
-            expect(shown().left).toBe('24px');
+            expect(shown().left).toBe('20px');
             expect(shown().top).toBe('346px');
             expect(shown().getPropertyValue('--ez-tools-max-height')).toBe(
                 '490px',
@@ -452,21 +452,29 @@ describe('tooltip-manager', () => {
             at(f, box(24, 300, 366, 380.719));
             repositionTooltip(target, root, { clearOf: f });
             expect(shown().top).toBe('386.719px');
-            expect(shown().left).toBe('24px');
+            expect(shown().left).toBe('20px');
             at(f, box(32, 340, 374, 420.719));
             at(target, box(344, 344, 368, 368));
             repositionTooltip(target, root, { clearOf: f });
             expect(shown().top).toBe('426.719px');
-            expect(shown().left).toBe('32px');
+            expect(shown().left).toBe('28px');
             height = 700;
             repositionTooltip(target, root, { clearOf: f });
             expect(shown().top).toBe('426.719px');
-            expect(shown().left).toBe('32px');
+            expect(shown().left).toBe('28px');
             expect(
                 Number.parseFloat(
                     shown().getPropertyValue('--ez-tools-max-height'),
                 ),
             ).toBeCloseTo(409.281);
+        });
+
+        it('aligns tools to the left edge of a right-to-left field', () => {
+            const tools = phoneTools(() => 121);
+            const { field: f, target } = field(box(24, 300, 366, 340));
+            target.style.direction = 'rtl';
+            showTooltip(target, tools, root, { clearOf: f });
+            expect(shown().left).toBe('24px');
         });
 
         describe('opening during native focus scrolling', () => {
