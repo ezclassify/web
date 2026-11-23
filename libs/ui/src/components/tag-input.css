@@ -28,6 +28,8 @@
 .tag-input-wrap > .proto-tag {
     box-sizing: border-box;
     min-width: 0;
+    /* Preserve the host text metrics within a single-line field frame. */
+    padding-block: 0.1em;
     border-radius: 0.875rem;
 }
 .tag-input-wrap > .proto-tag > span {

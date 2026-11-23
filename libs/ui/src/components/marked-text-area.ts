@@ -20,6 +20,7 @@ import type {
     Assertion,
     ProcessResult,
     Change,
+    Fix,
     ProcessingContext,
     RenderAssessment,
     UnreadMark,
@@ -38,12 +39,14 @@ import { getMountHost } from '../mount-host-registry';
 import { wholeSettled } from '../whole-read-gate';
 import { revealClearOfPinned } from './composer/composer-placement';
 import { AppliedFixHistory } from './applied-fix-history';
+import { NO_RULE_ERRORS, placeUnderField, ruleErrorsFrom } from './rule-errors';
 import {
     statusMarkOwnsNode,
     statusMarkFavoriteApplyOwner,
     setStatusMarkError,
     setStatusMarkGroups,
     type StatusMarkGroup,
+    type StatusMarkFinding,
 } from './status-mark';
 import {
     cleanupTooltipForRoot,
@@ -315,7 +318,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
      * they left behind, not wherever the DOM selection happens to report once
      * focus has moved on.
      */
-    private _lastCaret = 0;
+    private _lastCaret: number | null = null;
     private readonly onBrandDown = (event: KeyboardEvent): void => {
         if (
             event.key !== 'ArrowDown' ||
@@ -333,7 +336,9 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         event.stopPropagation();
         if (this.picker) this.picker.focus();
         else
-            this.focusAt(Math.min(this._lastCaret, this.textarea.value.length));
+            this.focusAt(
+                Math.min(this._lastCaret ?? 0, this.textarea.value.length),
+            );
     };
 
     /**
@@ -399,19 +404,114 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
      * picker.
      */
     private lastSegmentedText = '';
+    private readonly proposedFixesBySegment = new WeakMap<
+        MarkedSegment,
+        readonly Fix[]
+    >();
+
+    /** A choice in Favorites is separate from the field's live caret. */
+    private favoriteSelection: { key: string; text: string } | null = null;
+
+    private favoriteTargetKey(segment: MarkedSegment): string {
+        return segment.entryId
+            ? 'entry:' + segment.entryId
+            : 'span:' + segment.start;
+    }
+
+    private selectedFavoriteSegment(): MarkedSegment | undefined {
+        const selection = this.favoriteSelection;
+        if (!selection || this.textarea.value !== selection.text) return;
+        return this.segments.find(
+            (segment) => this.favoriteTargetKey(segment) === selection.key,
+        );
+    }
+
+    private favoriteCaretSegment(): MarkedSegment | undefined {
+        const range = this.activeRange;
+        return range
+            ? this.segments.find(({ start }) => start === range.start)
+            : this.segments[this.activeSegmentIndex];
+    }
 
     /**
-     * The caret's entry, or the entry still owned by the active Favorite
+     * The chosen entry, or the entry still owned by the active Favorite
      * application.
      */
     private favoriteEntryId(): string | undefined {
+        if (this.favoriteSelection?.text === this.textarea.value)
+            return this.selectedFavoriteSegment()?.entryId;
         const owner = statusMarkFavoriteApplyOwner(this.toolsButton);
-        return (
-            this.segments[this.activeSegmentIndex]?.entryId ??
-            (owner && owner === this.applyingEntry?.owner
-                ? this.applyingEntry.entryId
-                : undefined)
+        if (owner && owner === this.applyingEntry?.owner)
+            return this.applyingEntry.entryId;
+        return this.favoriteCaretSegment()?.entryId;
+    }
+
+    private favoriteTargets() {
+        const text = this.textarea.value;
+        if (text !== this.lastSegmentedText) return;
+        const editing = this.favoriteCaretSegment();
+        if (this.activeRange && !editing) return;
+        const caretStart =
+            this._lastCaret === null ? null : this.lineStartAt(this._lastCaret);
+        const caret =
+            editing ?? this.segments.find(({ start }) => start === caretStart);
+        const caretKey = caret ? this.favoriteTargetKey(caret) : '';
+        const draft = this.picker?.isDirty() ?? false;
+        const options = this.segments.flatMap((segment, index) => {
+            if (text.slice(segment.start, segment.end) !== segment.marking)
+                return [];
+            const end = this.segments[index + 1]?.start ?? text.length;
+            const body = text.slice(segment.end, end).split('\n', 1)[0].trim();
+            return [
+                {
+                    value: this.favoriteTargetKey(segment),
+                    disabled: draft && segment !== caret,
+                    invalid: segment.errors.length > 0,
+                    label: body
+                        ? segment.marking + ' ' + body
+                        : segment.marking,
+                },
+            ];
+        });
+        if (!options.length) return;
+        const selected =
+            this.favoriteSelection?.key ??
+            (this._lastCaret === null && !caretKey
+                ? options[0].value
+                : caretKey);
+        if (selected && !options.some(({ value }) => value === selected))
+            return;
+        if (!this.favoriteSelection)
+            this.favoriteSelection = { key: selected, text };
+        return {
+            selected,
+            options,
+            select: (key: string) => {
+                this.favoriteSelection = { key, text };
+            },
+        };
+    }
+
+    private favoriteInsertionLabel(): string {
+        return t(
+            this.newMarkedLineInsertion(this._lastCaret ?? 0).prefix
+                ? 'favorites.insertAfterParagraph'
+                : 'favorites.insertParagraph',
         );
+    }
+
+    private describeFavoriteTarget(): string {
+        if (this.favoriteSelection?.key === '')
+            return t('favorites.chooseTarget');
+        if (this.picker?.isDirty()) return t('favorites.finishCurrentMarking');
+        const selected = this.favoriteSelection
+            ? this.selectedFavoriteSegment()
+            : this.favoriteCaretSegment();
+        return selected
+            ? t('favorites.editingMarking')
+                  .replace('{n}', String(this.segments.indexOf(selected) + 1))
+                  .replace('{total}', String(this.segments.length))
+            : this.favoriteInsertionLabel();
     }
 
     async init(
@@ -592,25 +692,15 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
             },
             () =>
                 this.markedFavoritesHost({
-                    describeTarget: () =>
-                        this.activeSegmentIndex >= 0
-                            ? t('favorites.editingMarking')
-                                  .replace(
-                                      '{n}',
-                                      String(this.activeSegmentIndex + 1),
-                                  )
-                                  .replace(
-                                      '{total}',
-                                      String(this.segments.length),
-                                  )
-                            : t('favorites.insertParagraph'),
-                    getCurrent: () => this.currentFavoritesMarking(),
-                    onApply: (marking, signal) => {
-                        const target = markingTarget(this);
-                        return target && this.favoriteEntryId()
-                            ? target.onApply(marking, signal)
-                            : this.applyFavorite(marking, signal);
+                    describeTarget: () => this.describeFavoriteTarget(),
+                    targets: () => this.favoriteTargets(),
+                    endTargetSelection: () => {
+                        this.favoriteSelection = null;
                     },
+                    getCurrent: () => this.currentFavoritesMarking(),
+                    canApply: () => this.favoriteSelection?.key !== '',
+                    onApply: (marking, signal) =>
+                        this.applyFavoriteFromTools(marking, signal),
                     focusField: () =>
                         this.picker
                             ? this.picker.focus()
@@ -654,6 +744,8 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
             }
         });
         this.listenToTextarea('blur', () => {
+            if (this.textarea.selectionStart === this.textarea.selectionEnd)
+                this._lastCaret = this.textarea.selectionStart;
             this.hasFocus = false;
             this.display.style.borderColor = capturedStyles.borderColor;
             if (!this.picker) this.renderDisplay();
@@ -820,6 +912,9 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
      */
     refreshWhole(): void {
         if (this.tornDown || !this.options.resolveContext) return;
+        for (const segment of this.segments)
+            this.proposedFixesBySegment.delete(segment);
+        this.updateStatusMark();
         if (this.picker) {
             this.picker.refreshContext();
             return;
@@ -888,6 +983,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         )
             return true;
         const seq = ++this.entryWriteSeq;
+        const scanAtProjection = this.scanSeq;
         const own = [
             ...this.segments.filter(
                 (segment): segment is MarkedSegment & { entryId: string } =>
@@ -1043,7 +1139,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                         (error) => error.message,
                     );
                     if (readFailure) errors.push(readFailure);
-                    return {
+                    const segment: MarkedSegment = {
                         ...span,
                         marking: projected.text.slice(span.start, span.end),
                         assertions: state.assertions.map((a) => ({ ...a })),
@@ -1064,6 +1160,25 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                             ? !read.valid || previous?.sourceUnresolved
                             : previous?.preserveSource,
                     };
+                    const proposals =
+                        read?.proposedFixes ??
+                        (previous &&
+                        previous.marking === segment.marking &&
+                        facts(previous.assertions) ===
+                            facts(state.assertions) &&
+                        previous.valid === segment.valid &&
+                        JSON.stringify(previous.validationErrors) ===
+                            JSON.stringify(segment.validationErrors)
+                            ? this.proposedFixesBySegment.get(previous)
+                            : undefined);
+                    if (
+                        scanAtProjection === this.scanSeq &&
+                        !state.stale &&
+                        !readFailure &&
+                        proposals?.length
+                    )
+                        this.proposedFixesBySegment.set(segment, proposals);
+                    return segment;
                 }),
         ].sort((a, b) => a.start - b.start);
         ++this.scanSeq;
@@ -1140,6 +1255,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
             this.onBrandDown,
             true,
         );
+        this.removeRuleErrors();
         this.destroyFieldTools();
         this.toolsButton = null;
         this.textareaEvents.abort();
@@ -1403,12 +1519,12 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         }
 
         let previousSegmentIndex = 0;
-        const previousReadFailures = prevMarkings.map((marking) => {
+        const previousRecognized = prevMarkings.map((marking) => {
             // Recognized spans can lack an entry ID after a failed empty read.
             // Walk in source order, skipping only additional unrecognized spans.
             while (previousSegmentIndex < previousSegments.length) {
                 const previous = previousSegments[previousSegmentIndex++];
-                if (previous.marking === marking) return previous.readFailure;
+                if (previous.marking === marking) return previous;
             }
             return undefined;
         });
@@ -1455,7 +1571,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
             const failure =
                 readFailures.get(i) ??
                 (!changedIndices.includes(i)
-                    ? previousReadFailures[i]
+                    ? previousRecognized[i]?.readFailure
                     : undefined);
             if (failure !== undefined) errors.push(failure);
             const warnings = [
@@ -1465,7 +1581,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                 !res.valid ||
                 res.recognition?.status !== 'complete' ||
                 unappliedFixes;
-            return {
+            const segment: MarkedSegment = {
                 start: r.start,
                 end: r.end,
                 marking: r.marking,
@@ -1485,6 +1601,12 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                 sourceUnresolved,
                 preserveSource: failure !== undefined || sourceUnresolved,
             };
+            if (!failure && processed?.proposedFixes?.length)
+                this.proposedFixesBySegment.set(
+                    segment,
+                    processed.proposedFixes,
+                );
+            return segment;
         });
 
         // Wrapped marks the scan could not read, such as "(junkxyz)", read like
@@ -1549,9 +1671,20 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                     (changed) => embedded[changed]?.start === segment.start,
                 )
             ) {
-                // A body-only edit must not turn structured store state into a
-                // fresh text projection that drops captured or suppressed facts.
+                // The scan sees embedded text without its whole. A prose-only
+                // edit preserves the last contextual judgment for this entry.
                 segment.assertions = previous.assertions;
+                segment.errors = previous.errors;
+                segment.warnings = previous.warnings;
+                segment.validationErrors = previous.validationErrors;
+                segment.valid = previous.valid;
+                segment.pendingFixes = previous.pendingFixes;
+                segment.readFailure = previous.readFailure;
+                segment.sourceUnresolved = previous.sourceUnresolved;
+                segment.preserveSource = previous.preserveSource;
+                const proposals = this.proposedFixesBySegment.get(previous);
+                if (!segment.readFailure && proposals)
+                    this.proposedFixesBySegment.set(segment, proposals);
             }
         });
         // An edit that extends the end of a mark and also changes its body
@@ -1741,10 +1874,94 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
      */
     private updateStatusMark(): void {
         setStatusMarkGroups(this.chrome.status, this.markGroups());
+        const text = this.textarea.value;
+        const findings = this.segments.flatMap(
+            (segment): StatusMarkFinding[] => {
+                if (!segment.errors.length && !segment.warnings?.length)
+                    return [];
+                const proposals =
+                    this.scanComplete && !segment.readFailure
+                        ? (this.proposedFixesBySegment.get(segment) ?? [])
+                        : [];
+                const fixes = ruleErrorsFrom(
+                    segment.validationErrors,
+                    proposals,
+                ).fixes;
+                return [
+                    {
+                        id: this.favoriteTargetKey(segment),
+                        heading: t('tools.paragraph').replace(
+                            '{n}',
+                            String(paragraphNumber(text, segment.start)),
+                        ),
+                        report: {
+                            messages: segment.errors,
+                            errors: segment.validationErrors,
+                            warnings: segment.warnings ?? [],
+                            fixes,
+                        },
+                        apply:
+                            fixes.length &&
+                            !this.nativeTextarea.matches(':disabled') &&
+                            !this.nativeTextarea.readOnly
+                                ? (fix) => this.applyParagraphFix(segment, fix)
+                                : undefined,
+                    },
+                ];
+            },
+        );
+        this.setFieldFindings(findings);
+        this.showInlineReport(
+            this.container.ownerDocument,
+            {
+                ...NO_RULE_ERRORS,
+                messages: findings.flatMap(({ heading, report }) =>
+                    report.messages.map((message) => `${heading}: ${message}`),
+                ),
+                warnings: findings.flatMap(({ heading, report }) =>
+                    report.warnings.map((message) => `${heading}: ${message}`),
+                ),
+            },
+            (element) =>
+                placeUnderField(element, this.textarea, this.container),
+        );
         setStatusMarkError(
             this.chrome.status,
             this.scanComplete ? null : t('mark.scanIncomplete'),
         );
+    }
+
+    /** Apply the adapter's proposal to the still-current paragraph only. */
+    private applyParagraphFix(segment: MarkedSegment, fix: Fix): void {
+        const text = this.textarea.value;
+        if (
+            this.tornDown ||
+            this.picker ||
+            !this.scanComplete ||
+            this.nativeTextarea.matches(':disabled') ||
+            this.nativeTextarea.readOnly ||
+            text !== this.lastSegmentedText ||
+            !this.segments.includes(segment) ||
+            !this.proposedFixesBySegment.get(segment)?.includes(fix) ||
+            text.slice(segment.start, segment.end) !== segment.marking ||
+            !fix.rendered.trim() ||
+            /[\r\n]/.test(fix.rendered)
+        )
+            return;
+
+        const marking = this.wrapRendered(fix.rendered).trimEnd();
+        this.setHostValue(
+            text.slice(0, segment.start) + marking + text.slice(segment.end),
+        );
+        this.lastScannedText = '';
+        this.stageMarkReading(
+            segment.start,
+            marking,
+            this.fixedAssertions(fix, segment.assertions),
+            [],
+        );
+        this.focusAt(segment.start + marking.length);
+        void this.settleClosedEditor().then(() => this.revealCaret());
     }
 
     /** Each marking in text order, with the changes recorded for its entry. */
@@ -2861,13 +3078,21 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
 
     /** The caret segment remains the target while its tools hold focus. */
     private currentFavoritesMarking(): { rendered: string; valid: boolean } {
-        const segment = this.segments[this.activeSegmentIndex];
+        const segment = this.favoriteSelection
+            ? this.selectedFavoriteSegment()
+            : this.favoriteCaretSegment();
         return segment
             ? {
                   rendered: segment.rendered,
                   valid: segment.valid && !!segment.rendered,
               }
             : { rendered: '', valid: false };
+    }
+
+    private lineStartAt(caret: number): number {
+        const text = this.textarea.value;
+        const safeCaret = Math.min(caret, text.length);
+        return safeCaret === 0 ? 0 : text.lastIndexOf('\n', safeCaret - 1) + 1;
     }
 
     /**
@@ -2890,8 +3115,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         // used here: clamp it to the current text's length instead of
         // resolving line geometry against an offset the text no longer has.
         const safeCaret = Math.min(caret, v.length);
-        const lineStart =
-            safeCaret === 0 ? 0 : v.lastIndexOf('\n', safeCaret - 1) + 1;
+        const lineStart = this.lineStartAt(safeCaret);
         const lineHasMark = this.segments.some((s) => s.start === lineStart);
         if (!lineHasMark) {
             return { insertAt: lineStart, prefix: '' };
@@ -2910,23 +3134,54 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
      * freshly templated (Ctrl+Enter, nothing typed yet) or a previously
      * loaded/edited marking.
      */
+    private applyFavoriteFromTools(marking: string, signal: AbortSignal) {
+        const selection = this.favoriteSelection;
+        const active = this.favoriteCaretSegment();
+        const segment = selection ? this.selectedFavoriteSegment() : active;
+        if (
+            this.nativeTextarea.matches(':disabled, [readonly]') ||
+            (!this.picker && this.textarea.value !== this.lastSegmentedText) ||
+            (selection &&
+                (selection.text !== this.textarea.value || !segment)) ||
+            (selection && this.picker?.isDirty() && segment !== active)
+        )
+            throw new Error(t('favorites.applyFailed'));
+
+        const target = markingTarget(this);
+        // Store reflections preserve unread or unresolved source. An explicit
+        // author action replaces that source, then runs the normal scan.
+        return target && this.favoriteEntryId() && !segment?.preserveSource
+            ? target.onApply(marking, signal)
+            : this.applyFavorite(marking, signal);
+    }
+
     private async applyFavorite(
         marking: string,
         signal?: AbortSignal,
     ): Promise<void> {
+        const selection = this.favoriteSelection;
         const result = await this.readForFavorites(marking);
-        if (signal?.aborted) return;
+        if (
+            signal?.aborted ||
+            this.nativeTextarea.matches(':disabled, [readonly]')
+        )
+            return;
+        if (selection && selection.text !== this.textarea.value)
+            throw new Error(t('favorites.applyFailed'));
         const rendered = result.rendered.trim();
         const wrapped = this.wrapRendered(rendered);
 
         // A recent close can deliberately hold the editor closed while the
         // caret already targets another marking. That marking remains the
         // replacement target shown by Favorites, even without an open picker.
-        const range =
-            this.activeRange ??
-            (this.textarea.value === this.lastSegmentedText
-                ? this.segments[this.activeSegmentIndex]
-                : undefined);
+        const range = selection
+            ? this.selectedFavoriteSegment()
+            : (this.activeRange ??
+              (this.textarea.value === this.lastSegmentedText
+                  ? this.segments[this.activeSegmentIndex]
+                  : undefined));
+        if (selection?.key && !range)
+            throw new Error(t('favorites.applyFailed'));
         if (range) {
             // Replacing an existing segment's span excludes the template's
             // trailing separator (the span ends at the marking's own close
@@ -2960,7 +3215,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         // gluing directly onto the body text that follows it. The
         // Ctrl+Enter insert path never trims for the same reason.
         const insert = wrapped;
-        const caret = this._lastCaret;
+        const caret = this._lastCaret ?? 0;
         const v = this.textarea.value;
         const { insertAt, prefix } = this.newMarkedLineInsertion(caret);
         const inserted = prefix + insert;

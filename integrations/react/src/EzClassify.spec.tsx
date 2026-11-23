@@ -23,6 +23,7 @@ import { bucketKey } from '@ezclassify/ui';
 import type { ContextAdapter, FavoritesConfig } from '@ezclassify/ui';
 import {
     EzClassify,
+    EzClassifyBanner,
     EzClassifyProvider,
     ReactEzClassifyStore,
     useEzClassify,
@@ -77,6 +78,24 @@ function last<T>(items: T[]): T {
     if (item === undefined) throw new Error('nothing recorded');
     return item;
 }
+
+it('forwards each banner label and live setting to the UI library', async () => {
+    const { container } = render(
+        <EzClassifyProvider context={await makeContext()}>
+            <EzClassify>
+                <EzClassifyBanner label="Page markings" />
+                <EzClassifyBanner label="Visible markings" noLive />
+            </EzClassify>
+        </EzClassifyProvider>,
+    );
+    await flush();
+    const banners = container.querySelectorAll('.status-banner');
+    expect(banners).toHaveLength(2);
+    expect(banners[0].getAttribute('aria-label')).toContain('Page markings');
+    expect(banners[0].getAttribute('aria-live')).toBe('polite');
+    expect(banners[1].getAttribute('aria-label')).toContain('Visible markings');
+    expect(banners[1].getAttribute('aria-live')).toBe('off');
+});
 
 describe('<EzClassify> under <EzClassifyProvider context>', () => {
     it('gives the code inside a root its store and, once started, its runtime', async () => {

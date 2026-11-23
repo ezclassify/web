@@ -11,10 +11,10 @@
  * assertion's concept in that category. Use it when a surface narrows to one
  * facet, such as a level chip.
  *
- * Boundary mode (any of `affix`, `boundary`, or `showCurrentData: true`): Shows
- * a structured banner with an optional static boundary line ("Boundary: TIER
- * 3") and an optional dynamic current-data line ("Current: TIER 2"). Either or
- * both may be shown independently.
+ * Boundary mode (`boundary` or `showCurrentData: true`): Shows a structured
+ * banner with an optional static boundary line ("Boundary: TIER 3") and an
+ * optional dynamic current-data line ("Current: TIER 2"). Either or both may be
+ * shown independently.
  *
  * Over-boundary detection: when both a boundary and current data are present,
  * the engine's checkCoverage() call determines whether the boundary covers the
@@ -66,6 +66,7 @@ import {
 } from './component-base-readonly';
 import {
     resolveVocabulary,
+    type Assertion,
     roleNoun,
     type SchemeMetaView,
     type ValidationError,
@@ -161,7 +162,7 @@ export interface StatusBannerOptions extends ComponentOptions {
     boundaryLabel?: string;
     /**
      * Show the dynamic current-data line derived from the live store value.
-     * Defaults to true when a boundary or affix is set; false otherwise.
+     * Defaults to true when a boundary is set; false otherwise.
      */
     showCurrentData?: boolean;
     /**
@@ -169,6 +170,13 @@ export interface StatusBannerOptions extends ComponentOptions {
      * and the product default.
      */
     currentLabel?: string;
+    /**
+     * Accessible label prefix for this banner, including when it mirrors a
+     * source.
+     */
+    label?: string;
+    /** Disable live announcements while keeping this banner accessible. */
+    noLive?: boolean;
 }
 
 /** Full-width colored banner displaying aggregate marking status. Read-only. */
@@ -176,10 +184,7 @@ export class StatusBanner extends ReadOnlyComponentBase {
     private bannerEl!: HTMLDivElement;
     private categoryId!: string;
     private bannerOptions!: StatusBannerOptions;
-    /**
-     * True when running in boundary/affix mode (as opposed to single-concept
-     * mode).
-     */
+    /** Whether the banner is configured to show boundary or current-data lines. */
     private _boundaryMode = false;
     /** Set to true by destroy() so async coverage callbacks silently no-op. */
     private _sbDestroyed = false;
@@ -225,11 +230,8 @@ export class StatusBanner extends ReadOnlyComponentBase {
     protected setup(): void {
         const opts = this.bannerOptions;
 
-        // Determine whether we're in the structured boundary/affix mode.
         this._boundaryMode =
-            opts.affix !== undefined ||
-            opts.boundary !== undefined ||
-            opts.showCurrentData === true;
+            opts.boundary !== undefined || opts.showCurrentData === true;
 
         // Resolve color-source category: explicit > first single-select > first category.
         const resolved = this.resolveCategory(opts.categoryId);
@@ -246,9 +248,6 @@ export class StatusBanner extends ReadOnlyComponentBase {
 
         this.bannerEl = document.createElement('div');
         // No tabIndex: a non-interactive display element is not a keyboard tab stop.
-        // Screen readers receive the live region announcements via aria-live.
-        this.bannerEl.setAttribute('role', 'status');
-        this.bannerEl.setAttribute('aria-live', 'polite');
         this.container.appendChild(this.bannerEl);
 
         this.render();
@@ -317,15 +316,31 @@ export class StatusBanner extends ReadOnlyComponentBase {
         if (this.bannerEl) this.render();
     }
 
+    /** Show a single adapter-evaluated rollup without rereading its text. */
+    showRollup(
+        assertions: Assertion[],
+        rendered: string,
+        displayColor: StatusBannerColors | undefined,
+        incomplete: boolean,
+    ): void {
+        if (this._sbDestroyed) return;
+        this.invalidateValueRead();
+        this._buckets = null;
+        this.assertions = assertions;
+        this._lastRendered = rendered;
+        this.displayColor = displayColor;
+        this._incomplete = incomplete;
+        this.render();
+    }
+
     /** Render each non-empty or stale bucket as a labeled line. */
     private renderBuckets(buckets: readonly StatusBannerBucket[]): void {
         const size = this.bannerOptions.size ?? 'prominent';
         const shown = buckets.filter(
             (bucket) => bucket.rendered.trim() || bucket.stale === true,
         );
-        const level = this.levelLabel();
-        this.bannerEl.setAttribute('role', 'status');
-        this.bannerEl.setAttribute('aria-live', 'polite');
+        const level = this.bannerOptions.label ?? this.levelLabel();
+        this.setAnnouncement();
         this.bannerEl.style.removeProperty('--ez-banner-bg');
         this.bannerEl.style.removeProperty('--ez-banner-text');
         this.bannerEl.innerHTML = '';
@@ -401,6 +416,26 @@ export class StatusBanner extends ReadOnlyComponentBase {
         );
     }
 
+    private setAccessibleName(text: string, fallback = ''): void {
+        const label = this.bannerOptions.label;
+        this.bannerEl.setAttribute(
+            'aria-label',
+            label ? (text ? `${label}: ${text}` : label) : text || fallback,
+        );
+    }
+
+    private setAnnouncement(alert = false): void {
+        const silent = this.bannerOptions.noLive;
+        this.bannerEl.setAttribute(
+            'role',
+            silent ? 'group' : alert ? 'alert' : 'status',
+        );
+        this.bannerEl.setAttribute(
+            'aria-live',
+            silent ? 'off' : alert ? 'assertive' : 'polite',
+        );
+    }
+
     /** Append the incomplete statement to whatever the mode just rendered. */
     private renderIncomplete(): void {
         this.bannerEl.classList.toggle(
@@ -433,8 +468,7 @@ export class StatusBanner extends ReadOnlyComponentBase {
         const size = opts.size ?? 'prominent';
         const rendered = this._lastRendered;
 
-        this.bannerEl.setAttribute('role', 'status');
-        this.bannerEl.setAttribute('aria-live', 'polite');
+        this.setAnnouncement();
         this.bannerEl.innerHTML = '';
 
         if (!rendered) {
@@ -446,7 +480,7 @@ export class StatusBanner extends ReadOnlyComponentBase {
             label.textContent = t('banner.noMarking');
             this.bannerEl.appendChild(label);
             this.appendSubtitle(t('banner.noMarking'));
-            const level = this.levelLabel();
+            const level = this.bannerOptions.label ?? this.levelLabel();
             this.bannerEl.setAttribute(
                 'aria-label',
                 level
@@ -476,7 +510,7 @@ export class StatusBanner extends ReadOnlyComponentBase {
         this.bannerEl.appendChild(label);
 
         this.appendSubtitle(rendered);
-        const level = this.levelLabel();
+        const level = this.bannerOptions.label ?? this.levelLabel();
         this.bannerEl.setAttribute(
             'aria-label',
             level ? `${level}: ${rendered}` : rendered,
@@ -533,13 +567,7 @@ export class StatusBanner extends ReadOnlyComponentBase {
 
         this.bannerEl.innerHTML = '';
 
-        if (this._overBoundary) {
-            this.bannerEl.setAttribute('role', 'alert');
-            this.bannerEl.setAttribute('aria-live', 'assertive');
-        } else {
-            this.bannerEl.setAttribute('role', 'status');
-            this.bannerEl.setAttribute('aria-live', 'polite');
-        }
+        this.setAnnouncement(this._overBoundary);
 
         this.bannerEl.className = [
             'status-banner',
@@ -603,10 +631,7 @@ export class StatusBanner extends ReadOnlyComponentBase {
         ]
             .filter(Boolean)
             .join(', ');
-        this.bannerEl.setAttribute(
-            'aria-label',
-            ariaLabel || this.wholeLabel(),
-        );
+        this.setAccessibleName(ariaLabel, this.wholeLabel());
 
         // Async coverage check: triggers a targeted DOM update when the result
         // arrives.
@@ -683,8 +708,7 @@ export class StatusBanner extends ReadOnlyComponentBase {
             ? this.scheme.concepts.find((c) => c.id === assertion.conceptId)
             : null;
 
-        this.bannerEl.setAttribute('role', 'status');
-        this.bannerEl.setAttribute('aria-live', 'polite');
+        this.setAnnouncement();
 
         if (!assertion || !concept) {
             this.bannerEl.className = `status-banner status-banner--${size} status-banner--empty`;
@@ -695,7 +719,7 @@ export class StatusBanner extends ReadOnlyComponentBase {
             label.className = 'status-banner-label';
             label.textContent = 'No selection';
             this.bannerEl.appendChild(label);
-            this.bannerEl.setAttribute('aria-label', 'No selection');
+            this.setAccessibleName('No selection');
             return;
         }
 
@@ -743,7 +767,7 @@ export class StatusBanner extends ReadOnlyComponentBase {
             this.bannerEl.appendChild(subtitleEl);
         }
 
-        this.bannerEl.setAttribute('aria-label', conceptName);
+        this.setAccessibleName(conceptName);
     }
 
     // ── Helpers ─────────────────────────────────────────────────────────────────

@@ -99,6 +99,14 @@ export function isComponentContextAdapter(
 
 /** Component instance data shape. */
 export interface ComponentInstance {
+    /** @internal Let the store seed supply this field's initial judgment. */
+    useStoreSeed?(): void;
+    /** @internal Native text the store can use as its served baseline. */
+    readStoreSeedText?(): string;
+    /** @internal Keep the native draft during reflection of its baseline. */
+    readonly preservesNativeDraft?: boolean;
+    /** @internal Report a failed read when the field relies on its store seed. */
+    showFailedStoreSeed?(error: unknown): void;
     /**
      * Reflect a canonical store result without discarding text that has no
      * assertion identity.
@@ -498,6 +506,13 @@ export abstract class ReadOnlyComponentBase
      */
     protected assertEngineCapabilities(_componentLabel: string): void {}
 
+    /**
+     * The registered marking's store owns its initial adapter read.
+     *
+     * @internal
+     */
+    protected readInitialValueFromStore = false;
+
     async init(
         container: HTMLDivElement,
         engineOrContext?: ComponentEngineSource | null,
@@ -603,7 +618,8 @@ export abstract class ReadOnlyComponentBase
         const initialRead = ++this.valueReadSeq;
         const fromNative =
             !options?.initialValue && this.enhancedInput !== null;
-        while (initialValue) {
+        if (this.readInitialValueFromStore) this._lastRendered = initialValue;
+        while (initialValue && !this.readInitialValueFromStore) {
             try {
                 const initResult = await this.readHeld(initialValue);
                 if (this.abandoned) return;

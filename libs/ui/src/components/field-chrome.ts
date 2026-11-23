@@ -74,6 +74,8 @@ export function mountFieldChrome(
         root?: HTMLElement;
         align?: 'center' | 'start';
         placement?: 'overlay' | 'inline';
+        /** A select before the trailing chrome in the field's arrow order. */
+        leadingSelect?: HTMLSelectElement;
         /**
          * An owned caption retained in reading order while chrome follows the
          * work.
@@ -94,8 +96,10 @@ export function mountFieldChrome(
     element.appendChild(status);
     wrap.appendChild(element);
 
-    // Keep physical arrow navigation within the trailing button pair, without
-    // letting a picker or DecisionFlow interpret those same keys as choices.
+    // A select and its trailing buttons share one physical arrow order.
+    // Other fields manage their own text or picker keys.
+    const leadingSelect = opts.leadingSelect;
+    const keyboardRoot = leadingSelect ? wrap : element;
     const onKeydown = (event: KeyboardEvent) => {
         if (
             !['ArrowLeft', 'ArrowRight'].includes(event.key) ||
@@ -106,18 +110,19 @@ export function mountFieldChrome(
             event.isComposing
         )
             return;
-        const buttons = [
+        const controls = [
+            ...(leadingSelect ? [leadingSelect] : []),
             ...element.querySelectorAll<HTMLButtonElement>(
                 'button.ez-status-mark, button.ez-clear-button',
             ),
-        ].filter((button) => {
+        ].filter((control) => {
             if (
-                button.disabled ||
-                button.getAttribute('aria-disabled') === 'true'
+                control.disabled ||
+                control.getAttribute('aria-disabled') === 'true'
             )
                 return false;
             for (
-                let node: HTMLElement | null = button;
+                let node: HTMLElement | null = control;
                 node;
                 node = node.parentElement
             ) {
@@ -135,11 +140,13 @@ export function mountFieldChrome(
         });
         const target =
             event.target instanceof Element
-                ? event.target.closest('button')
+                ? event.target.closest('button, select')
                 : null;
-        if (!buttons.includes(target as HTMLButtonElement)) return;
+        if (!controls.some((control) => control === target)) return;
         const rtl = getComputedStyle(wrap).direction === 'rtl';
-        buttons.sort((a, b) => {
+        controls.sort((a, b) => {
+            if (a === leadingSelect || b === leadingSelect)
+                return (a === leadingSelect ? -1 : 1) * (rtl ? -1 : 1);
             const distance =
                 a.getBoundingClientRect().left - b.getBoundingClientRect().left;
             return (
@@ -153,10 +160,10 @@ export function mountFieldChrome(
         });
         event.preventDefault();
         event.stopPropagation();
-        const index = buttons.indexOf(target as HTMLButtonElement);
-        buttons[index + (event.key === 'ArrowRight' ? 1 : -1)]?.focus();
+        const index = controls.findIndex((control) => control === target);
+        controls[index + (event.key === 'ArrowRight' ? 1 : -1)]?.focus();
     };
-    element.addEventListener('keydown', onKeydown);
+    keyboardRoot.addEventListener('keydown', onKeydown);
 
     // In flow, the row takes its own room; there is nothing to reserve.
     if (opts.placement === 'inline') {
@@ -165,7 +172,7 @@ export function mountFieldChrome(
             status,
             measure() {},
             destroy() {
-                element.removeEventListener('keydown', onKeydown);
+                keyboardRoot.removeEventListener('keydown', onKeydown);
                 element.remove();
             },
         };
@@ -217,7 +224,7 @@ export function mountFieldChrome(
         destroy() {
             observer?.disconnect();
             if (frame !== undefined) cancelAnimationFrame(frame);
-            element.removeEventListener('keydown', onKeydown);
+            keyboardRoot.removeEventListener('keydown', onKeydown);
             element.remove();
             wrap.style.removeProperty(FIELD_CHROME_INLINE_SIZE);
         },
@@ -358,22 +365,27 @@ export function observeFieldTheme(
             attributeFilter: ['data-color-scheme'],
         });
     }
-    for (
-        let ancestor: HTMLElement | null = host;
-        ancestor;
-        ancestor = ancestor.parentElement
-    ) {
-        observer.observe(ancestor, {
-            attributes: true,
-            attributeFilter: [
-                ...(ancestor !== host || observeHostStyle
-                    ? ['style', 'class']
-                    : []),
-                'data-theme',
-                'data-bs-theme',
-                'data-color-scheme',
-            ],
-        });
+    observer.observe(host, {
+        attributes: true,
+        attributeFilter: [
+            ...(observeHostStyle ? ['style', 'class'] : []),
+            'data-theme',
+            'data-bs-theme',
+            'data-color-scheme',
+        ],
+    });
+    // Host stylesheets can scope a theme to any ancestor attribute.
+    const ShadowRootOfHost = host.ownerDocument.defaultView?.ShadowRoot;
+    let ancestor: Element | null = host;
+    while (ancestor) {
+        const parent: HTMLElement | null = ancestor.parentElement;
+        const root: Node | null = parent ? null : ancestor.getRootNode();
+        ancestor =
+            parent ??
+            (ShadowRootOfHost && root instanceof ShadowRootOfHost
+                ? root.host
+                : null);
+        if (ancestor) observer.observe(ancestor, { attributes: true });
     }
     return observer;
 }

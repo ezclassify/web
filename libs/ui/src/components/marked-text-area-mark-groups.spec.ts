@@ -55,16 +55,18 @@ function read(text: string) {
         ...(high ? [ruled('ANCHOR', 'high-adds-anchor')] : []),
     ];
     const rendered = high ? 'HIGH//STD/ANCHOR' : 'LOW//STD';
+    const addsStd = !text.includes('STD');
+    const addsAnchor = high && !text.includes('ANCHOR');
     return {
         assertions,
         rendered,
         valid: true,
-        inputWasValid: false,
+        inputWasValid: !addsStd && !addsAnchor,
         errors: [],
         warnings: [],
         appliedFixes: [
-            added('STD', 'adds-std'),
-            ...(high ? [added('ANCHOR', 'high-adds-anchor')] : []),
+            ...(addsStd ? [added('STD', 'adds-std')] : []),
+            ...(addsAnchor ? [added('ANCHOR', 'high-adds-anchor')] : []),
         ],
         proposedFixes: [],
         notices: [],
@@ -168,17 +170,21 @@ function engine() {
 
 const wait = (ms = 400) => new Promise((r) => setTimeout(r, ms));
 
-/** Read the field's Corrections tab through its branding button. */
+/** Read the field's Auto-fixes tab through its branding button. */
 async function markList(root: Element): Promise<string[]> {
     const mark = root.querySelector<HTMLElement>('.ez-status-mark')!;
     mark.click();
     await wait();
     const tipId = mark.getAttribute('aria-describedby');
     const tip = tipId ? document.getElementById(tipId) : null;
+    tip?.querySelector<HTMLButtonElement>(
+        '[data-tools-tab="corrections"]',
+    )?.click();
+    const panel = tip?.querySelector('[data-tools-panel="corrections"]');
     const lines =
-        tip && !tip.hidden
+        panel && !tip?.hidden
             ? [
-                  ...tip.querySelectorAll(
+                  ...panel.querySelectorAll(
                       '.ez-tooltip__header, .ez-status-list__marking, .ez-status-list__text',
                   ),
               ].map(

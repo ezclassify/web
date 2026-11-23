@@ -18,7 +18,10 @@ import {
     explainedChanges,
     schemeChangeWords,
     setStatusMarkError,
+    setStatusMarkFindings,
     setStatusMarkDraft,
+    setStatusMarkFavorites,
+    setStatusMarkGroups,
     setStatusMarkFixes,
 } from './status-mark';
 import type { ConceptWriting } from '../written-concept';
@@ -350,7 +353,189 @@ describe('the mark glyph and the plain input it sits on', () => {
     });
 });
 
+describe('field tools findings', () => {
+    it('opens unread auto-fixes first when the only finding is a warning', () => {
+        const mark = ensureStatusMark(wrap, { shape: 'chrome', tools: true });
+        setStatusMarkFindings(wrap, [
+            { report: { messages: [], warnings: ['Check this.'], fixes: [] } },
+        ]);
+        setStatusMarkFixes(wrap, [makeFix('r1')]);
+        expect(mark.querySelector('.ez-status-mark__count')?.textContent).toBe(
+            '1',
+        );
+
+        mark.click();
+        const popup = document.getElementById(
+            mark.getAttribute('aria-describedby')!,
+        )!;
+        expect(
+            popup.querySelector('[aria-selected="true"][role="tab"]')
+                ?.textContent,
+        ).toContain('Auto-fixes');
+        expect(mark.querySelector('.ez-status-mark__count')?.textContent).toBe(
+            '',
+        );
+    });
+
+    it('shows and acknowledges only the selected paragraph without changing the field total', () => {
+        const mark = ensureStatusMark(wrap, { shape: 'chrome', tools: true });
+        const badge = mark.querySelector('.ez-status-mark__count')!;
+        setStatusMarkGroups(wrap, [
+            { entryId: 'a', marking: '(A)', changes: [makeFix('first')] },
+            { entryId: 'b', marking: '(B)', changes: [makeFix('second')] },
+        ]);
+        setStatusMarkFindings(wrap, [
+            {
+                id: 'entry:a',
+                report: { messages: ['Error in A.'], warnings: [], fixes: [] },
+            },
+        ]);
+        setStatusMarkError(wrap, 'Scan incomplete.');
+        setStatusMarkFavorites(wrap, {
+            element: document.createElement('div'),
+            count: () => 0,
+            open: () => {},
+            close: () => {},
+            isApplying: () => false,
+            targets: () => ({
+                selected: 'entry:b',
+                options: [
+                    { value: 'entry:a', label: '(A)', invalid: true },
+                    { value: 'entry:b', label: '(B)' },
+                ],
+                select: () => {},
+            }),
+        });
+        expect(badge.textContent).toBe('4');
+        mark.click();
+        const popup = document.getElementById(
+            mark.getAttribute('aria-describedby')!,
+        )!;
+        const select = (query: string) =>
+            popup.querySelector<HTMLElement>(query)!;
+        expect(select('.ez-marking-tools__field-notice').textContent).toBe(
+            'Scan incomplete.',
+        );
+        expect(
+            select('[aria-selected="true"][role="tab"]').dataset.toolsTab,
+        ).toBe('corrections');
+        expect(
+            select('[data-tools-panel="corrections"]').textContent,
+        ).toContain('second');
+        expect(
+            select('[data-tools-panel="corrections"]').textContent,
+        ).not.toContain('first');
+        expect(badge.textContent).toBe('3');
+        select('[data-tools-tab="attention"]').click();
+        expect(select('[data-tools-panel="attention"]').textContent).toBe(
+            'No findings for this marking.',
+        );
+        select('[role="combobox"]').click();
+        select('[role="option"][data-invalid]').click();
+        expect(select('[data-tools-panel="attention"]').textContent).toBe(
+            'Error in A.',
+        );
+        expect(badge.textContent).toBe('3');
+        select('[data-tools-tab="corrections"]').click();
+        expect(
+            select('[data-tools-panel="corrections"]').textContent,
+        ).toContain('first');
+        expect(
+            select('[data-tools-panel="corrections"]').textContent,
+        ).not.toContain('second');
+        expect(badge.textContent).toBe('2');
+    });
+
+    it('opens Needs attention at the first fix and keeps errors counted after Auto-fixes are viewed', () => {
+        const root = document.createElement('div');
+        document.body.appendChild(root);
+        const mark = ensureStatusMark(root, {
+            root,
+            shape: 'chrome',
+            tools: true,
+        });
+        const badge = mark.querySelector('.ez-status-mark__count');
+        setStatusMarkFixes(root, [makeFix('r1')]);
+        setStatusMarkFindings(root, [
+            {
+                report: {
+                    messages: ['First error.', 'Second error.'],
+                    warnings: [],
+                    fixes: [
+                        {
+                            label: 'Resolve both',
+                            fix: {
+                                rendered: 'X',
+                                message: 'Resolve both.',
+                                adds: [],
+                                removes: [],
+                                keeps: [],
+                            },
+                        },
+                    ],
+                },
+                apply: () => setStatusMarkFindings(root, []),
+            },
+        ]);
+        expect(mark.classList).toContain('ez-status-mark--error');
+        expect(badge?.textContent).toBe('3');
+        expect(mark.getAttribute('aria-label')).toContain(
+            '3 items need attention',
+        );
+        mark.click();
+        const popup = document.getElementById(
+            mark.getAttribute('aria-describedby')!,
+        )!;
+        const attention = popup.querySelector<HTMLButtonElement>(
+            '[data-tools-tab="attention"]',
+        )!;
+        const corrections = popup.querySelector<HTMLButtonElement>(
+            '[data-tools-tab="corrections"]',
+        )!;
+        expect(popup.querySelector('[role="tab"]')).toBe(attention);
+        expect(attention.getAttribute('aria-selected')).toBe('true');
+        expect(document.activeElement).toBe(
+            popup.querySelector('.ez-validation-errors__fix'),
+        );
+        expect(badge?.textContent).toBe('3');
+        corrections.click();
+        expect(badge?.textContent).toBe('2');
+        expect(mark.classList).toContain('ez-status-mark--error');
+        attention.click();
+        expect(badge?.textContent).toBe('2');
+        popup
+            .querySelector<HTMLButtonElement>('.ez-validation-errors__fix')!
+            .click();
+        expect(badge?.textContent).toBe('');
+        expect(mark.classList).not.toContain('ez-status-mark--error');
+        cleanupTooltipForRoot(root);
+        root.remove();
+    });
+});
+
 describe('the unseen count', () => {
+    it('shows and acknowledges auto-fixes when explicitly opening tools with hover guidance disabled', () => {
+        const mark = ensureStatusMark(wrap, {
+            shape: 'chrome',
+            tools: true,
+            shouldShowTooltip: () => false,
+        });
+        setStatusMarkFixes(wrap, [makeFix('r1'), makeFix('r2')]);
+        const badge = mark.querySelector('.ez-status-mark__count');
+        expect(badge?.textContent).toBe('2');
+
+        mark.click();
+        const popup = document.getElementById(
+            mark.getAttribute('aria-describedby')!,
+        );
+        expect(popup?.textContent).toContain('Added X-r1 to cat.');
+        expect(popup?.textContent).toContain('Added X-r2 to cat.');
+        expect(badge?.textContent).toBe('');
+        expect(mark.getAttribute('aria-label')).not.toContain(
+            'not yet reviewed',
+        );
+    });
+
     const here = dirname(fileURLToPath(import.meta.url));
     it('stands on the leading side of the icon, so the icon keeps its place when it goes', () => {
         const mark = ensureStatusMark(wrap, { shape: 'chrome' });
@@ -659,7 +844,7 @@ describe('the error state', () => {
         expect(mark.classList.contains('ez-status-mark--unseen')).toBe(false);
         expect(mark.tabIndex).toBe(0);
         expect(mark.getAttribute('aria-label')).toBe(
-            `Enhanced by EzClassify. ${ERROR} 1 change made by a marking rule.`,
+            `Enhanced by EzClassify. ${ERROR} 1 change made by a marking rule, not yet reviewed.`,
         );
 
         setStatusMarkError(wrap, null);
@@ -1042,6 +1227,30 @@ describe('tooltip content', () => {
 });
 
 describe('the applied-changes popover does not outstay the value it described', () => {
+    it.each([
+        ['auto-fixes', () => setStatusMarkFixes(wrap, [makeFix('r2')])],
+        ['the field error', () => setStatusMarkError(wrap, 'Scan incomplete.')],
+    ])(
+        'returns focus to the tools button when a read changes %s',
+        (_change, update) => {
+            const mark = ensureStatusMark(wrap, {
+                shape: 'chrome',
+                tools: true,
+            });
+            setStatusMarkFixes(wrap, [makeFix('r1')]);
+            mark.click();
+            const popup = document.getElementById(
+                mark.getAttribute('aria-describedby')!,
+            )!;
+            expect(popup.contains(document.activeElement)).toBe(true);
+
+            update();
+
+            expect(popup.hidden).toBe(true);
+            expect(document.activeElement).toBe(mark);
+        },
+    );
+
     function fieldWithMark() {
         const field = document.createElement('div');
         field.className = 'marking-field-wrap';

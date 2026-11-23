@@ -246,7 +246,7 @@ describe('embedded Favorites ownership', () => {
         expect(document.activeElement).toBe(first);
         expect(favoriteTab().getAttribute('aria-label')).toBe('Favorites');
         press(first, 'ArrowLeft');
-        expect(favoriteTab().getAttribute('aria-label')).toBe('Corrections');
+        expect(favoriteTab().getAttribute('aria-label')).toBe('Auto-fixes');
         expect(document.activeElement).toBe(
             document.querySelector('.ez-marking-tools__section:not([hidden])'),
         );
@@ -277,7 +277,7 @@ describe('embedded Favorites ownership', () => {
             [...document.querySelectorAll('[role=tab]')].map((tab) =>
                 tab.getAttribute('aria-label'),
             ),
-        ).toEqual(['Corrections']);
+        ).toEqual(['Auto-fixes']);
     });
     it('reuses the existing branding button and refreshes host closures', async () => {
         const original = wrap.querySelector('.ez-status-mark');
@@ -720,6 +720,12 @@ describe('presets and native rows', () => {
                 'proto-dropdown-item--highlighted',
             ),
         ).toBe(true);
+        favoriteTab().focus();
+        expect(
+            favorite('B').classList.contains(
+                'proto-dropdown-item--highlighted',
+            ),
+        ).toBe(false);
     });
     it('deletes an unrelated Favorite without applying it and focuses its neighbor', async () => {
         let entries = [{ marking: 'A' }, { marking: 'B' }];

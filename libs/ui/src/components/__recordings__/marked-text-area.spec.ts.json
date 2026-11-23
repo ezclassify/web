@@ -334,31 +334,6 @@
             "method": "POST",
             "statusCode": 200
         },
-        "0f01cb75e06479448b75e34ea2047f269b136f07cfd5655ca61df2b1591962a8": {
-            "body": {
-                "resolution": {
-                    "artifacts": [
-                        {
-                            "id": "marked-test",
-                            "kind": "scheme",
-                            "version": "1.0.0"
-                        }
-                    ],
-                    "contextId": "marked-test",
-                    "requestedVersion": "0.0.0",
-                    "resolvedVersion": "1.0.0"
-                },
-                "result": {
-                    "categoryId": "level",
-                    "conceptId": "S",
-                    "lines": ["Level: Secret"],
-                    "name": "Secret"
-                }
-            },
-            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
         "136b04f0e4e5538f1073c149fa0f47f611565a5e69d06524db91ae7f281c2e06": {
             "body": {
                 "resolution": {
@@ -2353,6 +2328,75 @@
             "method": "POST",
             "statusCode": 200
         },
+        "9971bd9f3c158436ef3cd0f5c92ec072e0962dc8b4181af2b9640d88adf7b4cd": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mta-fav-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "mta-fav-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "limits": { "regionsFound": 1, "status": "complete" },
+                    "results": [
+                        {
+                            "end": 3,
+                            "inner": "S",
+                            "marking": "(S)",
+                            "result": {
+                                "appliedFixes": [],
+                                "assertions": [
+                                    {
+                                        "categoryId": "level",
+                                        "conceptId": "S",
+                                        "confidence": "certain",
+                                        "source": "parse"
+                                    }
+                                ],
+                                "assessment": {
+                                    "collapsed": [],
+                                    "conflicts": [],
+                                    "emitted": [
+                                        {
+                                            "categoryId": "level",
+                                            "conceptId": "S"
+                                        }
+                                    ],
+                                    "omitted": [],
+                                    "unrepresentable": []
+                                },
+                                "errors": [],
+                                "inputWasValid": true,
+                                "notices": [],
+                                "recognition": {
+                                    "inputFormat": "portion",
+                                    "status": "complete",
+                                    "surface": "marking",
+                                    "unmatched": []
+                                },
+                                "rendered": "S",
+                                "valid": true,
+                                "warnings": []
+                            },
+                            "role": "part",
+                            "start": 0,
+                            "type": "portion",
+                            "wrapped": true
+                        }
+                    ],
+                    "unread": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "9a01a89edd4c9ebef4bfa21c5dfaded3ce34fec7c79d7604606ca10572407752": {
             "body": [
                 {
@@ -3036,6 +3080,49 @@
             "method": "POST",
             "statusCode": 200
         },
+        "c6c438fc02b781e3a219a46f4446157f11177dd88a714656163520c4620dad75": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mta-fav-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "mta-fav-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "status": "complete",
+                        "unmatched": []
+                    },
+                    "rendered": "",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "c7329a081db0dbf920395a6bf7d610f9604556f09cd70a41005e557e77fa2d85": {
             "body": [
                 {
@@ -3507,119 +3594,6 @@
                         }
                     ],
                     "warnings": []
-                }
-            },
-            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
-            "method": "POST",
-            "statusCode": 200
-        },
-        "e76d7669313a9e7a2d0bbb36bbf90a13aaa7faf247f8f2745ce9ecdd750ea377": {
-            "body": {
-                "resolution": {
-                    "artifacts": [
-                        {
-                            "id": "mta-fav-test",
-                            "kind": "scheme",
-                            "version": "1.0.0"
-                        }
-                    ],
-                    "contextId": "mta-fav-test",
-                    "requestedVersion": "0.0.0",
-                    "resolvedVersion": "1.0.0"
-                },
-                "result": {
-                    "limits": { "regionsFound": 2, "status": "complete" },
-                    "results": [
-                        {
-                            "end": 3,
-                            "inner": "U",
-                            "marking": "(U)",
-                            "result": {
-                                "appliedFixes": [],
-                                "assertions": [
-                                    {
-                                        "categoryId": "level",
-                                        "conceptId": "U",
-                                        "confidence": "certain",
-                                        "source": "parse"
-                                    }
-                                ],
-                                "assessment": {
-                                    "collapsed": [],
-                                    "conflicts": [],
-                                    "emitted": [
-                                        {
-                                            "categoryId": "level",
-                                            "conceptId": "U"
-                                        }
-                                    ],
-                                    "omitted": [],
-                                    "unrepresentable": []
-                                },
-                                "errors": [],
-                                "inputWasValid": true,
-                                "notices": [],
-                                "recognition": {
-                                    "inputFormat": "portion",
-                                    "status": "complete",
-                                    "surface": "marking",
-                                    "unmatched": []
-                                },
-                                "rendered": "U",
-                                "valid": true,
-                                "warnings": []
-                            },
-                            "role": "part",
-                            "start": 0,
-                            "type": "portion",
-                            "wrapped": true
-                        },
-                        {
-                            "end": 19,
-                            "inner": "S",
-                            "marking": "(S)",
-                            "result": {
-                                "appliedFixes": [],
-                                "assertions": [
-                                    {
-                                        "categoryId": "level",
-                                        "conceptId": "S",
-                                        "confidence": "certain",
-                                        "source": "parse"
-                                    }
-                                ],
-                                "assessment": {
-                                    "collapsed": [],
-                                    "conflicts": [],
-                                    "emitted": [
-                                        {
-                                            "categoryId": "level",
-                                            "conceptId": "S"
-                                        }
-                                    ],
-                                    "omitted": [],
-                                    "unrepresentable": []
-                                },
-                                "errors": [],
-                                "inputWasValid": true,
-                                "notices": [],
-                                "recognition": {
-                                    "inputFormat": "portion",
-                                    "status": "complete",
-                                    "surface": "marking",
-                                    "unmatched": []
-                                },
-                                "rendered": "S",
-                                "valid": true,
-                                "warnings": []
-                            },
-                            "role": "part",
-                            "start": 16,
-                            "type": "portion",
-                            "wrapped": true
-                        }
-                    ],
-                    "unread": []
                 }
             },
             "headers": { "x-ezclassify-resolved-version": "1.0.0" },

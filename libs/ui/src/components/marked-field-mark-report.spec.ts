@@ -1,3 +1,4 @@
+import { openFieldTools } from '../../test-fixtures/marking-tools';
 import { textareaEditor } from '../../test-fixtures/textarea-editor';
 /**
  * What the marked fields show about each mark.
@@ -138,6 +139,23 @@ describe('MarkedTextArea portion report', () => {
         ]);
     });
 
+    it('applies a Quick fix from Needs attention to its own paragraph only', async () => {
+        const textarea = await mount();
+        const tools = openFieldTools(root)!;
+        const fix = [
+            ...tools.querySelectorAll<HTMLButtonElement>('button'),
+        ].find((button) => button.textContent === 'Replace P with C')!;
+        expect(fix).toBeDefined();
+        expect(document.activeElement).toBe(fix);
+        expect(textarea.value).toBe(TEXT);
+        fix.click();
+        await vi.waitFor(() =>
+            expect(textarea.value).toBe(
+                TEXT.replace('(P//FINANCIAL)', '(C//FINANCIAL)'),
+            ),
+        );
+    });
+
     it('a portion with only a warning stays valid, says so on the mark, and its editor shows the warning with nothing to fix', async () => {
         await mount();
         const warned = chip('(C)');
@@ -205,11 +223,11 @@ describe('MarkedInput mark report', () => {
         expect(root.querySelector('.marked-input-chip')!.classList).toContain(
             'marked-input-chip--invalid',
         );
-        expect(listed().fixes).toContain('Replace P with C');
+        expect(listed().fixes).toEqual([]);
         [
-            ...root.querySelectorAll<HTMLButtonElement>(
+            ...(openFieldTools(root)?.querySelectorAll<HTMLButtonElement>(
                 '.ez-validation-errors__fix',
-            ),
+            ) ?? []),
         ]
             .find((b) => b.textContent === 'Replace P with C')!
             .click();

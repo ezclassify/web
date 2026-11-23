@@ -74,7 +74,7 @@ describe('marking tools keyboard navigation', () => {
     it('offers no Favorites tab without provider content or scoped presets', () => {
         const { tabs } = mount(false);
         expect(tabs).toHaveLength(1);
-        expect(tabs[0].getAttribute('aria-label')).toBe('Corrections');
+        expect(tabs[0].getAttribute('aria-label')).toBe('Auto-fixes');
     });
 
     it.each([true, false])(
@@ -127,7 +127,7 @@ describe('marking tools keyboard navigation', () => {
         expect(tabs.map((tab) => tab.tabIndex)).toEqual([-1, 0]);
     });
 
-    it('moves between a saved marking and its remove action, then into Corrections', () => {
+    it('moves between a saved marking and its remove action, then into Auto-fixes', () => {
         const { tools, tabs, saved, undo } = mount();
         const pair = document.createElement('div');
         pair.className = 'ez-favorites-panel__saved-row';
@@ -187,7 +187,7 @@ describe('marking tools keyboard navigation', () => {
         undo.parentElement!.append(change);
         updateMarkingToolsCounts(tools, 3);
         expect(tabs.map((tab) => tab.getAttribute('aria-label'))).toEqual([
-            'Corrections',
+            'Auto-fixes',
             'Favorites',
         ]);
         expect(tabs.map((tab) => tab.getAttribute('aria-description'))).toEqual(

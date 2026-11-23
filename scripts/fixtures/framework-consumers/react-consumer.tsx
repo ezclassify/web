@@ -2,6 +2,7 @@ import {
     ContextReference,
     ContextReferenceTab,
     EzClassify,
+    EzClassifyBanner,
     ReactEzClassifyStore,
     useEzClassifyFacet,
 } from '@ezclassify/react';
@@ -25,7 +26,12 @@ const rendered: ReactNode = (
     </ContextReference>
 );
 function OwnedStore({ store }: { store: ReactEzClassifyStore }) {
-    return <EzClassify store={store}>{rendered}</EzClassify>;
+    return (
+        <EzClassify store={store}>
+            <EzClassifyBanner aggregate="folder" label="Folder marking" noLive />
+            {rendered}
+        </EzClassify>
+    );
 }
 function Facet() {
     const facet = useEzClassifyFacet('document', 'level');

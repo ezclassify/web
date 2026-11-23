@@ -77,6 +77,13 @@ export function parseComponentOptions(
         opts.showCurrentData = true;
         delete opts['show-current-data'];
     }
+    if (
+        el.getAttribute('data-ezclassify-controller') === 'banner' &&
+        'no-live' in opts
+    ) {
+        opts.noLive = opts['no-live'] !== 'false';
+        delete opts['no-live'];
+    }
     if (typeof opts['current-label'] === 'string') {
         opts.currentLabel = opts['current-label'];
         delete opts['current-label'];

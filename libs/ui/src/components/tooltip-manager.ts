@@ -303,7 +303,12 @@ export interface TooltipPlacement {
      * below the target, or above it.
      */
     readonly clearOf?: HTMLElement | readonly HTMLElement[] | null;
-    /** A dialog in a mobile sheet follows the viewport as its keyboard moves. */
+    /**
+     * Keep tools near the trigger when a tall field or its feedback extends
+     * below it.
+     */
+    readonly preferNearTarget?: boolean;
+    /** An open field dialog tracks its trigger during scroll and resize. */
     readonly followViewport?: boolean;
 }
 
@@ -468,12 +473,16 @@ function placeTools(
     area: Box,
     minimumHeight: number,
     rtl: boolean,
+    preferAbove: boolean,
 ): ToolsPlacement | null {
     if (width > area.right - area.left) return null;
     const above = Math.max(0, clear.top - GAP - area.top);
     const below = Math.max(0, area.bottom - clear.bottom - GAP);
     if (Math.max(above, below) < minimumHeight) return null;
-    const side = below >= above ? 'below' : 'above';
+    const side =
+        (preferAbove && above >= minimumHeight) || above > below
+            ? 'above'
+            : 'below';
     return {
         left: clamp(
             rtl ? anchor.left : anchor.right - width,
@@ -494,11 +503,28 @@ function placeToolsInViewport(
     width: number,
     minimumHeight: number,
     rtl: boolean,
+    preferAbove: boolean,
 ): ToolsPlacement {
     const area = viewportBox();
     return (
-        placeTools(anchor, clear, width, area, minimumHeight, rtl) ??
-        placeTools(anchor, target, width, area, minimumHeight, rtl) ?? {
+        placeTools(
+            anchor,
+            clear,
+            width,
+            area,
+            minimumHeight,
+            rtl,
+            preferAbove,
+        ) ??
+        placeTools(
+            anchor,
+            target,
+            width,
+            area,
+            minimumHeight,
+            rtl,
+            preferAbove,
+        ) ?? {
             left: clamp(
                 rtl ? anchor.left : anchor.right - width,
                 area.left,
@@ -526,8 +552,16 @@ function toolsMinimumHeight(tip: HTMLElement): number {
     const length = (value: string | undefined) =>
         Number.parseFloat(value ?? '') || 0;
     const headerHeight = header?.getBoundingClientRect().height ?? 0;
+    const target = tip.querySelector<HTMLElement>(
+        '.ez-marking-tools__target-region',
+    );
+    const targetHeight = target
+        ? target.getBoundingClientRect().height +
+          length(window.getComputedStyle(target).marginBottom)
+        : 0;
     const rowHeight = row?.getBoundingClientRect().height ?? 0;
     return (
+        targetHeight +
         headerHeight +
         Math.max(headerHeight, Math.min(rowHeight, headerHeight || rowHeight)) +
         length(headerStyle?.marginTop) +
@@ -679,11 +713,30 @@ export function showTooltip(
                 ? pendingFocus
                 : undefined;
         if (focusScroll) focusScroll.dialog = tip;
+        let offscreenClose: ReturnType<typeof setTimeout> | undefined;
         const dismiss = (event: Event) => {
             const scrolled = event.target;
             if (scrolled instanceof Node && tip.contains(scrolled)) return;
             if (placement?.followViewport) {
-                repositionTooltip(target, root, placement);
+                clearTimeout(offscreenClose);
+                const trigger = target.getBoundingClientRect();
+                const area = visibleBox(target);
+                if (
+                    event.type === 'scroll' &&
+                    scrolled !== window.visualViewport &&
+                    (trigger.bottom <= area.top ||
+                        trigger.top >= area.bottom ||
+                        trigger.right <= area.left ||
+                        trigger.left >= area.right)
+                ) {
+                    // A native focus reveal can briefly pass through a frame
+                    // in which the trigger is off-screen. Retire after the
+                    // scrolling settles if it remains out of view.
+                    offscreenClose = setTimeout(
+                        () => hideTooltip(effectiveRoot),
+                        150,
+                    );
+                } else repositionTooltip(target, root, placement);
                 return;
             }
             if (
@@ -725,6 +778,7 @@ export function showTooltip(
         visualViewport?.addEventListener('resize', dismiss);
         visualViewport?.addEventListener('scroll', dismiss);
         entry.detach = () => {
+            clearTimeout(offscreenClose);
             focusScroll?.stop();
             window.removeEventListener('scroll', dismiss, opts);
             window.removeEventListener('resize', dismiss);
@@ -746,8 +800,10 @@ export function repositionTooltip(
     const tip = entry.el;
     // Position near the target
     const rect = target.getBoundingClientRect();
-    const tipWidth = Math.min(32 * 16, window.innerWidth - 16); // max 32rem
-    tip.style.maxWidth = tipWidth + 'px';
+    const tools = tip.classList.contains('ez-tooltip--tools');
+    tip.style.maxWidth = tools
+        ? ''
+        : Math.min(32 * 16, window.innerWidth - 16) + 'px'; // max 32rem
 
     // Natural-size measurement temporarily expands the content section.
     // Retain its scroll position while laying the same focused actions out.
@@ -770,18 +826,22 @@ export function repositionTooltip(
     const rtl = clear
         ? window.getComputedStyle(target).direction === 'rtl'
         : false;
-    const tools = tip.classList.contains('ez-tooltip--tools');
     const minimumHeight = tools ? toolsMinimumHeight(tip) : 0;
     let toolsPlacement: ToolsPlacement | undefined;
     if (tools) {
         const anchor = clear?.anchor.getBoundingClientRect() ?? rect;
         const area = clear ? visibleBox(clear.anchor) : viewportBox();
+        const preferAbove =
+            !!placement?.preferNearTarget &&
+            !!clear &&
+            rect.top + rect.bottom < clear.box.top + clear.box.bottom;
         const geometry = JSON.stringify([
             ...[anchor, clear?.box ?? rect, rect, area, viewportBox()].flatMap(
                 (box) => [box.left, box.top, box.right, box.bottom],
             ),
             tipRect.width,
             rtl,
+            preferAbove,
         ]);
         if (entry.toolsGeometry !== geometry) {
             entry.toolsPlacement = undefined;
@@ -797,6 +857,7 @@ export function repositionTooltip(
                       area,
                       minimumHeight,
                       rtl,
+                      preferAbove,
                   )
                 : null) ??
             placeToolsInViewport(
@@ -806,6 +867,7 @@ export function repositionTooltip(
                 tipRect.width,
                 minimumHeight,
                 rtl,
+                preferAbove,
             );
         entry.toolsPlacement = toolsPlacement;
         tip.style.setProperty(

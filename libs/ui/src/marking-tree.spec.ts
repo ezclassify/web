@@ -425,6 +425,9 @@ describe('a refused element inside a collection', () => {
         );
         const ui = mount(await reference());
         await expect.poll(hostErrors).toContain('duplicate-marking-id');
+        await expect
+            .poll(() => levelState(ui.store, 'fb').rendered)
+            .toBe('LOW');
         await expect.poll(() => levelState(ui.store, 'fa').stale).toBe(true);
         expect(levelState(ui.store, 'fb').stale).toBeUndefined();
     });

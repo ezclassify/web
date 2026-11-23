@@ -3302,6 +3302,275 @@
             "method": "GET",
             "statusCode": 200
         },
+        "770e278bc32a7f8db1ce36a639b805c5f562c25560eec57ba6d0acd7b0730ff5": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "cedar-valley",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-guide",
+                            "kind": "guide",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-access",
+                            "kind": "access",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley",
+                            "kind": "context",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "cedar-valley",
+                    "requestedVersion": "latest",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "limits": { "regionsFound": 3, "status": "complete" },
+                    "results": [
+                        {
+                            "end": 14,
+                            "inner": "C//FINANCIAL",
+                            "marking": "(C//FINANCIAL)",
+                            "result": {
+                                "appliedFixes": [
+                                    {
+                                        "action": "add",
+                                        "add": [
+                                            {
+                                                "categoryId": "allow_sharing_with",
+                                                "conceptId": "CEDAR_VALLEY_DISTRICT"
+                                            }
+                                        ],
+                                        "message": "Rule \"nonpublic-is-internal-by-default\": added \"CEDAR_VALLEY_DISTRICT\" to category \"allow_sharing_with\"",
+                                        "ruleId": "nonpublic-is-internal-by-default",
+                                        "triggerConceptIds": ["CONFIDENTIAL"]
+                                    }
+                                ],
+                                "assertions": [
+                                    {
+                                        "categoryId": "level",
+                                        "conceptId": "CONFIDENTIAL",
+                                        "confidence": "certain",
+                                        "source": "parse"
+                                    },
+                                    {
+                                        "categoryId": "sensitive_content",
+                                        "conceptId": "FINANCIAL_INFORMATION",
+                                        "confidence": "certain",
+                                        "source": "parse"
+                                    },
+                                    {
+                                        "categoryId": "allow_sharing_with",
+                                        "conceptId": "CEDAR_VALLEY_DISTRICT",
+                                        "confidence": "inferred",
+                                        "source": "infer",
+                                        "sourceRule": "nonpublic-is-internal-by-default"
+                                    }
+                                ],
+                                "assessment": {
+                                    "collapsed": [],
+                                    "conflicts": [],
+                                    "emitted": [
+                                        {
+                                            "categoryId": "level",
+                                            "conceptId": "CONFIDENTIAL"
+                                        },
+                                        {
+                                            "categoryId": "sensitive_content",
+                                            "conceptId": "FINANCIAL_INFORMATION"
+                                        }
+                                    ],
+                                    "omitted": [
+                                        {
+                                            "categoryId": "allow_sharing_with",
+                                            "conceptId": "CEDAR_VALLEY_DISTRICT"
+                                        }
+                                    ],
+                                    "unrepresentable": []
+                                },
+                                "displayColor": {
+                                    "background": "#6a1b9a",
+                                    "text": "#ffffff"
+                                },
+                                "errors": [],
+                                "inputWasValid": true,
+                                "notices": [],
+                                "recognition": {
+                                    "inputFormat": "short",
+                                    "status": "complete",
+                                    "surface": "marking",
+                                    "unmatched": []
+                                },
+                                "rendered": "C//FINANCIAL",
+                                "valid": true,
+                                "warnings": []
+                            },
+                            "role": "part",
+                            "start": 0,
+                            "type": "short",
+                            "wrapped": true
+                        },
+                        {
+                            "end": 32,
+                            "inner": "C",
+                            "marking": "(C)",
+                            "result": {
+                                "appliedFixes": [
+                                    {
+                                        "action": "add",
+                                        "add": [
+                                            {
+                                                "categoryId": "allow_sharing_with",
+                                                "conceptId": "CEDAR_VALLEY_DISTRICT"
+                                            }
+                                        ],
+                                        "message": "Rule \"nonpublic-is-internal-by-default\": added \"CEDAR_VALLEY_DISTRICT\" to category \"allow_sharing_with\"",
+                                        "ruleId": "nonpublic-is-internal-by-default",
+                                        "triggerConceptIds": ["CONFIDENTIAL"]
+                                    }
+                                ],
+                                "assertions": [
+                                    {
+                                        "categoryId": "level",
+                                        "conceptId": "CONFIDENTIAL",
+                                        "confidence": "certain",
+                                        "source": "parse"
+                                    },
+                                    {
+                                        "categoryId": "allow_sharing_with",
+                                        "conceptId": "CEDAR_VALLEY_DISTRICT",
+                                        "confidence": "inferred",
+                                        "source": "infer",
+                                        "sourceRule": "nonpublic-is-internal-by-default"
+                                    }
+                                ],
+                                "assessment": {
+                                    "collapsed": [],
+                                    "conflicts": [],
+                                    "emitted": [
+                                        {
+                                            "categoryId": "level",
+                                            "conceptId": "CONFIDENTIAL"
+                                        }
+                                    ],
+                                    "omitted": [
+                                        {
+                                            "categoryId": "allow_sharing_with",
+                                            "conceptId": "CEDAR_VALLEY_DISTRICT"
+                                        }
+                                    ],
+                                    "unrepresentable": []
+                                },
+                                "displayColor": {
+                                    "background": "#6a1b9a",
+                                    "text": "#ffffff"
+                                },
+                                "errors": [],
+                                "inputWasValid": true,
+                                "notices": [],
+                                "recognition": {
+                                    "inputFormat": "short",
+                                    "status": "complete",
+                                    "surface": "marking",
+                                    "unmatched": []
+                                },
+                                "rendered": "C",
+                                "valid": true,
+                                "warnings": []
+                            },
+                            "role": "part",
+                            "start": 29,
+                            "type": "short",
+                            "wrapped": true
+                        },
+                        {
+                            "end": 56,
+                            "inner": "I",
+                            "marking": "(I)",
+                            "result": {
+                                "appliedFixes": [
+                                    {
+                                        "action": "add",
+                                        "add": [
+                                            {
+                                                "categoryId": "allow_sharing_with",
+                                                "conceptId": "CEDAR_VALLEY_DISTRICT"
+                                            }
+                                        ],
+                                        "message": "Rule \"nonpublic-is-internal-by-default\": added \"CEDAR_VALLEY_DISTRICT\" to category \"allow_sharing_with\"",
+                                        "ruleId": "nonpublic-is-internal-by-default",
+                                        "triggerConceptIds": ["INTERNAL"]
+                                    }
+                                ],
+                                "assertions": [
+                                    {
+                                        "categoryId": "level",
+                                        "conceptId": "INTERNAL",
+                                        "confidence": "certain",
+                                        "source": "parse"
+                                    },
+                                    {
+                                        "categoryId": "allow_sharing_with",
+                                        "conceptId": "CEDAR_VALLEY_DISTRICT",
+                                        "confidence": "inferred",
+                                        "source": "infer",
+                                        "sourceRule": "nonpublic-is-internal-by-default"
+                                    }
+                                ],
+                                "assessment": {
+                                    "collapsed": [],
+                                    "conflicts": [],
+                                    "emitted": [
+                                        {
+                                            "categoryId": "level",
+                                            "conceptId": "INTERNAL"
+                                        }
+                                    ],
+                                    "omitted": [
+                                        {
+                                            "categoryId": "allow_sharing_with",
+                                            "conceptId": "CEDAR_VALLEY_DISTRICT"
+                                        }
+                                    ],
+                                    "unrepresentable": []
+                                },
+                                "displayColor": {
+                                    "background": "#1565c0",
+                                    "text": "#ffffff"
+                                },
+                                "errors": [],
+                                "inputWasValid": true,
+                                "notices": [],
+                                "recognition": {
+                                    "inputFormat": "short",
+                                    "status": "complete",
+                                    "surface": "marking",
+                                    "unmatched": []
+                                },
+                                "rendered": "I",
+                                "valid": true,
+                                "warnings": []
+                            },
+                            "role": "part",
+                            "start": 53,
+                            "type": "short",
+                            "wrapped": true
+                        }
+                    ],
+                    "unread": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "774afb680ead8bc505f20f0d991369774c36616bce48c60363ad03f449446f3c": {
             "body": {
                 "resolution": {

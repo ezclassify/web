@@ -244,7 +244,7 @@ The markup and the rest of `main.ts` stay as they are.
 ## Favorites
 
 Editable marking controls put Favorites in the EzClassify branding button's
-popover, beside Corrections. Enhanced native marking inputs and a
+popover, beside Auto-fixes. Enhanced native marking inputs and a
 GuideChecklist bound to a marking use the same tools. The checklist's computed
 result still belongs to its selected guide rules. The Favorites tab appears when the host supplies
 `favorites.load` or the scheme declares a preset for the field's scope. Without
@@ -303,13 +303,26 @@ The optional `clear(context)` hook clears that list without changing presets.
 
 Click the branding button or press Ctrl+Shift+Enter (Cmd+Shift+Enter on Mac)
 while editing a control to open its tools. Hover shows the shortcut hint.
-Opening tools focuses the selected tab and hides editing suggestions. Returning
-to the editor closes tools.
+Opening tools focuses the first available Quick fix for an error, or the
+selected tab when there is no fix to focus. Returning to the editor closes
+tools.
 With the popover open, Left/Right switches tabs from content controls. In the
 header, the arrows cycle through the available tabs and Close. Down from the
 selected tab enters its section; Up closes tools and returns to the branding
 button. Each tab shows its current entry count.
-On a saved marking, Right moves to its Remove button and Left enters Corrections'
+When a marked textarea offers several Favorites targets, the popup first focuses
+the selector above the tabs. It defaults to the marking on the paragraph where
+the caret last rested and previews
+each marking with as much of its paragraph as fits on one line. Open the choices
+with Enter or Space. Down from the closed selector moves to the active
+tab, and Up from any tab or Close returns to the selector. Choosing a target
+leaves the textarea value alone until a Favorite is applied. Needs attention
+and Auto-fixes show the selected marking's results. The logo still counts
+unresolved errors and unseen automatic changes across the entire textarea.
+The selector lists existing markings. Use the field's Add marking action to create
+another one.
+
+On a saved marking, Right moves to its Remove button and Left enters Auto-fixes'
 first action. Left on Remove returns to the marking. Up/Down moves through its actions, including Save, saved markings,
 and presets. Enter or Space activates a focused action. Delete removes a
 focused saved Favorite when the host provides `remove`. The adjacent Remove
@@ -348,6 +361,21 @@ The library adds no input of its own to your form. If the page marking has to
 be submitted, place a hidden input with `data-ezclassify-aggregate` where you
 want it, and it holds the rendered value. Any other element with no controller
 shows the value as text. A view never feeds back into a rollup.
+
+Give each banner an accessible name prefix with
+`data-ezclassify-banner-label="Page markings"`. The banner includes its current
+marking after that label. Add `data-ezclassify-banner-no-live` to silence its
+announcements while keeping the banner available to assistive technology. Use
+`bannerLabel` and `bannerNoLive: true` with `ui.add(element, 'banner', …)`.
+React and Vue expose `label` and `noLive` on `EzClassifyBanner`. Angular
+exposes the same inputs on `EzClassifyBannerComponent` (`<ez-classify-banner>`).
+Place these components inside their framework's marking root. Each shows the
+page rollup by default. Set `aggregate` to a rollup ID or `source` to a marking ID.
+
+Use `data-ezclassify-banner-affix="top"` or `"bottom"` to pin the banner to
+the viewport. Reserve enough space in the page layout for the fixed banner.
+Use `data-ezclassify-banner-boundary` or `data-ezclassify-banner-show-current-data`
+to opt into the structured boundary display.
 
 ### A part outside its whole's container
 
@@ -638,17 +666,18 @@ The field's normal Tab, Enter and Escape behavior is unchanged.
 
 ## Rule errors
 
-A form field (`marking`, `tags`, `marked-input` and the other editable
-controllers) lists each rule its value breaks directly under the field, starting
-at the field's left edge. Under the errors, "Ways to fix" lists the fixes the
-engine proposed in `ProcessResult.proposedFixes` as buttons. Each fix is one
-whole valid marking: the concepts of the author's marking it keeps, the ones it
-adds, the ones it removes, the marking that results, and a message that says
-what it does. The button reads that message without its closing period, such
-as "Replace LOW with HIGH" or "Remove HOLD". Two fixes that end in the same
-marking are listed once. Pressing one makes what the fix keeps and adds the
-field's value in one write, the same way picking from its list does. The
-engine words the message; the heading comes from the `fix.heading` locale key.
+Editable controls summarize rule errors below the field and show them in the
+branding button's **Needs attention** tab. The button turns red when there are
+unresolved errors. **Quick fixes** in that tab lists any alternatives the
+engine proposed in `ProcessResult.proposedFixes`. Each names the marking it
+would write and the concepts it would keep, add, or remove. The action uses
+the engine's own message, and alternatives with the same rendered marking
+appear once. Activating a fix submits its marking to the engine for judgment.
+
+**Auto-fixes** lists changes the engine already applied. The branding button
+counts unresolved errors plus unseen automatic changes. Viewing Auto-fixes
+acknowledges those changes. Unresolved errors stay in the count until the
+marking passes the rule that raised them.
 
 A whole with parts, the fields inside its `data-ezclassify-whole` container or
 naming it with `data-ezclassify-part-of`, is judged against those parts. The
@@ -763,7 +792,7 @@ injectDefaultStyles();
 ```css
 .ez-root,
 [data-ezclassify] {
-    --ez-font-size: 0.875rem;
+    font-size: 0.875rem;
     --ez-border-radius: 0.25rem;
     --ez-color-success: #2e7d32;
     --ez-color-error: #c62828;
@@ -772,15 +801,14 @@ injectDefaultStyles();
 
 ### Fit fields to a host form
 
-Mounted components have their own default typography, spacing, and borders.
-Set theme variables on a form wrapper to apply them to the fields and their
-pickers. Style an original native control with ordinary CSS to adjust a single
+Set ordinary typography on the form, and use theme variables for colors,
+spacing, and borders. Style an original native control to adjust a single
 field. Enhanced editors mirror that control's typography, padding, and border.
 
 ```css
 .case-form {
-    --ez-font-family: Georgia, serif;
-    --ez-font-size: 1rem;
+    font-family: Georgia, serif;
+    font-size: 1rem;
     --ez-color-background: #f6f7ff;
     --ez-color-primary: #41368a;
     --ez-color-primary-contrast: #fff;
@@ -823,13 +851,13 @@ a concept was inferred.
 
 ### Fonts
 
-Set `--ez-font-family` on the form to change the font for controls and their
-pickers together. The controls follow the form's ordinary `font-size`.
-Set `--ez-font-size` to override that size for EzClassify alone.
-Primary values and choice labels use the same inherited size. Captions, help
-text, and other secondary labels use proportions of the same value.
-Use `rem` for the base so it follows the user's browser font setting.
-For a field-specific override, style its native control with ordinary CSS.
+Enhanced text uses the native field's typography. Pickers, buttons, and error
+messages use the surrounding form's font. Secondary labels and actions scale
+with the form's text size. The built-in themes leave font family and size to
+the application.
+
+Set `font-family` and `font-size` with ordinary CSS on the form or a native
+field. A form size expressed in `rem` follows the user's browser font setting.
 TagInput uses the same font and size for its chips and search text. Use
 `--ez-tag-input-font-size` to adjust both. Touch devices keep a minimum of
 16px for those labels to avoid zooming when the search field receives focus.

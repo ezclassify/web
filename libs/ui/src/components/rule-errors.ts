@@ -45,6 +45,8 @@ export interface RuleErrorFix {
 export interface RuleErrorReport {
     /** One message per engine error, in the engine's order. */
     readonly messages: readonly string[];
+    /** Adapter errors, with rule identifiers for the details view. */
+    readonly errors?: readonly ValidationError[];
     /** Each distinct way to a valid marking. */
     readonly fixes: readonly RuleErrorFix[];
     /** One message per engine warning, in the engine's order. */
@@ -100,6 +102,7 @@ export function ruleErrorsFrom(
     }
     return {
         messages: errors.map((error) => error.message),
+        ...(errors.length ? { errors } : {}),
         fixes,
         warnings: warned,
     };
@@ -158,20 +161,16 @@ export function fixAssertions(
     ];
 }
 
-/**
- * What follows the field inside its wrapper: the inline chrome, or the hint row
- * under a marked input. The error list goes before it.
- */
-const FIELD_CHROME = ':scope > .ez-field-chrome, :scope > .marked-input-footer';
+/** The field's inline chrome follows its keyboard hint and its findings. */
+const FIELD_CHROME = ':scope > .ez-field-chrome';
 
 /**
- * Put the error list directly under the field the user sees. Inside the
- * library's own wrapper it goes after the editable surface and before the
- * field's chrome, so the fixes are the next thing Tab reaches after the field
- * and the chrome (status mark, ★ favorites) comes after them. Without a
- * wrapper, or a wrapper with no chrome, it follows the wrapper (or the mount
- * container that holds the field). TagInput keeps it inside its owned mount,
- * after the chip editor and its chrome.
+ * Put the error list directly under the field the user sees. Inside the marked
+ * text it shares the footer with the keyboard hint. In other owned wrappers it
+ * goes before the field's chrome. Without a wrapper, or a wrapper with no
+ * chrome, it follows the wrapper (or the mount container that holds the field).
+ * TagInput keeps it inside its owned mount, after the chip editor and its
+ * chrome.
  */
 export function placeUnderField(
     list: HTMLElement,
@@ -185,6 +184,11 @@ export function placeUnderField(
         return;
     }
     const wrapper = host?.closest(FIELD_WRAPPERS) ?? null;
+    const footer = wrapper?.querySelector(':scope > .ez-marked-field-footer');
+    if (footer) {
+        if (footer.firstElementChild !== list) footer.prepend(list);
+        return;
+    }
     const chrome = wrapper?.querySelector(FIELD_CHROME) ?? null;
     if (wrapper && chrome) {
         if (chrome.previousElementSibling === list) return;
@@ -198,18 +202,34 @@ export function placeUnderField(
 
 let nextHeadingId = 0;
 
+/**
+ * Render a scheme rule identifier. Internal adapter errors have no rule to look
+ * up.
+ */
+export function ruleAttribution(
+    doc: Document,
+    rule: string | undefined,
+): HTMLElement | null {
+    if (!rule || rule.startsWith('_')) return null;
+    const name = doc.createElement('div');
+    name.className = 'ez-status-list__rule';
+    name.textContent = t('mark.rule').replace('{rule}', () => rule);
+    return name;
+}
+
 /** Build the shared engine-proposed Ways to Fix heading and action group. */
 export function buildRuleFixes(
     doc: Document,
     fixes: readonly RuleErrorFix[],
-    onApply: (fix: Fix) => void,
+    onApply: (fix: Fix, pointerType?: string) => void,
     returnFocus?: (pointerType?: string) => void,
+    headingText = t('fix.heading'),
 ): HTMLElement {
     adoptStylesOnce(ruleErrorsCss, doc);
     const heading = doc.createElement('div');
     heading.className = 'ez-validation-errors__fixes-heading';
     heading.id = `ez-fix-heading-${++nextHeadingId}`;
-    heading.textContent = t('fix.heading');
+    heading.textContent = headingText;
     const group = doc.createElement('div');
     group.className = 'ez-validation-errors__fixes';
     group.appendChild(heading);
@@ -235,7 +255,7 @@ export function buildRuleFixes(
             event.preventDefault();
             const activation = event.detail === 0 ? 'keyboard' : pointerType;
             pointerType = 'keyboard';
-            onApply(fix);
+            onApply(fix, activation);
             // The pressed button disappears. Keep the activation type so a
             // pointer repair can retain its place without opening the editor.
             returnFocus?.(activation);
@@ -263,7 +283,8 @@ export class RuleErrorList {
      */
     private suppressed = false;
     private currentFixes: readonly RuleErrorFix[] = [];
-    private currentApply: ((fix: Fix) => void) | null = null;
+    private currentApply: ((fix: Fix, pointerType?: string) => void) | null =
+        null;
 
     /**
      * @param doc - The document the field lives in
@@ -276,6 +297,8 @@ export class RuleErrorList {
         private readonly returnFocus?: (pointerType?: string) => void,
         private readonly options?: {
             remediesOnly?: boolean;
+            fixesHeading?: string;
+            showRuleNames?: boolean;
             beforeReplace?: () => void;
         },
     ) {
@@ -293,14 +316,20 @@ export class RuleErrorList {
      */
     update(
         report: RuleErrorReport,
-        onApply: ((fix: Fix) => void) | null,
+        onApply: ((fix: Fix, pointerType?: string) => void) | null,
     ): void {
         this.currentFixes = report.fixes;
         this.currentApply = onApply;
+        this.element.toggleAttribute(
+            'data-has-errors',
+            report.messages.length > 0,
+        );
         const shown = JSON.stringify([
             onApply !== null,
             report.messages,
             report.warnings,
+            this.options?.showRuleNames &&
+                report.errors?.map((error) => error.constraintId),
             // The marking each button writes, not only its words: two
             // results can word the same change over different values.
             report.fixes.map((f) => [f.label, f.fix.rendered]),
@@ -321,7 +350,11 @@ export class RuleErrorList {
         if (!changed) return;
         this.shown = shown;
         const doc = this.element.ownerDocument;
-        const row = (text: string, warning: boolean): HTMLElement => {
+        const row = (
+            text: string,
+            warning: boolean,
+            ruleId?: string,
+        ): HTMLElement => {
             const item = doc.createElement('div');
             item.className = warning
                 ? 'ez-validation-errors__item ez-validation-errors__item--warning'
@@ -330,10 +363,19 @@ export class RuleErrorList {
             message.className = 'ez-validation-errors__message';
             message.textContent = text;
             item.appendChild(message);
+            const rule = ruleAttribution(doc, ruleId);
+            if (rule) item.appendChild(rule);
             return item;
         };
+        const rules = this.options?.showRuleNames
+            ? [...(report.errors ?? [])]
+            : [];
         const children: HTMLElement[] = [
-            ...report.messages.map((text) => row(text, false)),
+            ...report.messages.map((text) => {
+                const i = rules.findIndex((error) => error.message === text);
+                const rule = i < 0 ? undefined : rules.splice(i, 1)[0];
+                return row(text, false, rule?.constraintId);
+            }),
             ...report.warnings.map((text) => row(text, true)),
         ];
         if (showFixes) {
@@ -343,13 +385,15 @@ export class RuleErrorList {
                 buildRuleFixes(
                     doc,
                     report.fixes,
-                    (previous) => {
+                    (previous, pointerType) => {
                         const current = this.currentFixes.find(
                             ({ fix }) => fix.rendered === previous.rendered,
                         );
-                        if (current) this.currentApply?.(current.fix);
+                        if (current)
+                            this.currentApply?.(current.fix, pointerType);
                     },
                     this.returnFocus,
+                    this.options?.fixesHeading,
                 ),
             );
         }

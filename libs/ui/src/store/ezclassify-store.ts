@@ -725,6 +725,17 @@ export interface EzClassifyStore extends Partial<MarkingEntriesStore> {
         compare: ((left: string, right: string) => number) | null,
     ): void;
 
+    /** @internal Recognize a native field that can consume the store's own rendering. */
+    usesRenderedFormat?(id: string, formatId: string): boolean;
+    /** @internal Recheck native text before the store commits its mount read. */
+    seedRenderedFromHost?(id: string, readNative: () => string): Promise<void>;
+    /** @internal Compose served text and initial native selections in one transaction. */
+    seedRenderedWithFacets?(
+        id: string,
+        rendered: string,
+        facets: ReadonlyMap<string, Assertion[]>,
+    ): Promise<void>;
+
     /**
      * Record whether a contributor read only part of its source: a marked text
      * area whose scan stopped before the end of its text. The rollups it feeds

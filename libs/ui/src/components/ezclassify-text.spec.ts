@@ -187,6 +187,23 @@ describe('EzClassifyText (standalone)', () => {
         host.remove();
     });
 
+    it('adopts and releases its stylesheet inside the host shadow root', async () => {
+        const parent = document.createElement('div');
+        document.body.append(parent);
+        const shadow = parent.attachShadow({ mode: 'open' });
+        shadow.append(host);
+        const before = [...document.adoptedStyleSheets];
+        try {
+            await field.init(host as HTMLDivElement, toCtx(engine));
+            expect(document.adoptedStyleSheets).toEqual(before);
+            expect(shadow.adoptedStyleSheets).toHaveLength(1);
+            field.destroy();
+            expect(shadow.adoptedStyleSheets).toHaveLength(0);
+        } finally {
+            parent.remove();
+        }
+    });
+
     it('reads a host that names one scope as that scope, in its output', async () => {
         const meta = engine.getSchemeMeta();
         engine.getSchemeMeta = () => ({

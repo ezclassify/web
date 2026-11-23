@@ -4,15 +4,166 @@
     flex-direction: column;
     min-height: 0;
     flex: 1 1 auto;
-    width: min(20rem, calc(100vw - 3rem));
+    width: min(20em, calc(100vw - 3em));
+}
+.ez-marking-tools:has([data-tools-tab='attention']) {
+    width: min(26em, calc(100vw - 3em));
+}
+.ez-marking-tools [data-tools-panel='attention'] .ez-validation-errors {
+    margin: 0;
+    font-size: inherit;
+}
+.ez-marking-tools
+    [data-tools-panel='attention']
+    .ez-validation-errors__item
+    + .ez-validation-errors__item {
+    margin-block-start: 0.375em;
+}
+.ez-marking-tools [data-tools-panel='attention'] .ez-validation-errors__fixes {
+    display: block;
+    margin-block-start: 0.625em;
+    padding-block-start: 0.625em;
+    border-block-start: 1px solid var(--ez-color-border, #d1d5db);
+}
+.ez-marking-tools
+    [data-tools-panel='attention']
+    .ez-validation-errors__fixes-heading {
+    margin-block-end: 0.25em;
+    font-size: calc(1em * 0.6875 / 0.85);
+    color: var(--ez-tooltip-rule-color, var(--ez-color-muted, #555));
+}
+.ez-marking-tools
+    [data-tools-panel='attention']
+    button.ez-validation-errors__fix {
+    display: block;
+    inline-size: 100%;
+    min-height: 2.75em;
+    padding: 0.5em 0.625em;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    color: var(--ez-tooltip-body-color, var(--ez-color-text, #333));
+    font-weight: 500;
+    text-align: start;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+.ez-marking-tools
+    [data-tools-panel='attention']
+    button.ez-validation-errors__fix:hover {
+    background: var(--ez-dropdown-item-hover, #f3f4f6);
+}
+.ez-marking-tools
+    [data-tools-panel='attention']
+    button.ez-validation-errors__fix:focus-visible {
+    outline: 2px solid var(--ez-color-primary, #fdb827);
+    outline-offset: -0.125em;
+}
+.ez-marking-tools--with-target {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto minmax(0, 1fr);
+}
+.ez-marking-tools__target-region {
+    grid-area: 1 / 1;
+    margin-block-end: 0.375em;
+}
+.ez-marking-tools__target-region,
+.ez-marking-tools__target-options {
+    font-size: calc(1em * 0.85);
+}
+.ez-marking-tools--with-target .ez-marking-tools__header {
+    grid-area: 2 / 1;
+}
+.ez-marking-tools--with-target .ez-marking-tools__section {
+    grid-area: 3 / 1;
+}
+.ez-marking-tools__target {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5em;
+    inline-size: 100%;
+    min-height: 2.75em;
+    padding: 0.375em 0.625em;
+    border: 1px solid var(--ez-color-border, #d1d5db);
+    border-radius: var(--ez-border-radius, 0.25em);
+    background: var(--ez-dropdown-background, var(--ez-color-background, #fff));
+    color: inherit;
+    font: inherit;
+    text-align: start;
+    cursor: pointer;
+}
+.ez-marking-tools__target-value {
+    min-inline-size: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.ez-marking-tools__target::after {
+    content: '';
+    flex: none;
+    width: 0.42em;
+    height: 0.42em;
+    border: solid currentColor;
+    border-width: 0 1px 1px 0;
+    transform: rotate(45deg);
+}
+.ez-marking-tools__target[aria-disabled='true'] {
+    opacity: 0.65;
+    cursor: default;
+}
+.ez-marking-tools__target:focus-visible {
+    outline: 2px solid var(--ez-color-primary, #fdb827);
+    outline-offset: -2px;
+}
+.ez-marking-tools__target-options:not([hidden]) {
+    position: absolute;
+    grid-area: 2 / 1 / 4 / 2;
+    inset: 0;
+    z-index: 1;
+    overflow: auto;
+    background: var(--ez-dropdown-background, var(--ez-color-background, #fff));
+    border: 1px solid var(--ez-color-border, #d1d5db);
+    border-radius: var(--ez-border-radius, 0.25em);
+}
+.ez-marking-tools__target-options [role='option'] {
+    padding: 0.5em 0.625em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: pointer;
+}
+.ez-marking-tools__target-options [role='option'][aria-disabled='true'] {
+    color: var(--ez-color-muted, #6b7280);
+    cursor: default;
+}
+.ez-marking-tools__target-options [role='option'][data-invalid] {
+    color: var(--ez-color-error, #b91c1c);
+}
+.ez-marking-tools__target-options [role='option']:hover {
+    background: var(--ez-dropdown-item-hover, #f3f4f6);
+}
+.ez-marking-tools__target-options [data-active] {
+    background: var(--ez-dropdown-highlight, #fef3c7);
 }
 .ez-marking-tools__header {
     flex: none;
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.75em;
     border-bottom: 1px solid var(--ez-color-border, #d1d5db);
-    margin-bottom: 0.625rem;
+    margin-bottom: 0.625em;
+}
+.ez-marking-tools__header:has(.ez-marking-tools__field-notice) {
+    flex-wrap: wrap;
+}
+.ez-marking-tools__field-notice {
+    flex-basis: 100%;
+    padding-block-end: 0.625em;
+    font-size: calc(1em * 0.85);
+    color: var(--ez-color-error, #b91c1c);
 }
 .ez-marking-tools__section:not([hidden]) {
     min-height: 0;
@@ -22,7 +173,8 @@
 .ez-marking-tools__tabs {
     display: flex;
     flex: 1;
-    gap: 1rem;
+    flex-wrap: wrap;
+    column-gap: 1em;
     min-width: 0;
 }
 .ez-marking-tools__tab,
@@ -32,22 +184,51 @@
     background: transparent;
     cursor: pointer;
 }
+/* Keep the tools text compact relative to the surrounding form. */
+.ez-marking-tools__tab,
+.ez-marking-tools__section {
+    font-size: calc(1em * 0.85);
+}
 .ez-marking-tools__tab {
     display: inline-flex;
     align-items: center;
-    gap: 0.375rem;
-    min-height: 2.75rem;
+    gap: 0.375em;
+    min-height: 2.75em;
     border: 0;
     border-bottom: 2px solid transparent;
-    padding: 0.375rem 0;
+    padding: 0.375em 0;
     margin-bottom: -1px;
 }
 .ez-marking-tools__tab[aria-selected='true'] {
     border-bottom-color: var(--ez-color-primary, #fdb827);
     font-weight: 600;
 }
+.ez-marking-tools:has(
+        [data-tools-panel='attention']
+            :is(
+                .ez-validation-errors__item:not(
+                    .ez-validation-errors__item--warning
+                ),
+                .ez-status-list__error
+            )
+    )
+    [data-tools-tab='attention'] {
+    color: var(--ez-color-error, #b91c1c);
+}
+.ez-marking-tools:has(
+        [data-tools-panel='attention']
+            :is(
+                .ez-validation-errors__item:not(
+                    .ez-validation-errors__item--warning
+                ),
+                .ez-status-list__error
+            )
+    )
+    [data-tools-tab='attention'][aria-selected='true'] {
+    border-bottom-color: currentColor;
+}
 .ez-marking-tools__count {
-    font-size: calc(var(--ez-font-size, 1rem) * 0.6875);
+    font-size: calc(1em * 0.6875 / 0.85);
     font-weight: 500;
     font-variant-numeric: tabular-nums;
     color: var(--ez-color-muted, #6b7280);
@@ -60,12 +241,12 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 2.75rem;
-    min-height: 2.75rem;
+    min-width: max(2.75rem, calc(2.75em / 1.5));
+    min-height: max(2.75rem, calc(2.75em / 1.5));
     border: 0;
-    border-radius: 0.375rem;
+    border-radius: 0.25em;
     padding: 0;
-    font-size: calc(var(--ez-font-size, 1rem) * 1.5);
+    font-size: calc(1em * 1.5);
     line-height: 1;
 }
 .ez-marking-tools__close:hover {
@@ -74,15 +255,11 @@
 .ez-marking-tools__close:focus-visible,
 .ez-marking-tools__section:focus-visible {
     outline: 2px solid var(--ez-color-primary, #fdb827);
-    outline-offset: 2px;
+    outline-offset: -2px;
 }
 @media (pointer: coarse) {
-    .ez-marking-tools__tab,
-    .ez-marking-tools__close {
-        min-height: 2.75rem;
-    }
-    .ez-marking-tools__close {
-        min-width: 2.75rem;
+    .ez-marking-tools__tab {
+        min-height: max(2.75rem, 2.75em);
     }
 }
 /* One brand-logo mark per enhanced field: 3 bars + a sparkle, always drawn in
@@ -200,13 +377,14 @@
 }
 .ez-status-mark__count {
     margin-inline-end: 0.125rem;
-    font-family: var(--ez-font-family, inherit);
-    font-size: calc(var(--ez-font-size, 1rem) * 0.75);
+    font-family: inherit;
+    font-size: calc(1em * 0.75);
     font-weight: 700;
     line-height: 1;
     font-variant-numeric: tabular-nums;
 }
-.ez-status-mark--unseen {
+.ez-status-mark--unseen,
+.ez-status-mark--error {
     width: auto;
     min-width: 1.5rem;
 }

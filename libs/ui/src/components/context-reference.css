@@ -30,7 +30,7 @@
     flex-direction: column;
     min-width: 0;
     min-height: 0;
-    font-family: var(--ez-font-family, inherit);
+    font-family: inherit;
     /* The frame is a transparent positioning shell until opened; the handle and
      * the open surface re-enable pointer events so a closed drawer never
      * swallows clicks along the whole edge. */
@@ -107,7 +107,7 @@
     background: transparent;
     color: inherit;
     font: inherit;
-    font-size: calc(var(--ez-font-size, 1rem) * 0.875);
+    font-size: calc(1em * 0.875);
 }
 .ez-context-ref__close:hover {
     background: var(--ez-color-surface-hover, #f3f4f6);
@@ -139,7 +139,7 @@
     cursor: pointer;
     padding: var(--ez-spacing-sm, 0.5rem) var(--ez-spacing-md, 0.75rem);
     font: inherit;
-    font-size: calc(var(--ez-font-size, 1rem) * 0.9375);
+    font-size: calc(1em * 0.9375);
     color: var(--ez-context-ref-tab-text, var(--ez-color-muted, #6b7280));
     border-bottom: 2px solid transparent;
     transition:
@@ -228,7 +228,7 @@
         var(--ez-color-primary-contrast, #1c1c1c)
     );
     font: inherit;
-    font-size: calc(var(--ez-font-size, 1rem) * 0.875);
+    font-size: calc(1em * 0.875);
     font-weight: 600;
     letter-spacing: 0.02em;
     padding: var(--ez-spacing-sm, 0.5rem) var(--ez-spacing-xs, 0.25rem);

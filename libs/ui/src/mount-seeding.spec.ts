@@ -56,6 +56,11 @@ async function countingStore() {
         count(id);
         return seedRendered(id, rendered);
     };
+    const seedRenderedFromHost = store.seedRenderedFromHost.bind(store);
+    store.seedRenderedFromHost = (id, readNative) => {
+        count(id);
+        return seedRenderedFromHost(id, readNative);
+    };
     store.seedAssertions = (id, assertions) => {
         count(id);
         return seedAssertions(id, assertions);

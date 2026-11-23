@@ -120,13 +120,9 @@ import type { ShownForm } from '../written-facts';
 import { renderViewRefused } from '../render-refusal';
 import { writtenValue } from '../value-spelling';
 import { t } from '../i18n';
+import { statusMarkOwnsNode } from './status-mark';
 import { derivedAssertion } from '../assertion-identity';
 import { locateTokenSpans } from '../token-tree/token-tree';
-import {
-    RuleErrorList,
-    ruleErrorsFrom,
-    type RuleErrorFix,
-} from './rule-errors';
 import {
     categoriesByScope,
     factsInScopes,
@@ -341,9 +337,7 @@ export class DecisionFlow extends ComponentBase {
     private rendering = false;
     private catalogChangedDuringPress = false;
     private pendingText: PendingText | null = null;
-    private ruleFixes: readonly RuleErrorFix[] = [];
     private ruleFixesInput: string | null = null;
-    private fixesList: RuleErrorList | null = null;
     private focusAfterRuleFix = false;
     /** True while a committed store state is being applied. */
     private applyingStoreState = false;
@@ -371,8 +365,17 @@ export class DecisionFlow extends ComponentBase {
             return;
         this.finishPointer();
     };
+    private ownsTools(node: Node | null): boolean {
+        const mark =
+            this.suiteChrome?.status.querySelector<HTMLElement>(
+                '.ez-status-mark',
+            );
+        return !!node && statusMarkOwnsNode(mark, node);
+    }
+
     private readonly outsidePointer = (event: Event) => {
-        if (this.flowEl.contains(event.target as Node)) return;
+        const target = event.target as Node;
+        if (this.flowEl.contains(target) || this.ownsTools(target)) return;
         this.finishPointer();
         // A tap anywhere else puts a previewed dot back.
         this.setPreview(null);
@@ -389,7 +392,16 @@ export class DecisionFlow extends ComponentBase {
         this.pressingOutside = false;
         // The path the click took, not where its target is now: a press on a
         // dot rebuilds the dots before the click reaches the document.
-        if (event.composedPath().includes(this.flowEl)) return;
+        if (
+            event
+                .composedPath()
+                .some(
+                    (node) =>
+                        node === this.flowEl ||
+                        (node instanceof Node && this.ownsTools(node)),
+                )
+        )
+            return;
         this.setOpen(false);
     };
     /** Focus left the flow: the step closes and the flow is one line again. */
@@ -397,7 +409,8 @@ export class DecisionFlow extends ComponentBase {
         // A render replaces the focused element and puts focus back itself.
         if (this.rendering) return;
         const next = event.relatedTarget as Node | null;
-        if (next && this.flowEl.contains(next)) return;
+        if (next && (this.flowEl.contains(next) || this.ownsTools(next)))
+            return;
         this.setPreview(null);
         // A press elsewhere closes the flow on its click (see outsideClick).
         if (this.pressingOutside) return;
@@ -928,7 +941,6 @@ export class DecisionFlow extends ComponentBase {
         refused?: { assessment?: RenderAssessment },
         byScope?: ReadonlyMap<string, readonly ValidationError[]>,
     ): void {
-        this.ruleFixes = ruleErrorsFrom(errors, proposedFixes, warnings).fixes;
         this.ruleFixesInput = this.proofInputKey();
         this.allErrors = errors.map((error) => error.message);
         this.errorsByCategory = new Map();
@@ -1145,9 +1157,8 @@ export class DecisionFlow extends ComponentBase {
      * active.
      */
     private clearRuleFixes(): void {
-        this.ruleFixes = [];
         this.ruleFixesInput = null;
-        if (this.flowEl) this.renderRuleFixes();
+        this.setFieldFindings([]);
     }
 
     destroy(): void {
@@ -2710,7 +2721,6 @@ export class DecisionFlow extends ComponentBase {
      * its step, and the engine's other messages.
      */
     private renderValues(): void {
-        this.renderRuleFixes();
         this.valuesEl.replaceChildren();
         if (!this.multiScope) {
             this.valuesEl.appendChild(
@@ -2743,33 +2753,9 @@ export class DecisionFlow extends ComponentBase {
         if (!texts && this.resultWriting !== key) void this.writeResult(key);
     }
 
-    /** Show the engine's whole-marking remedies once, beside the scoped report. */
-    private renderRuleFixes(): void {
-        const fixes = this.locked ? [] : this.ruleFixes;
-        if (!this.fixesList) {
-            if (!fixes.length) return;
-            this.fixesList = new RuleErrorList(
-                this.container.ownerDocument,
-                undefined,
-                {
-                    remediesOnly: true,
-                    beforeReplace: () => {
-                        if (
-                            this.open &&
-                            this.fixesList?.element.contains(
-                                document.activeElement,
-                            )
-                        ) {
-                            this.focusCurrentStep();
-                            this._restoreFocusAfterRender = 'step';
-                        }
-                    },
-                },
-            );
-            this.fixesList.element.classList.add('ez-decision-flow__fixes');
-            this.flowEl.insertBefore(this.fixesList.element, this.previewEl);
-        }
-        this.fixesList.update({ messages: [], warnings: [], fixes }, (fix) => {
+    protected override ruleFixHandler(): (fix: Fix) => void {
+        const apply = super.ruleFixHandler();
+        return (fix) => {
             if (this._destroyed || this.locked || this.nativeLocked) return;
             if (this.ruleFixesInput !== this.proofInputKey()) {
                 this.clearRuleFixes();
@@ -2779,8 +2765,12 @@ export class DecisionFlow extends ComponentBase {
                 this.open && this.flowEl.contains(document.activeElement);
             if (focus) this.focusCurrentStep();
             this.focusAfterRuleFix = focus;
-            this.ruleFixHandler()(fix);
-        });
+            apply(fix);
+        };
+    }
+
+    protected override focusAfterFix(): void {
+        // The flow's action above owns focus across its asynchronous write.
     }
 
     /** Move between steps, options and remedies without trapping normal Tab. */
@@ -2839,29 +2829,6 @@ export class DecisionFlow extends ComponentBase {
             }
             return;
         }
-        const fixes = [
-            ...(this.fixesList?.element.querySelectorAll<HTMLButtonElement>(
-                '.ez-validation-errors__fix',
-            ) ?? []),
-        ];
-        const index = fixes.indexOf(target as HTMLButtonElement);
-        if (index >= 0) {
-            if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
-                event.preventDefault();
-                event.stopPropagation();
-                fixes[
-                    (index +
-                        (event.key === 'ArrowRight' ? 1 : -1) +
-                        fixes.length) %
-                        fixes.length
-                ]?.focus();
-            } else if (event.key === 'ArrowUp') {
-                event.preventDefault();
-                event.stopPropagation();
-                this.focusCurrentStep();
-            }
-            return;
-        }
         const options = [
             ...this.stepEl.querySelectorAll<HTMLButtonElement>(
                 '.ez-decision-flow__option:not(:disabled):not([aria-disabled="true"])',
@@ -2879,7 +2846,6 @@ export class DecisionFlow extends ComponentBase {
         ) {
             event.preventDefault();
             event.stopPropagation();
-            if (!this.fixesList?.element.hidden) fixes[0]?.focus();
             return;
         }
         if (
@@ -2982,7 +2948,7 @@ export class DecisionFlow extends ComponentBase {
                     this.dotsEl.querySelector<HTMLElement>(
                         '[aria-current="step"]',
                     ) ?? undefined;
-            } else if (!this.fixesList?.element.hidden) destination = fixes[0];
+            }
         }
         if (destination?.matches('.ez-decision-flow__option'))
             this.rememberStepOption(destination as HTMLButtonElement);

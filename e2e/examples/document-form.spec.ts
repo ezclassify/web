@@ -11,8 +11,8 @@
  * proof the example sends exactly what the README promises.
  *
  * A second test loads the same form with the page's fields set in a monospace
- * face, as a host that styles its textareas that way does, and checks that the
- * library's chrome keeps the page font while the field text keeps the field's.
+ * face and checks that the library's chrome follows the form's typography while
+ * the field text keeps the native field's font.
  */
 
 import {
@@ -175,7 +175,8 @@ async function chromeOverlaps(page: Page): Promise<string[]> {
 
 /**
  * Status marks whose color does not say what the field has: muted while it has
- * nothing to say, the field's own text color once it has a message.
+ * nothing to say, red for unresolved errors, and the field's text color for
+ * changes the engine already made.
  *
  * @param page - The page under test.
  * @returns One entry per mismatched mark.
@@ -186,13 +187,16 @@ async function markToneMismatches(page: Page): Promise<string[]> {
         .evaluateAll((marks) =>
             marks.flatMap((mark) => {
                 const quiet = mark.classList.contains('ez-status-mark--quiet');
+                const error = mark.classList.contains('ez-status-mark--error');
                 const color = getComputedStyle(mark).color;
-                const expected = quiet
-                    ? 'rgb(156, 163, 175)'
-                    : getComputedStyle(mark.parentElement!).color;
+                const expected = error
+                    ? 'rgb(185, 28, 28)'
+                    : quiet
+                      ? 'rgb(156, 163, 175)'
+                      : getComputedStyle(mark.parentElement!).color;
                 return color === expected
                     ? []
-                    : [`${quiet ? 'quiet' : 'message'} mark is ${color}`];
+                    : [`mark is ${color}, expected ${expected}`];
             }),
         );
 }
@@ -598,17 +602,23 @@ for (const viewport of [
 test.describe('README document form beside monospace fields', () => {
     test.use({ viewport: { width: 1280, height: 900 } });
 
-    test("keeps the page font in the library's chrome and the field's font in its text", async ({
+    test("uses the host's CSS for field and picker typography", async ({
         page,
     }, info) => {
         const observed = observe(page);
-        // A host stylesheet that sets its fields in a monospace face. Adopted
-        // before the page loads, so the fields mirror it when they enhance.
+        // The app styles the form and native text fields before enhancement.
         await page.addInitScript(() => {
             const sheet = new CSSStyleSheet();
-            sheet.replaceSync(
-                'input, textarea { font-family: "Courier New", monospace; }',
-            );
+            sheet.replaceSync(`
+                form[data-ezclassify-whole="document"] {
+                    font-family: Georgia, serif;
+                    font-size: 20px;
+                }
+                input, textarea {
+                    font-family: "Courier New", monospace;
+                    font-size: 22px;
+                }
+            `);
             document.adoptedStyleSheets = [
                 ...document.adoptedStyleSheets,
                 sheet,
@@ -623,32 +633,62 @@ test.describe('README document form beside monospace fields', () => {
         await expect(body).toBeVisible({ timeout: 60_000 });
         await settle(observed);
 
-        const pageFont = await family(page.locator('body'));
         const fieldFont = await family(body);
         expect(fieldFont).toContain('monospace');
-        expect(pageFont).not.toContain('monospace');
+        await expect(body).toHaveCSS('font-size', '22px');
+        await expect(summary).toHaveCSS('font-family', fieldFont);
+        await expect(summary).toHaveCSS('font-size', '22px');
 
         // The field's own text keeps the control's face.
         expect(await family(page.locator('.marked-textarea-display'))).toBe(
             fieldFont,
         );
-        // The marking action beside the field reads the page font.
         const markingAction = page.getByRole('button', {
             name: /^Add marking$/i,
         });
         await expect(markingAction).toBeVisible();
-        expect(await family(markingAction)).toBe(pageFont);
+        await expect(markingAction).toHaveCSS('font-family', 'Georgia, serif');
+        await expect(markingAction).toHaveCSS('font-size', '13.75px');
+        const setMarking = page.getByRole('button', { name: /^Set marking$/i });
+        await expect(setMarking).toHaveCSS('font-size', '13.75px');
+        const composer = page.locator('.ez-composer:not([hidden])');
+        await summary.focus();
+        await page.keyboard.press('Alt+ArrowDown');
+        await expect(composer).toHaveCSS('font-family', 'Georgia, serif');
+        await expect(composer).toHaveCSS('font-size', '20px');
+        await page.keyboard.press('Escape');
+        await expect(composer).toHaveCount(0);
+        await settle(observed);
 
-        // The composer, portaled to the body, reads the page font whether it
+        const themeFont = 'Arial, sans-serif';
+        await page
+            .locator('form[data-ezclassify-whole="document"]')
+            .evaluate((form, font) => {
+                form.style.fontFamily = font;
+                form.style.fontSize = '24px';
+            }, themeFont);
+        await expect(markingAction).toHaveCSS('font-family', themeFont);
+        await expect(markingAction).toHaveCSS('font-size', '16.5px');
+        await expect(setMarking).toHaveCSS('font-size', '16.5px');
+        await expect(page.locator('.marked-textarea-display')).toHaveCSS(
+            'font-family',
+            fieldFont,
+        );
+        await expect(page.locator('.marked-textarea-display')).toHaveCSS(
+            'font-size',
+            '22px',
+        );
+
+        // The composer, portaled to the body, reads the form's font whether it
         // opens from the tag field or the text area's inline editor, in the
         // README path's order.
-        const composer = page.locator('.ez-composer:not([hidden])');
         observed.step = 'browse-summary';
         await summary.focus();
         await page.keyboard.press('Alt+ArrowDown');
         await expect(composer).toBeVisible();
         await settle(observed);
-        expect(await family(composer)).toBe(pageFont);
+        await expect(composer).toHaveCSS('font-family', themeFont);
+        await expect(composer).toHaveCSS('font-size', '24px');
         await page.keyboard.press('Escape');
         await expect(composer).toHaveCount(0);
         await settle(observed);
@@ -658,10 +698,10 @@ test.describe('README document form beside monospace fields', () => {
         await page.keyboard.press('ControlOrMeta+Enter');
         await expect(composer).toBeVisible();
         await settle(observed);
-        expect(await family(composer)).toBe(pageFont);
-        expect(
-            await family(composer.locator('.ez-composer__group-label').first()),
-        ).toBe(pageFont);
+        await expect(composer).toHaveCSS('font-family', themeFont);
+        await expect(
+            composer.locator('.ez-composer__group-label').first(),
+        ).toHaveCSS('font-family', themeFont);
         await page.screenshot({
             path: await evidencePath(
                 `${info.project.name}-monospace-marking-body.png`,

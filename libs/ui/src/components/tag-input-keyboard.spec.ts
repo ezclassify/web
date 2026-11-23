@@ -105,6 +105,27 @@ describe('handleChipKeydown', () => {
         expect(focusSpy).toHaveBeenCalled();
     });
 
+    it.each([
+        { direction: 'ltr', forward: 'ArrowRight', lastLeft: 60 },
+        { direction: 'rtl', forward: 'ArrowLeft', lastLeft: 0 },
+    ])(
+        'moves from the final $direction chip into a wrapped filter',
+        ({ direction, forward, lastLeft }) => {
+            const ctx = createChipContext();
+            const [first, last] = ctx.tagEls;
+            last.style.direction = direction;
+            place(first, 60 - lastLeft, 0);
+            place(last, lastLeft, 0);
+            place(ctx.filterInput, 0, 40, 120);
+            const focus = vi.spyOn(ctx.filterInput, 'focus');
+
+            handleChipKeydown(makeKeyEvent(forward), last, ctx);
+
+            expect(ctx.unfocusAllChips).toHaveBeenCalledOnce();
+            expect(focus).toHaveBeenCalledOnce();
+        },
+    );
+
     it('contains vertical edges when every candidate is on one row', () => {
         const ctx = createChipContext();
         const focus = vi.spyOn(ctx.filterInput, 'focus');

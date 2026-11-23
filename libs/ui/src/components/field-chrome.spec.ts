@@ -12,7 +12,34 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { FIELD_CHROME_INLINE_SIZE, mountFieldChrome } from './field-chrome';
+import {
+    FIELD_CHROME_INLINE_SIZE,
+    mountFieldChrome,
+    observeFieldTheme,
+} from './field-chrome';
+
+it.each(['ancestor', 'shadow host'])(
+    'refreshes field snapshots when a theme is removed from a %s',
+    async (scope) => {
+        const ancestor = document.createElement('div');
+        const field = document.createElement('textarea');
+        const root =
+            scope === 'shadow host'
+                ? ancestor.attachShadow({ mode: 'open' })
+                : ancestor;
+        root.append(field);
+        ancestor.setAttribute('data-app-theme', 'evergreen');
+        const sync = vi.fn();
+        const observer = observeFieldTheme(field, sync);
+        try {
+            ancestor.removeAttribute('data-app-theme');
+            await Promise.resolve();
+            expect(sync).toHaveBeenCalledTimes(1);
+        } finally {
+            observer?.disconnect();
+        }
+    },
+);
 
 /** A ResizeObserver stand-in whose callbacks the test fires. */
 class FakeResizeObserver {
@@ -251,9 +278,9 @@ describe('mountFieldChrome', () => {
 describe.each(['overlay', 'inline'] as const)(
     '%s chrome keyboard navigation',
     (placement) => {
-        function pair(direction = 'ltr') {
+        function pair(direction = 'ltr', leadingSelect?: HTMLSelectElement) {
             wrap.style.direction = direction;
-            const chrome = mountFieldChrome(wrap, { placement });
+            const chrome = mountFieldChrome(wrap, { placement, leadingSelect });
             const tools = document.createElement('button');
             tools.className = 'ez-status-mark';
             const clear = document.createElement('button');
@@ -296,6 +323,29 @@ describe.each(['overlay', 'inline'] as const)(
                 key(right, 'ArrowLeft');
                 expect(document.activeElement).toBe(left);
                 expect(escaped).toBe(0);
+            },
+        );
+        it.each(['ltr', 'rtl'])(
+            'connects a leading select and chrome in %s order',
+            (direction) => {
+                const select = document.createElement('select');
+                wrap.appendChild(select);
+                const { tools, clear } = pair(direction, select);
+                place(tools, direction === 'rtl' ? 36 : 0, 32);
+                place(clear, direction === 'rtl' ? 0 : 36, 32);
+                const forward =
+                    direction === 'rtl' ? 'ArrowLeft' : 'ArrowRight';
+                const back = direction === 'rtl' ? 'ArrowRight' : 'ArrowLeft';
+                select.focus();
+                expect(key(select, 'ArrowDown').defaultPrevented).toBe(false);
+                expect(key(select, forward).defaultPrevented).toBe(true);
+                expect(document.activeElement).toBe(tools);
+                key(tools, forward);
+                expect(document.activeElement).toBe(clear);
+                key(clear, back);
+                expect(document.activeElement).toBe(tools);
+                key(tools, back);
+                expect(document.activeElement).toBe(select);
             },
         );
         it.each([

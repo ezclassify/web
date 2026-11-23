@@ -656,169 +656,6 @@
             "method": "POST",
             "statusCode": 200
         },
-        "1f798bc2dc513f1e7e912b3bb5c868e3d533a6ad24c09b2fdbeaf1717d117032": {
-            "body": {
-                "resolution": {
-                    "artifacts": [
-                        {
-                            "id": "settled-values",
-                            "kind": "scheme",
-                            "version": "1.0.0"
-                        }
-                    ],
-                    "contextId": "settled-values",
-                    "requestedVersion": "0.0.0",
-                    "resolvedVersion": "1.0.0"
-                },
-                "result": {
-                    "appliedFixes": [],
-                    "assertions": [
-                        {
-                            "categoryId": "level",
-                            "conceptId": "A",
-                            "confidence": "certain",
-                            "source": "parse"
-                        },
-                        {
-                            "categoryId": "tag",
-                            "conceptId": "G",
-                            "confidence": "certain",
-                            "source": "parse"
-                        },
-                        {
-                            "categoryId": "tag",
-                            "conceptId": "R",
-                            "confidence": "certain",
-                            "source": "parse"
-                        },
-                        {
-                            "categoryId": "handling",
-                            "conceptId": "STD",
-                            "confidence": "certain",
-                            "source": "parse"
-                        },
-                        {
-                            "categoryId": "origin",
-                            "conceptId": "HOME",
-                            "confidence": "certain",
-                            "source": "default"
-                        }
-                    ],
-                    "assessment": {
-                        "collapsed": [],
-                        "conflicts": [],
-                        "emitted": [
-                            { "categoryId": "level", "conceptId": "A" },
-                            { "categoryId": "tag", "conceptId": "G" },
-                            { "categoryId": "tag", "conceptId": "R" },
-                            { "categoryId": "handling", "conceptId": "STD" }
-                        ],
-                        "omitted": [
-                            { "categoryId": "origin", "conceptId": "HOME" }
-                        ],
-                        "unrepresentable": []
-                    },
-                    "errors": [
-                        {
-                            "affectedConcepts": ["B"],
-                            "constraintId": "g-needs-b",
-                            "message": "TAG-G requires LEVEL B."
-                        },
-                        {
-                            "affectedConcepts": ["O"],
-                            "categoryId": "tag",
-                            "constraintId": "g-adds-o",
-                            "message": "TAG-G requires TAG-O."
-                        }
-                    ],
-                    "inputWasValid": false,
-                    "notices": [],
-                    "proposedFixes": [
-                        {
-                            "adds": [],
-                            "keeps": [
-                                { "categoryId": "level", "conceptId": "A" },
-                                { "categoryId": "tag", "conceptId": "R" },
-                                { "categoryId": "handling", "conceptId": "STD" }
-                            ],
-                            "message": "Remove TAG-G.",
-                            "removes": [
-                                { "categoryId": "tag", "conceptId": "G" }
-                            ],
-                            "rendered": "LEVEL A//TAG-R//STD"
-                        }
-                    ],
-                    "recognition": {
-                        "corrections": [],
-                        "inputFormat": "default",
-                        "status": "complete",
-                        "surface": "marking",
-                        "unmatched": []
-                    },
-                    "rendered": "LEVEL A//TAG-G/TAG-R//STD",
-                    "renders": {},
-                    "valid": false,
-                    "warnings": []
-                }
-            },
-            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
-            "method": "POST",
-            "statusCode": 200
-        },
-        "24feaca1f0ef46ce66c24b1092f8ba06877225a455cc550d6ec1c30953743956": {
-            "body": {
-                "resolution": {
-                    "artifacts": [
-                        {
-                            "id": "loaded-values",
-                            "kind": "scheme",
-                            "version": "1.0.0"
-                        }
-                    ],
-                    "contextId": "loaded-values",
-                    "requestedVersion": "0.0.0",
-                    "resolvedVersion": "1.0.0"
-                },
-                "result": {
-                    "appliedFixes": [],
-                    "assertions": [
-                        {
-                            "categoryId": "level",
-                            "conceptId": "A",
-                            "confidence": "certain",
-                            "source": "parse"
-                        }
-                    ],
-                    "assessment": {
-                        "collapsed": [],
-                        "conflicts": [],
-                        "emitted": [
-                            { "categoryId": "level", "conceptId": "A" }
-                        ],
-                        "omitted": [],
-                        "unrepresentable": []
-                    },
-                    "errors": [],
-                    "inputWasValid": true,
-                    "notices": [],
-                    "proposedFixes": [],
-                    "recognition": {
-                        "corrections": [],
-                        "inputFormat": "default",
-                        "status": "complete",
-                        "surface": "marking",
-                        "unmatched": []
-                    },
-                    "rendered": "LEVEL A",
-                    "renders": {},
-                    "valid": true,
-                    "warnings": []
-                }
-            },
-            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
-            "method": "POST",
-            "statusCode": 200
-        },
         "286977ce1876a713babdc947bab60b9a0e2a918599cac9eb07c9031c146b025e": {
             "body": {
                 "resolution": {
@@ -963,89 +800,6 @@
                     "notices": [],
                     "proposedFixes": [],
                     "rendered": "LEVEL B//TAG-X//STD",
-                    "valid": true,
-                    "warnings": []
-                }
-            },
-            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
-            "method": "POST",
-            "statusCode": 200
-        },
-        "31823402252ed38e742db872b86339646da3fa6bdb94ad1b298f95a12f85151a": {
-            "body": {
-                "resolution": {
-                    "artifacts": [
-                        {
-                            "id": "settled-values",
-                            "kind": "scheme",
-                            "version": "1.0.0"
-                        }
-                    ],
-                    "contextId": "settled-values",
-                    "requestedVersion": "0.0.0",
-                    "resolvedVersion": "1.0.0"
-                },
-                "result": {
-                    "appliedFixes": [],
-                    "assertions": [
-                        {
-                            "categoryId": "level",
-                            "conceptId": "B",
-                            "confidence": "certain",
-                            "source": "parse"
-                        },
-                        {
-                            "categoryId": "tag",
-                            "conceptId": "G",
-                            "confidence": "certain",
-                            "source": "parse"
-                        },
-                        {
-                            "categoryId": "tag",
-                            "conceptId": "O",
-                            "confidence": "certain",
-                            "source": "parse"
-                        },
-                        {
-                            "categoryId": "handling",
-                            "conceptId": "STD",
-                            "confidence": "certain",
-                            "source": "parse"
-                        },
-                        {
-                            "categoryId": "origin",
-                            "conceptId": "HOME",
-                            "confidence": "certain",
-                            "source": "default"
-                        }
-                    ],
-                    "assessment": {
-                        "collapsed": [],
-                        "conflicts": [],
-                        "emitted": [
-                            { "categoryId": "level", "conceptId": "B" },
-                            { "categoryId": "tag", "conceptId": "G" },
-                            { "categoryId": "tag", "conceptId": "O" },
-                            { "categoryId": "handling", "conceptId": "STD" }
-                        ],
-                        "omitted": [
-                            { "categoryId": "origin", "conceptId": "HOME" }
-                        ],
-                        "unrepresentable": []
-                    },
-                    "errors": [],
-                    "inputWasValid": true,
-                    "notices": [],
-                    "proposedFixes": [],
-                    "recognition": {
-                        "corrections": [],
-                        "inputFormat": "default",
-                        "status": "complete",
-                        "surface": "marking",
-                        "unmatched": []
-                    },
-                    "rendered": "LEVEL B//TAG-G/TAG-O//STD",
-                    "renders": {},
                     "valid": true,
                     "warnings": []
                 }
@@ -1987,6 +1741,66 @@
             "method": "POST",
             "statusCode": 200
         },
+        "4d0a1139268b75045b5333d6cc7747ec2529ac1702f5cb18a51a1f03c7b81115": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "settled-values",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "settled-values",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "B",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        },
+                        {
+                            "categoryId": "tag",
+                            "conceptId": "G",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "tag",
+                            "conceptId": "O",
+                            "confidence": "inferred",
+                            "source": "aggregate"
+                        },
+                        {
+                            "categoryId": "handling",
+                            "conceptId": "STD",
+                            "confidence": "certain",
+                            "source": "default"
+                        },
+                        {
+                            "categoryId": "origin",
+                            "conceptId": "HOME",
+                            "confidence": "certain",
+                            "source": "default"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "LEVEL B//TAG-G/TAG-O//STD",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "4d37ea94595ec5734b61fa75c2cef70786cd64af540558ab17dc26b065552283": {
             "body": [],
             "headers": { "x-ezclassify-resolved-version": "1.0.0" },
@@ -2407,66 +2221,6 @@
                             "conceptId": "STD",
                             "confidence": "certain",
                             "source": "default"
-                        },
-                        {
-                            "categoryId": "origin",
-                            "conceptId": "HOME",
-                            "confidence": "certain",
-                            "source": "default"
-                        }
-                    ],
-                    "errors": [],
-                    "notices": [],
-                    "proposedFixes": [],
-                    "rendered": "LEVEL B//TAG-G/TAG-O//STD",
-                    "valid": true,
-                    "warnings": []
-                }
-            },
-            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
-            "method": "POST",
-            "statusCode": 200
-        },
-        "57373dc1d16c3199affdeee40aee8fa4640297c69208a40210bd1cd9c69544b4": {
-            "body": {
-                "resolution": {
-                    "artifacts": [
-                        {
-                            "id": "settled-values",
-                            "kind": "scheme",
-                            "version": "1.0.0"
-                        }
-                    ],
-                    "contextId": "settled-values",
-                    "requestedVersion": "0.0.0",
-                    "resolvedVersion": "1.0.0"
-                },
-                "result": {
-                    "appliedFixes": [],
-                    "assertions": [
-                        {
-                            "categoryId": "level",
-                            "conceptId": "B",
-                            "confidence": "certain",
-                            "source": "aggregate"
-                        },
-                        {
-                            "categoryId": "tag",
-                            "conceptId": "G",
-                            "confidence": "certain",
-                            "source": "parse"
-                        },
-                        {
-                            "categoryId": "tag",
-                            "conceptId": "O",
-                            "confidence": "certain",
-                            "source": "parse"
-                        },
-                        {
-                            "categoryId": "handling",
-                            "conceptId": "STD",
-                            "confidence": "certain",
-                            "source": "parse"
                         },
                         {
                             "categoryId": "origin",
@@ -3756,84 +3510,6 @@
             "method": "POST",
             "statusCode": 200
         },
-        "a0daa9a76268e57e7ae9e7cde0f4699b5f8f376ea81e83d4c6e1844bcdb4994a": {
-            "body": {
-                "resolution": {
-                    "artifacts": [
-                        {
-                            "id": "settled-values",
-                            "kind": "scheme",
-                            "version": "1.0.0"
-                        }
-                    ],
-                    "contextId": "settled-values",
-                    "requestedVersion": "0.0.0",
-                    "resolvedVersion": "1.0.0"
-                },
-                "result": {
-                    "appliedFixes": [],
-                    "assertions": [
-                        {
-                            "categoryId": "level",
-                            "conceptId": "B",
-                            "confidence": "certain",
-                            "source": "aggregate"
-                        },
-                        {
-                            "categoryId": "tag",
-                            "conceptId": "G",
-                            "confidence": "certain",
-                            "source": "parse"
-                        },
-                        {
-                            "categoryId": "tag",
-                            "conceptId": "R",
-                            "confidence": "certain",
-                            "source": "parse"
-                        },
-                        {
-                            "categoryId": "handling",
-                            "conceptId": "STD",
-                            "confidence": "certain",
-                            "source": "parse"
-                        },
-                        {
-                            "categoryId": "origin",
-                            "conceptId": "HOME",
-                            "confidence": "certain",
-                            "source": "default"
-                        }
-                    ],
-                    "errors": [
-                        {
-                            "affectedConcepts": ["B", "G", "R", "STD", "HOME"],
-                            "constraintId": "_invalid_contributor",
-                            "message": "Contributor 1 did not produce a complete valid input outcome."
-                        },
-                        {
-                            "affectedConcepts": ["O"],
-                            "categoryId": "tag",
-                            "constraintId": "g-adds-o",
-                            "message": "Contributor 1: TAG-G requires TAG-O."
-                        },
-                        {
-                            "affectedConcepts": ["O"],
-                            "categoryId": "tag",
-                            "constraintId": "g-adds-o",
-                            "message": "TAG-G requires TAG-O."
-                        }
-                    ],
-                    "notices": [],
-                    "proposedFixes": [],
-                    "rendered": "LEVEL B//TAG-G/TAG-R//STD",
-                    "valid": false,
-                    "warnings": []
-                }
-            },
-            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
-            "method": "POST",
-            "statusCode": 200
-        },
         "a119b054754674bba79d8a7f85d6274694283504236e5046dc4706dfcf6f233b": {
             "body": {
                 "resolution": {
@@ -3971,123 +3647,6 @@
             "body": [],
             "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
-            "statusCode": 200
-        },
-        "ab386ca6f931933ce4e479ef27806b8ec91de78c4b5439d9c91e5af6a80eb194": {
-            "body": {
-                "resolution": {
-                    "artifacts": [
-                        {
-                            "id": "settled-values",
-                            "kind": "scheme",
-                            "version": "1.0.0"
-                        }
-                    ],
-                    "contextId": "settled-values",
-                    "requestedVersion": "0.0.0",
-                    "resolvedVersion": "1.0.0"
-                },
-                "result": {
-                    "appliedFixes": [],
-                    "assertions": [
-                        {
-                            "categoryId": "level",
-                            "conceptId": "B",
-                            "confidence": "certain",
-                            "source": "parse"
-                        },
-                        {
-                            "categoryId": "tag",
-                            "conceptId": "G",
-                            "confidence": "certain",
-                            "source": "parse"
-                        },
-                        {
-                            "categoryId": "tag",
-                            "conceptId": "R",
-                            "confidence": "certain",
-                            "source": "parse"
-                        },
-                        {
-                            "categoryId": "handling",
-                            "conceptId": "STD",
-                            "confidence": "certain",
-                            "source": "parse"
-                        },
-                        {
-                            "categoryId": "origin",
-                            "conceptId": "HOME",
-                            "confidence": "certain",
-                            "source": "default"
-                        }
-                    ],
-                    "assessment": {
-                        "collapsed": [],
-                        "conflicts": [],
-                        "emitted": [
-                            { "categoryId": "level", "conceptId": "B" },
-                            { "categoryId": "tag", "conceptId": "G" },
-                            { "categoryId": "tag", "conceptId": "R" },
-                            { "categoryId": "handling", "conceptId": "STD" }
-                        ],
-                        "omitted": [
-                            { "categoryId": "origin", "conceptId": "HOME" }
-                        ],
-                        "unrepresentable": []
-                    },
-                    "errors": [
-                        {
-                            "affectedConcepts": ["O"],
-                            "categoryId": "tag",
-                            "constraintId": "g-adds-o",
-                            "message": "TAG-G requires TAG-O."
-                        }
-                    ],
-                    "inputWasValid": false,
-                    "notices": [],
-                    "proposedFixes": [
-                        {
-                            "adds": [],
-                            "keeps": [
-                                { "categoryId": "level", "conceptId": "B" },
-                                { "categoryId": "tag", "conceptId": "G" },
-                                { "categoryId": "handling", "conceptId": "STD" }
-                            ],
-                            "message": "Remove TAG-R.",
-                            "removes": [
-                                { "categoryId": "tag", "conceptId": "R" }
-                            ],
-                            "rendered": "LEVEL B//TAG-G/TAG-O//STD"
-                        },
-                        {
-                            "adds": [],
-                            "keeps": [
-                                { "categoryId": "level", "conceptId": "B" },
-                                { "categoryId": "tag", "conceptId": "R" },
-                                { "categoryId": "handling", "conceptId": "STD" }
-                            ],
-                            "message": "Remove TAG-G.",
-                            "removes": [
-                                { "categoryId": "tag", "conceptId": "G" }
-                            ],
-                            "rendered": "LEVEL B//TAG-R//STD"
-                        }
-                    ],
-                    "recognition": {
-                        "corrections": [],
-                        "inputFormat": "default",
-                        "status": "complete",
-                        "surface": "marking",
-                        "unmatched": []
-                    },
-                    "rendered": "LEVEL B//TAG-G/TAG-R//STD",
-                    "renders": {},
-                    "valid": false,
-                    "warnings": []
-                }
-            },
-            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
-            "method": "POST",
             "statusCode": 200
         },
         "acb6d5b6a272984809577380485a397f61951afec14a7b8858bc02a74d8c3a95": {
@@ -4365,31 +3924,7 @@
             "method": "GET",
             "statusCode": 200
         },
-        "c4e16d587b9660fb8518315621bf17e232fcd21b400f33b7d68b182f7ccf0501": {
-            "body": [
-                {
-                    "categoryOrder": ["level", "tag"],
-                    "categorySeparators": { "level": "/", "tag": "/" },
-                    "categoryViews": { "level": "default", "tag": "default" },
-                    "id": "default",
-                    "mode": "inline",
-                    "separator": "//",
-                    "separatorBefore": { "tag": "//" },
-                    "surface": "marking"
-                }
-            ],
-            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
-        "c70c4034eb21eac49bf7195371c7d929bc070b3f90dd219f060e037547662630": {
-            "body": {
-                "contextId": "sbx-67c477dddb95ee87cf31324c751b4b782dffde7deab62b359c1f420a1df25432"
-            },
-            "method": "PUT",
-            "statusCode": 200
-        },
-        "cc8630ac797e286e67983e24dbb5b13edd4da4e9f4e9d6e360154348ab3d8723": {
+        "be6e3165cd20d5e613ff7085a46f54cf711a314379a36fc6896bffe82e582a7b": {
             "body": {
                 "resolution": {
                     "artifacts": [
@@ -4420,7 +3955,7 @@
                         },
                         {
                             "categoryId": "tag",
-                            "conceptId": "O",
+                            "conceptId": "R",
                             "confidence": "certain",
                             "source": "parse"
                         },
@@ -4428,7 +3963,7 @@
                             "categoryId": "handling",
                             "conceptId": "STD",
                             "confidence": "certain",
-                            "source": "parse"
+                            "source": "default"
                         },
                         {
                             "categoryId": "origin",
@@ -4439,7 +3974,7 @@
                     ],
                     "errors": [
                         {
-                            "affectedConcepts": ["A", "G", "O", "STD", "HOME"],
+                            "affectedConcepts": ["A", "G", "R", "STD", "HOME"],
                             "constraintId": "_invalid_contributor",
                             "message": "Contributor 1 did not produce a complete valid input outcome."
                         },
@@ -4447,17 +3982,53 @@
                             "affectedConcepts": ["B"],
                             "constraintId": "g-needs-b",
                             "message": "Contributor 1: TAG-G requires LEVEL B."
+                        },
+                        {
+                            "affectedConcepts": ["O"],
+                            "categoryId": "tag",
+                            "constraintId": "g-adds-o",
+                            "message": "Contributor 1: TAG-G requires TAG-O."
+                        },
+                        {
+                            "affectedConcepts": ["O"],
+                            "categoryId": "tag",
+                            "constraintId": "g-adds-o",
+                            "message": "TAG-G requires TAG-O."
                         }
                     ],
                     "notices": [],
                     "proposedFixes": [],
-                    "rendered": "LEVEL A//TAG-G/TAG-O//STD",
+                    "rendered": "LEVEL A//TAG-G/TAG-R//STD",
                     "valid": false,
                     "warnings": []
                 }
             },
             "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
+            "statusCode": 200
+        },
+        "c4e16d587b9660fb8518315621bf17e232fcd21b400f33b7d68b182f7ccf0501": {
+            "body": [
+                {
+                    "categoryOrder": ["level", "tag"],
+                    "categorySeparators": { "level": "/", "tag": "/" },
+                    "categoryViews": { "level": "default", "tag": "default" },
+                    "id": "default",
+                    "mode": "inline",
+                    "separator": "//",
+                    "separatorBefore": { "tag": "//" },
+                    "surface": "marking"
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "c70c4034eb21eac49bf7195371c7d929bc070b3f90dd219f060e037547662630": {
+            "body": {
+                "contextId": "sbx-67c477dddb95ee87cf31324c751b4b782dffde7deab62b359c1f420a1df25432"
+            },
+            "method": "PUT",
             "statusCode": 200
         },
         "d1174b9b73a9f4f8e9df4a4d72b18e80206e15631188df84725c54471327ee93": {
@@ -4595,75 +4166,6 @@
             "method": "POST",
             "statusCode": 200
         },
-        "d8cd84d33b3830bf73d14449e7e7dae31f18edac685e5683c775e45baccf65c4": {
-            "body": {
-                "resolution": {
-                    "artifacts": [
-                        {
-                            "id": "settled-values",
-                            "kind": "scheme",
-                            "version": "1.0.0"
-                        }
-                    ],
-                    "contextId": "settled-values",
-                    "requestedVersion": "0.0.0",
-                    "resolvedVersion": "1.0.0"
-                },
-                "result": {
-                    "appliedFixes": [],
-                    "assertions": [
-                        {
-                            "categoryId": "level",
-                            "conceptId": "B",
-                            "confidence": "certain",
-                            "source": "parse"
-                        },
-                        {
-                            "categoryId": "tag",
-                            "conceptId": "X",
-                            "confidence": "certain",
-                            "source": "parse"
-                        },
-                        {
-                            "categoryId": "handling",
-                            "conceptId": "STD",
-                            "confidence": "certain",
-                            "source": "default"
-                        },
-                        {
-                            "categoryId": "origin",
-                            "conceptId": "HOME",
-                            "confidence": "certain",
-                            "source": "default"
-                        }
-                    ],
-                    "assessment": {
-                        "collapsed": [],
-                        "conflicts": [],
-                        "emitted": [
-                            { "categoryId": "level", "conceptId": "B" },
-                            { "categoryId": "tag", "conceptId": "X" },
-                            { "categoryId": "handling", "conceptId": "STD" }
-                        ],
-                        "omitted": [
-                            { "categoryId": "origin", "conceptId": "HOME" }
-                        ],
-                        "unrepresentable": []
-                    },
-                    "errors": [],
-                    "inputWasValid": true,
-                    "notices": [],
-                    "proposedFixes": [],
-                    "rendered": "LEVEL B//TAG-X//STD",
-                    "renders": {},
-                    "valid": true,
-                    "warnings": []
-                }
-            },
-            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
-            "method": "POST",
-            "statusCode": 200
-        },
         "d978b6b7d298e3b9a1bfad228acc379bd74c0eb4fe76d0f5b3951595bd9b1b85": {
             "body": {
                 "resolution": {
@@ -4693,89 +4195,6 @@
                     "proposedFixes": [],
                     "rendered": "LEVEL A",
                     "valid": true,
-                    "warnings": []
-                }
-            },
-            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
-            "method": "POST",
-            "statusCode": 200
-        },
-        "da8307846dbf737a0dc5503a68853efcf06ebc91a80c0559c7e100bc71d22551": {
-            "body": {
-                "resolution": {
-                    "artifacts": [
-                        {
-                            "id": "settled-values",
-                            "kind": "scheme",
-                            "version": "1.0.0"
-                        }
-                    ],
-                    "contextId": "settled-values",
-                    "requestedVersion": "0.0.0",
-                    "resolvedVersion": "1.0.0"
-                },
-                "result": {
-                    "appliedFixes": [],
-                    "assertions": [
-                        {
-                            "categoryId": "level",
-                            "conceptId": "A",
-                            "confidence": "certain",
-                            "source": "aggregate"
-                        },
-                        {
-                            "categoryId": "tag",
-                            "conceptId": "G",
-                            "confidence": "certain",
-                            "source": "parse"
-                        },
-                        {
-                            "categoryId": "tag",
-                            "conceptId": "R",
-                            "confidence": "certain",
-                            "source": "parse"
-                        },
-                        {
-                            "categoryId": "handling",
-                            "conceptId": "STD",
-                            "confidence": "certain",
-                            "source": "parse"
-                        },
-                        {
-                            "categoryId": "origin",
-                            "conceptId": "HOME",
-                            "confidence": "certain",
-                            "source": "default"
-                        }
-                    ],
-                    "errors": [
-                        {
-                            "affectedConcepts": ["A", "G", "R", "STD", "HOME"],
-                            "constraintId": "_invalid_contributor",
-                            "message": "Contributor 1 did not produce a complete valid input outcome."
-                        },
-                        {
-                            "affectedConcepts": ["B"],
-                            "constraintId": "g-needs-b",
-                            "message": "Contributor 1: TAG-G requires LEVEL B."
-                        },
-                        {
-                            "affectedConcepts": ["O"],
-                            "categoryId": "tag",
-                            "constraintId": "g-adds-o",
-                            "message": "Contributor 1: TAG-G requires TAG-O."
-                        },
-                        {
-                            "affectedConcepts": ["O"],
-                            "categoryId": "tag",
-                            "constraintId": "g-adds-o",
-                            "message": "TAG-G requires TAG-O."
-                        }
-                    ],
-                    "notices": [],
-                    "proposedFixes": [],
-                    "rendered": "LEVEL A//TAG-G/TAG-R//STD",
-                    "valid": false,
                     "warnings": []
                 }
             },

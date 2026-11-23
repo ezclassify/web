@@ -2709,7 +2709,7 @@ describe('MarkingField favorites', () => {
         activeForms = forms;
         expect(
             root.querySelector('.ez-status-mark')?.getAttribute('title'),
-        ).toMatch(/^Corrections \(/);
+        ).toMatch(/^Auto-fixes \(/);
     });
 
     it('opens Favorites from branding and replaces the whole marking', async () => {
@@ -2753,7 +2753,7 @@ describe('MarkingField favorites', () => {
         ).toContain('Standard secret');
     });
 
-    it.each(['Corrections', 'Favorites'])(
+    it.each(['Auto-fixes', 'Favorites'])(
         'returns focus to the branding button when Up closes the %s tab',
         async (label) => {
             const { forms } = await mountWithFavorites({

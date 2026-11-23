@@ -26,6 +26,7 @@ import {
     CONTROLLER_ATTR,
     isPresent,
     MARKING_ATTR,
+    MEMBER_OF_ATTR,
     STRUCTURAL_ATTRS,
     VIEW_ATTRS,
 } from './binding-model';
@@ -348,6 +349,8 @@ const DERIVING_ATTRS: readonly string[] = [
     'data-ezclassify-scope',
     'data-ezclassify-decisionflow-combine',
     'data-ezclassify-format',
+    'data-ezclassify-banner-label',
+    'data-ezclassify-banner-no-live',
     ...STRUCTURAL_ATTRS,
 ];
 
@@ -427,12 +430,12 @@ export function observeNewElements(
     onBehavior: BehaviorCallback,
     onView: ViewCallback,
     onRemove?: (el: HTMLElement) => void,
-    onStructureChange?: (el: HTMLElement) => void,
+    onStructureChange?: (el: HTMLElement, membershipOnly?: true) => void,
     onReferencesChange?: () => void,
 ): MutationObserver {
     const handle = (mutations: MutationRecord[]): void => {
         const added = new Set<Node>();
-        const restructured = new Set<HTMLElement>();
+        const restructured = new Map<HTMLElement, boolean>();
         let references = false;
         for (const m of mutations) {
             if (m.type === 'attributes') {
@@ -455,7 +458,15 @@ export function observeNewElements(
                 )
                     continue;
                 if (m.attributeName === COLLECTION_ATTR) references = true;
-                if (m.target instanceof HTMLElement) restructured.add(m.target);
+                if (m.target instanceof HTMLElement) {
+                    const membership =
+                        m.attributeName === MEMBER_OF_ATTR ||
+                        m.attributeName === COLLECTION_ATTR;
+                    restructured.set(
+                        m.target,
+                        membership && restructured.get(m.target) !== false,
+                    );
+                }
                 continue;
             }
             for (let i = 0; i < m.addedNodes.length; i++) {
@@ -495,7 +506,7 @@ export function observeNewElements(
             }
         }
         if (onStructureChange) {
-            for (const el of restructured) {
+            for (const el of restructured.keys()) {
                 if (!el.isConnected || !root.contains(el)) continue;
                 let fresh = false;
                 for (const node of added)
@@ -506,12 +517,18 @@ export function observeNewElements(
                 if (fresh) continue;
                 // An enclosing element derived again covers this one.
                 let covered = false;
-                for (const other of restructured)
+                for (const other of restructured.keys())
                     if (other !== el && other.contains(el)) {
                         covered = true;
                         break;
                     }
-                if (!covered) onStructureChange(el);
+                if (covered) continue;
+                const membershipOnly = [...restructured].every(
+                    ([target, membership]) =>
+                        !el.contains(target) || membership,
+                );
+                if (membershipOnly) onStructureChange(el, true);
+                else onStructureChange(el);
             }
         }
         if (references) onReferencesChange?.();

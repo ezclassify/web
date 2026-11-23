@@ -1,3 +1,4 @@
+import { openFieldTools } from '../../test-fixtures/marking-tools';
 /**
  * A field holds the marking the engine settled on, and the errors and ways to
  * fix it shows are the engine's judgment of that marking.
@@ -142,9 +143,9 @@ async function mount(markup: string): Promise<void> {
 
 function fixButton(label: string): HTMLButtonElement {
     const button = Array.from(
-        root.querySelectorAll<HTMLButtonElement>(
+        openFieldTools(root)?.querySelectorAll<HTMLButtonElement>(
             '.ez-validation-errors button.ez-validation-errors__fix',
-        ),
+        ) ?? [],
     ).find((b) => b.textContent === label);
     expect(button, label).toBeDefined();
     return button!;
@@ -179,9 +180,9 @@ function errorsHidden(): boolean {
 
 function fixLabels(scope: ParentNode = root): string[] {
     return [
-        ...scope.querySelectorAll<HTMLButtonElement>(
+        ...(openFieldTools(scope)?.querySelectorAll<HTMLButtonElement>(
             '.ez-validation-errors button.ez-validation-errors__fix',
-        ),
+        ) ?? []),
     ].map((button) => button.textContent ?? '');
 }
 
@@ -221,13 +222,13 @@ describe.each(FIELDS)('$name holds author-stated conflicts', (field) => {
         root.innerHTML = field.markup('LOW//C');
         const engine = await createEngine();
         const store = new VanillaEzClassifyStore(engine);
-        const originalSeed = store.seedRendered.bind(store);
+        const originalSeed = store.seedRenderedFromHost.bind(store);
         let release!: () => void;
         const gate = new Promise<void>((resolve) => {
             release = resolve;
         });
         const seed = vi
-            .spyOn(store, 'seedRendered')
+            .spyOn(store, 'seedRenderedFromHost')
             .mockImplementation(async (...args) => {
                 await gate;
                 await originalSeed(...args);
@@ -238,7 +239,8 @@ describe.each(FIELDS)('$name holds author-stated conflicts', (field) => {
         forms = new EzClassifyUI(asContext(engine as never), { root, store });
         try {
             await vi.waitFor(() => expect(seed).toHaveBeenCalled());
-            fixButton('Remove C');
+            // The field has no judgment until the store's initial read lands.
+            expect(errorsHidden()).toBe(true);
             await store.publishRendered('f', 'LOW//A');
             await wait(120);
             expect(errorsHidden()).toBe(true);

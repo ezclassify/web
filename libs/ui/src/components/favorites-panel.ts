@@ -32,6 +32,7 @@ import { createAnnouncer, announce } from './component-utils';
 import { adoptStylesOnce } from '../styles/adopt';
 import { t } from '../i18n';
 import favoritesPanelCss from './favorites-panel.css?inline';
+import type { MarkingToolsTargets } from './marking-tools';
 import {
     dismissStatusMarkPopover,
     refreshStatusMarkPopover,
@@ -130,8 +131,11 @@ export interface FavoritesPanelHost {
      * empty marking has nothing coherent to save.
      */
     getCurrent: () => { rendered: string; valid: boolean };
+    canApply?: () => boolean;
     /** Describe the caret target when a field contains several markings. */
     describeTarget?: () => string;
+    /** Choose which entry in a multi-marking field Favorites will operate on. */
+    targets?: () => MarkingToolsTargets | undefined;
     /**
      * Apply a resolved marking (replace, or MTA's stamp). An asynchronous host
      * must honor cancellation before writing if the panel closes or another
@@ -140,6 +144,7 @@ export interface FavoritesPanelHost {
     onApply: (marking: string, signal: AbortSignal) => MaybePromise<void>;
     /** Return focus to the host's working control after applying a marking. */
     focusField: () => void;
+    endTargetSelection?: () => void;
 }
 
 /** All external state needed for row rendering. Rebuilt on every open. */
@@ -269,11 +274,32 @@ export class FavoritesPanel {
                 ),
             );
         });
+        this.panelItems.addEventListener('focusout', (event) => {
+            if (
+                event.relatedTarget instanceof Node &&
+                this.panelItems.contains(event.relatedTarget)
+            )
+                return;
+            this.moveHighlight(-1);
+        });
         this.announcer = createAnnouncer();
         wrap.appendChild(this.announcer);
         setStatusMarkFavorites(wrap, {
             element: this.panelItems,
             isApplying: () => this.applyAbort !== null,
+            targets: () => {
+                const targets = this.host.targets?.();
+                if (!targets) return undefined;
+                return {
+                    ...targets,
+                    select: (value) => {
+                        if (this.applyAbort) return;
+                        targets.select(value);
+                        this.renderRows(this._cachedFavorites);
+                        refreshStatusMarkPopover(this.button);
+                    },
+                };
+            },
             count: () =>
                 this._cachedFavorites.length +
                 getScopedPresets(this.host.scheme, this.host.scope).length,
@@ -284,6 +310,7 @@ export class FavoritesPanel {
                 this.abortApply();
                 this._isOpen = false;
                 this.managing = false;
+                this.host.endTargetSelection?.();
             },
         });
         // Providers load at mount as well as each tools open.
@@ -487,6 +514,7 @@ export class FavoritesPanel {
             this.panelItems.appendChild(target);
         }
         const current = this.host.getCurrent();
+        const canApply = this.host.canApply?.() ?? true;
         const canPin =
             !!this.host.config?.save && current.valid && !!current.rendered;
         if (canPin) {
@@ -512,6 +540,7 @@ export class FavoritesPanel {
         ] of processed.entries()) {
             const isCurrent = current.valid && rendered === current.rendered;
             const row = this.buildFavoriteRow(entry, isCurrent);
+            row.toggleAttribute('disabled', !canApply);
             row.dataset.favoriteMarking = entry.marking;
             this.addRow(row, () => this.applyAndClose(entry.marking));
             if (this.host.config?.remove) {
@@ -562,6 +591,7 @@ export class FavoritesPanel {
                     (entry) => entry.preset.id === preset.id,
                 )?.rendered;
                 const row = this.buildPresetRow(preset, rendered);
+                row.toggleAttribute('disabled', !canApply);
                 row.dataset.presetId = preset.id;
                 this.addRow(row, () => {
                     if (rendered) this.applyAndClose(rendered);
@@ -612,7 +642,11 @@ export class FavoritesPanel {
         return () => {
             if (!identity || this.panelItems.closest('[hidden]')) return;
             const [name, value] = identity;
-            [...this.panelItems.querySelectorAll<HTMLElement>('button, input')]
+            [
+                ...this.panelItems.querySelectorAll<HTMLElement>(
+                    'button, input, select',
+                ),
+            ]
                 .find((control) => control.dataset[name] === value)
                 ?.focus();
         };
@@ -843,17 +877,27 @@ export class FavoritesPanel {
         return row;
     }
 
+    private markApplying(applying: boolean): void {
+        if (applying) this.panelItems.setAttribute('aria-busy', 'true');
+        else this.panelItems.removeAttribute('aria-busy');
+        this.panelItems
+            .closest('.ez-marking-tools')
+            ?.querySelector('.ez-marking-tools__target')
+            ?.setAttribute('aria-disabled', String(applying));
+    }
+
     /** Apply a chosen marking (favorite or preset) and close the panel. */
     private abortApply(): void {
         this.applyAbort?.abort();
         this.applyAbort = null;
-        this.panelItems.removeAttribute('aria-busy');
+        this.markApplying(false);
     }
 
     private applyAndClose(marking: string): void {
         this.abortApply();
         const controller = new AbortController();
         this.applyAbort = controller;
+        this.markApplying(true);
         try {
             const result = this.host.onApply(marking, controller.signal);
             if (!result || typeof result.then !== 'function') {
@@ -864,18 +908,17 @@ export class FavoritesPanel {
             // Keep the editor's focus domain intact until its asynchronous
             // read applies to the selected marking. Closing/moving on cancels
             // that read's UI write rather than losing its caret target.
-            this.panelItems.setAttribute('aria-busy', 'true');
             void Promise.resolve(result).then(
                 () => {
                     if (this.applyAbort !== controller) return;
                     this.applyAbort = null;
-                    this.panelItems.removeAttribute('aria-busy');
+                    this.markApplying(false);
                     if (!this._destroyed) this.close(true);
                 },
                 () => {
                     if (this.applyAbort !== controller) return;
                     this.applyAbort = null;
-                    this.panelItems.removeAttribute('aria-busy');
+                    this.markApplying(false);
                     announce(this.announcer, t('favorites.applyFailed'));
                 },
             );

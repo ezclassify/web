@@ -1,3 +1,4 @@
+import { openFieldTools } from '../../test-fixtures/marking-tools';
 /**
  * The rule-error surface on the real form fields: every field shows a broken
  * rule directly under itself, then offers the engine's proposed fixes as
@@ -182,9 +183,9 @@ function errorList(): HTMLElement {
 
 function fixButtons(): HTMLButtonElement[] {
     return Array.from(
-        errorList().querySelectorAll<HTMLButtonElement>(
+        openFieldTools(root)?.querySelectorAll<HTMLButtonElement>(
             'button.ez-validation-errors__fix',
-        ),
+        ) ?? [],
     );
 }
 
@@ -255,13 +256,17 @@ describe.each(FIELDS)('$name rule errors', (field) => {
         },
     );
 
-    it('shows the broken rule directly under the field, then the engine fixes by their messages', async () => {
+    it('shows the broken rule inline and puts the engine fixes in the red tools', async () => {
         await mount(field.markup);
 
         const list = errorList();
         expect(list.hidden).toBe(false);
         expect(list.textContent).toContain('HOLD requires HIGH.');
-        expect(fixButtons().map((b) => b.textContent)).toEqual([
+        expect(list.querySelector('button')).toBeNull();
+        expect(root.querySelector('.ez-status-mark--error')).not.toBeNull();
+        const fixes = fixButtons();
+        expect(document.activeElement).toBe(fixes[0]);
+        expect(fixes.map((b) => b.textContent)).toEqual([
             'Replace LOW with HIGH',
             'Remove HOLD',
         ]);
@@ -271,10 +276,14 @@ describe.each(FIELDS)('$name rule errors', (field) => {
         expect(visual.contains(list)).toBe(field.inside);
         expect(visual.contains(root.querySelector('label'))).toBe(false);
         if (field.inside) {
-            const chrome = visual.querySelector(
-                ':scope > .ez-field-chrome, :scope > .marked-input-footer',
+            const footer = visual.querySelector(
+                ':scope > .ez-marked-field-footer',
             );
-            expect(list.nextElementSibling).toBe(chrome);
+            if (footer) expect(list.parentElement).toBe(footer);
+            else
+                expect(list.nextElementSibling).toBe(
+                    visual.querySelector(':scope > .ez-field-chrome'),
+                );
         } else {
             expect(visual.nextElementSibling).toBe(list);
         }
@@ -318,6 +327,17 @@ describe.each(FIELDS)('$name rule errors', (field) => {
 });
 
 describe('MarkingField rule errors while editing', () => {
+    it('blocks a portaled Quick fix when the host disables the fieldset', async () => {
+        await mount('<fieldset>' + FIELDS[0].markup + '</fieldset>');
+        const host = root.querySelector<HTMLTextAreaElement>('#f')!;
+        const fix = fixButtons()[0];
+        expect(fix.textContent).toBe('Replace LOW with HIGH');
+        root.querySelector('fieldset')!.disabled = true;
+        fix.click();
+        await wait();
+        expect(host.value).toBe('LOW//HOLD');
+    });
+
     it('a pointer press on a fix keeps the field focused and the fix stands after the blur delay', async () => {
         await mount(FIELDS[0].markup);
         const host = document.getElementById('f') as HTMLTextAreaElement;

@@ -11,11 +11,18 @@ import type {
     SchemeEngineAdapter,
 } from '@ezclassify/types';
 import { EzClassifyUI } from './ezclassify-ui';
+import { EMPTY_RENDER_ASSESSMENT } from './engine-result-mock';
 import { mockRenderFormats } from './render-format-layout-mock';
 import { __resetMountRollupRegistry } from './mount-rollup-registry';
 import { BaseEzClassifyStore } from './store/base-ezclassify-store';
+import { VanillaEzClassifyStore } from './store/ezclassify-store';
 
 vi.mock('./styles.css?inline', () => ({ default: '' }));
+
+/** A latency fixture can hold one call while answering its peers synchronously. */
+type TestAdapterCall<Call extends (...args: never[]) => unknown> = (
+    ...args: Parameters<Call>
+) => ReturnType<Call>;
 
 const concepts = [
     {
@@ -91,23 +98,34 @@ function createContext(): ContextAdapter {
             rendered: spell(assertions),
             assessment: valid,
         })),
-        process: vi.fn((input: string | Assertion[]) => {
-            const assertions = Array.isArray(input) ? input : read(input);
-            return {
-                assertions,
-                rendered: spell(assertions),
-                valid: true,
-                errors: [],
-                recognition: {
-                    status: 'complete',
-                    inputFormat: 'default',
-                    surface: 'default',
-                    unmatched: [],
-                    corrections: [],
-                },
-            };
-        }),
-        validate: vi.fn(() => ({ valid: true, errors: [] })),
+        process: vi.fn(
+            (
+                input: string | Assertion[],
+                options?: { assertions?: Assertion[] },
+            ) => {
+                const assertions = Array.isArray(input)
+                    ? input
+                    : [...read(input), ...(options?.assertions ?? [])];
+                return {
+                    assertions,
+                    rendered: spell(assertions),
+                    valid: true,
+                    errors: [],
+                    recognition: {
+                        status: 'complete',
+                        inputFormat: 'default',
+                        surface: 'default',
+                        unmatched: [],
+                        corrections: [],
+                    },
+                };
+            },
+        ),
+        validate: vi.fn((input: string) => ({
+            assertions: read(input),
+            valid: true,
+            errors: [],
+        })),
         suggest: vi.fn(() => ({ suggestions: [] })),
         aggregate: vi.fn((values: string[]) => ({
             assertions: read(values.join('')),
@@ -146,6 +164,510 @@ afterEach(() => {
     ui = undefined;
     document.body.innerHTML = '';
     vi.restoreAllMocks();
+});
+
+function deferred() {
+    let resolve!: () => void;
+    let reject!: (error: Error) => void;
+    const promise = new Promise<void>((done, failed) => {
+        resolve = () => done();
+        reject = failed;
+    });
+    return { promise, resolve, reject };
+}
+
+describe('marking adapter calls', () => {
+    it('preserves the current native Tags value across runtime teardown and remount', async () => {
+        document.body.innerHTML = `
+            <form>
+                <input id="tags" name="tags" value="A" data-ezclassify-controller="tags">
+            </form>`;
+        const form = document.querySelector('form')!;
+        const context = createContext();
+        ui = new EzClassifyUI(context, { root: form });
+        await expect.poll(() => ui?.isReady).toBe(true);
+        await ui.store.publishRendered('tags', 'B');
+        expect(new FormData(form).get('tags')).toBe('B');
+
+        ui.destroy();
+        expect(new FormData(form).get('tags')).toBe('B');
+
+        ui = new EzClassifyUI(context, { root: form });
+        await expect.poll(() => ui?.isReady).toBe(true);
+        expect(ui.store.get('tags').rendered).toBe('B');
+    });
+
+    it('processes each mounted standalone marking once without aborting its read', async () => {
+        document.body.innerHTML = `
+            <input id="a" type="hidden" data-ezclassify-marking value="A">
+            <input id="b" data-ezclassify-controller="marking" value="B">
+            <textarea id="c" data-ezclassify-controller="marking">A</textarea>
+            <input id="d" data-ezclassify-controller="tags" value="B">
+            <div data-ezclassify-controller="banner" data-ezclassify-aggregate></div>`;
+        const context = createContext();
+        ui = new EzClassifyUI(context);
+        await expect.poll(() => ui?.isReady).toBe(true);
+
+        const calls = vi.mocked(context.scheme.process).mock.calls;
+        expect(calls.map(([input]) => input)).toEqual(['A', 'B', 'A', 'B']);
+        for (const [id, conceptId] of [
+            ['b', 'B'],
+            ['c', 'A'],
+            ['d', 'B'],
+        ]) {
+            const host = document.querySelector<HTMLInputElement>(`#${id}`)!;
+            const field =
+                ui.components.get(host) ?? ui.autocompleters.get(host);
+            expect(field?.getAssertions()).toEqual([
+                expect.objectContaining({ conceptId }),
+            ]);
+        }
+        expect(calls.every(([, options]) => !options?.signal?.aborted)).toBe(
+            true,
+        );
+    });
+
+    it.each(['marking', 'tags'])(
+        'keeps a newer native edit while the %s field’s mount read settles',
+        async (controller) => {
+            document.body.innerHTML = `<input id="a" value="A" data-ezclassify-controller="${controller}">`;
+            const input = document.querySelector<HTMLInputElement>('#a')!;
+            const context = createContext();
+            const process = vi.mocked(context.scheme.process);
+            const read = process.getMockImplementation()!;
+            const old = deferred();
+            const edited = deferred();
+            process.mockImplementation(((
+                ...args: Parameters<SchemeEngineAdapter['process']>
+            ) => {
+                const [value] = args;
+                const answer = read(...args);
+                if (value === 'A') return old.promise.then(() => answer);
+                if (value === 'B') return edited.promise.then(() => answer);
+                return answer;
+            }) as never);
+
+            ui = new EzClassifyUI(context);
+            await expect
+                .poll(() => process.mock.calls.some(([value]) => value === 'A'))
+                .toBe(true);
+            input.value = 'B';
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            await expect
+                .poll(
+                    () =>
+                        process.mock.calls.filter(([value]) => value === 'B')
+                            .length,
+                )
+                .toBe(1);
+            old.resolve();
+            await expect
+                .poll(
+                    () =>
+                        process.mock.calls.filter(([value]) => value === 'B')
+                            .length,
+                )
+                .toBe(2);
+            expect(input.value).toBe('B');
+            expect(ui.store.get('a').rendered).toBe('');
+
+            edited.resolve();
+            await expect.poll(() => ui?.isReady).toBe(true);
+            await expect.poll(() => ui?.store.get('a').rendered).toBe('B');
+            expect(input.value).toBe('B');
+        },
+    );
+
+    it.each(['succeeds', 'fails'])(
+        'reads native text assigned without an event when the mount read %s',
+        async (outcome) => {
+            document.body.innerHTML =
+                '<input id="a" value="A" data-ezclassify-controller="marking">';
+            const input = document.querySelector<HTMLInputElement>('#a')!;
+            const context = createContext();
+            const process = vi.mocked(context.scheme.process);
+            const read = process.getMockImplementation()!;
+            const old = deferred();
+            process.mockImplementationOnce(((
+                ...args: Parameters<SchemeEngineAdapter['process']>
+            ) => old.promise.then(() => read(...args))) as never);
+
+            ui = new EzClassifyUI(context);
+            await expect.poll(() => process.mock.calls[0]?.[0]).toBe('A');
+            input.value = 'B';
+            if (outcome === 'succeeds') old.resolve();
+            else old.reject(new Error('The initial read failed'));
+            await expect.poll(() => ui?.store.get('a').rendered).toBe('B');
+            expect(input.value).toBe('B');
+            expect(
+                process.mock.calls.filter(([value]) => value === 'B'),
+            ).toHaveLength(1);
+        },
+    );
+
+    it.each([
+        ['input', 'A'],
+        ['input', 'AA'],
+        ['textarea', 'A'],
+        ['textarea', 'AA'],
+    ])(
+        'keeps an uncommitted %s draft when the initial read renders %s',
+        async (tag, canonical) => {
+            document.body.innerHTML =
+                tag === 'input'
+                    ? '<input id="a" value="A" data-ezclassify-controller="marking">'
+                    : '<textarea id="a" data-ezclassify-controller="marking">A</textarea>';
+            const native = document.querySelector<HTMLInputElement>('#a')!;
+            const context = createContext();
+            const process = vi.mocked(context.scheme.process);
+            const read = process.getMockImplementation()!;
+            const old = deferred();
+            process.mockImplementationOnce(((
+                ...args: Parameters<SchemeEngineAdapter['process']>
+            ) =>
+                old.promise.then(() => ({
+                    ...read(...args),
+                    rendered: canonical,
+                }))) as never);
+
+            ui = new EzClassifyUI(context);
+            await expect.poll(() => process.mock.calls[0]?.[0]).toBe('A');
+            const editor = document.querySelector<HTMLTextAreaElement>(
+                'textarea.marking-field-host',
+            )!;
+            editor.focus();
+            editor.value = 'B';
+            editor.dispatchEvent(new Event('input', { bubbles: true }));
+            expect(native.value).toBe('B');
+            const reflected: string[] = [];
+            native.addEventListener('input', () =>
+                reflected.push(native.value),
+            );
+
+            old.resolve();
+            await expect.poll(() => ui?.isReady).toBe(true);
+            expect(ui.store.get('a').rendered).toBe(canonical);
+            expect(native.value).toBe('B');
+            expect(editor.value).toBe('B');
+            expect(reflected).toEqual([]);
+
+            for (let press = 0; press < 2; press++)
+                editor.dispatchEvent(
+                    new KeyboardEvent('keydown', {
+                        key: 'Escape',
+                        bubbles: true,
+                    }),
+                );
+            expect(editor.value).toBe(canonical);
+            expect(native.value).toBe(canonical);
+        },
+    );
+
+    it('applies native facet selections before later edits on injected stores', async () => {
+        document.body.innerHTML = `
+            <input id="a" type="hidden" data-ezclassify-marking value="A">
+            <select id="facet" data-ezclassify-controller="select"
+                    data-ezclassify-facet-of="a" data-ezclassify-category="level">
+                <option value="A" selected>A</option>
+                <option value="B">B</option>
+            </select>`;
+        document.querySelector<HTMLSelectElement>('#facet')!.value = 'B';
+        const context = createContext();
+        const store = new VanillaEzClassifyStore(context.scheme);
+        const gate = deferred();
+        const seed = store.seedRendered.bind(store);
+        vi.spyOn(store, 'seedRendered').mockImplementation(
+            async (id, value) => {
+                await gate.promise;
+                await seed(id, value);
+            },
+        );
+        const publish = vi.spyOn(store, 'publishAssertions');
+
+        try {
+            ui = new EzClassifyUI(context, { store });
+            await expect
+                .poll(() => publish.mock.calls[0]?.[1][0]?.conceptId)
+                .toBe('B');
+            await store.publishAssertions('a', read('A'), undefined, {
+                categories: ['level'],
+            });
+            gate.resolve();
+            await expect.poll(() => ui?.isReady).toBe(true);
+            expect(store.get('a').rendered).toBe('A');
+        } finally {
+            gate.resolve();
+            ui?.destroy();
+            ui = undefined;
+            store.destroy();
+        }
+    });
+
+    it('reads served text once when a native facet changes its initial selection', async () => {
+        document.body.innerHTML = `
+            <input id="a" type="hidden" data-ezclassify-marking value="A">
+            <select id="facet" data-ezclassify-controller="select"
+                    data-ezclassify-facet-of="a" data-ezclassify-category="level">
+                <option value="A" selected>A</option>
+                <option value="B">B</option>
+            </select>`;
+        document.querySelector<HTMLSelectElement>('#facet')!.value = 'B';
+        const context = createContext();
+        ui = new EzClassifyUI(context);
+        await expect.poll(() => ui?.isReady).toBe(true);
+
+        const calls = vi.mocked(context.scheme.process).mock.calls;
+        expect(calls.filter(([input]) => input === 'A')).toHaveLength(1);
+        expect(calls.every(([, options]) => !options?.signal?.aborted)).toBe(
+            true,
+        );
+        expect(ui.store.get('a').rendered).toBe('B');
+    });
+
+    it('updates collection membership from committed facts without remounting or reading the marking', async () => {
+        document.body.innerHTML = `
+            <section data-ezclassify-collection="folder"></section>
+            <input id="a" data-ezclassify-controller="marking" value="A">
+            <input id="out" type="hidden" data-ezclassify-aggregate="folder">
+            <div id="banner" data-ezclassify-controller="banner" data-ezclassify-aggregate="folder"></div>`;
+        const context = createContext();
+        ui = new EzClassifyUI(context);
+        await expect.poll(() => ui?.isReady).toBe(true);
+        const marking = document.getElementById('a')!;
+        const output = document.querySelector<HTMLInputElement>('#out')!;
+        const bannerText = () =>
+            document.querySelector('#banner .status-banner-label')?.textContent;
+        const component = ui.components.get(marking);
+        expect(component).toBeDefined();
+        const process = vi.mocked(context.scheme.process);
+        const validate = vi.mocked(context.scheme.validate);
+        process.mockClear();
+        validate.mockClear();
+
+        marking.setAttribute('data-ezclassify-member-of', 'folder');
+        await expect.poll(() => output.value).toBe('A');
+        expect(bannerText()).toBe('A');
+        expect(ui.components.get(marking) === component).toBe(true);
+        marking.removeAttribute('data-ezclassify-member-of');
+        await expect.poll(() => output.value).toBe('');
+        expect(bannerText()).toBe('No marking');
+        expect(ui.components.get(marking) === component).toBe(true);
+        expect(process).not.toHaveBeenCalled();
+        expect(validate).not.toHaveBeenCalled();
+    });
+
+    it('adds and removes a collection around a known marking without rereading it', async () => {
+        document.body.innerHTML = `
+            <section id="region">
+                <input id="whole" type="hidden" data-ezclassify-marking value="A">
+            </section>`;
+        const context = createContext();
+        ui = new EzClassifyUI(context);
+        await expect.poll(() => ui?.isReady).toBe(true);
+        const process = vi.mocked(context.scheme.process);
+        const validate = vi.mocked(context.scheme.validate);
+        process.mockClear();
+        validate.mockClear();
+        const region = document.querySelector('#region')!;
+        region.setAttribute('data-ezclassify-collection', 'folder');
+        await expect
+            .poll(
+                () =>
+                    [...ui!.store.getAggregate('folder').byBucket.values()][0]
+                        ?.rendered,
+            )
+            .toBe('A');
+        region.removeAttribute('data-ezclassify-collection');
+        await expect
+            .poll(() => ui!.store.getAggregate('folder').byBucket.size)
+            .toBe(0);
+        expect(process).not.toHaveBeenCalled();
+        expect(validate).not.toHaveBeenCalled();
+    });
+
+    it('shows an unchecked collection marking as incomplete without displaying a rollup', async () => {
+        document.body.innerHTML = `
+            <section data-ezclassify-collection="folder">
+                <input id="unchecked" type="hidden" data-ezclassify-marking value="A">
+            </section>
+            <input id="out" type="hidden" data-ezclassify-aggregate="folder">
+            <div id="banner" data-ezclassify-controller="banner" data-ezclassify-aggregate="folder"></div>`;
+        const context = createContext();
+        vi.mocked(context.scheme.process).mockImplementationOnce(() => {
+            throw new Error('Adapter offline');
+        });
+        ui = new EzClassifyUI(context);
+        await expect.poll(() => ui?.isReady).toBe(true);
+        const banner = document.querySelector('#banner .status-banner')!;
+        await expect
+            .poll(() => banner.classList.contains('status-banner--incomplete'))
+            .toBe(true);
+        expect(banner.querySelector('.status-banner-label')?.textContent).toBe(
+            'No marking',
+        );
+        const output = document.querySelector<HTMLInputElement>('#out')!;
+        await expect
+            .poll(() => output.getAttribute('aria-invalid'))
+            .toBe('true');
+        expect(output.value).toBe('');
+        expect(context.scheme.aggregateAssertions).not.toHaveBeenCalled();
+        expect(context.scheme.validate).not.toHaveBeenCalled();
+    });
+
+    it('shows the page banner as incomplete until every initial marking has been read', async () => {
+        document.body.innerHTML = `
+            <input id="first" type="hidden" data-ezclassify-marking value="A">
+            <input id="second" type="hidden" data-ezclassify-marking value="B">
+            <div id="banner" data-ezclassify-controller="banner" data-ezclassify-aggregate></div>`;
+        const context = createContext();
+        const process = vi.mocked(
+            context.scheme.process as TestAdapterCall<
+                SchemeEngineAdapter['process']
+            >,
+        );
+        const run = process.getMockImplementation()!;
+        const gate = deferred();
+        process.mockImplementation((input, options) =>
+            input === 'B'
+                ? gate.promise.then(() => run(input, options))
+                : run(input, options),
+        );
+        ui = new EzClassifyUI(context);
+        const banner = () => document.querySelector('#banner .status-banner');
+        try {
+            await expect.poll(() => process.mock.calls.length).toBe(2);
+            await expect
+                .poll(() =>
+                    banner()?.classList.contains('status-banner--incomplete'),
+                )
+                .toBe(true);
+            expect(context.scheme.aggregateAssertions).not.toHaveBeenCalled();
+            gate.resolve();
+            await expect.poll(() => ui?.isReady).toBe(true);
+            await expect
+                .poll(
+                    () =>
+                        banner()?.querySelector('.status-banner-label')
+                            ?.textContent,
+                )
+                .toBe('AB');
+            expect(
+                banner()?.classList.contains('status-banner--incomplete'),
+            ).toBe(false);
+        } finally {
+            gate.resolve();
+        }
+    });
+
+    it('flags the last page marking while an alternate banner format is still writing', async () => {
+        document.body.innerHTML = `
+            <input id="memo" type="hidden" data-ezclassify-marking value="A">
+            <div id="banner" data-ezclassify-controller="banner" data-ezclassify-aggregate
+                data-ezclassify-format="alternate"></div>`;
+        const context = createContext();
+        const meta = context.scheme.getSchemeMeta();
+        vi.spyOn(context.scheme, 'getSchemeMeta').mockReturnValue({
+            ...meta,
+            formats: [
+                ...meta.formats!,
+                { ...meta.formats![0]!, id: 'alternate' },
+            ],
+        });
+        const render = vi.mocked(
+            context.scheme.render as TestAdapterCall<
+                SchemeEngineAdapter['render']
+            >,
+        );
+        const runRender = (assertions: Assertion[]) => ({
+            rendered: spell(assertions),
+            assessment: EMPTY_RENDER_ASSESSMENT,
+        });
+        render.mockImplementation(runRender);
+        ui = new EzClassifyUI(context);
+        const banner = () => document.querySelector('#banner .status-banner');
+        const text = () =>
+            banner()?.querySelector('.status-banner-label')?.textContent;
+        await expect.poll(text).toBe('A');
+
+        const read = deferred();
+        const write = deferred();
+        const process = vi.mocked(
+            context.scheme.process as TestAdapterCall<
+                SchemeEngineAdapter['process']
+            >,
+        );
+        const runProcess = process.getMockImplementation()!;
+        process.mockImplementationOnce((...args) =>
+            read.promise.then(() => runProcess(...args)),
+        );
+        render.mockImplementation((...args) =>
+            args[1] === 'alternate'
+                ? write.promise.then(() => runRender(args[0]))
+                : runRender(args[0]),
+        );
+        try {
+            const published = ui.store.publishRendered('memo', 'B');
+            expect(
+                banner()?.classList.contains('status-banner--incomplete'),
+            ).toBe(true);
+            expect(text()).toBe('A');
+            read.resolve();
+            await published;
+            expect(
+                banner()?.classList.contains('status-banner--incomplete'),
+            ).toBe(true);
+            write.resolve();
+            await expect.poll(text).toBe('B');
+            expect(
+                banner()?.classList.contains('status-banner--incomplete'),
+            ).toBe(false);
+        } finally {
+            read.resolve();
+            write.resolve();
+        }
+    });
+
+    it('skips aggregation when a marking excluded from rollups commits', async () => {
+        document.body.innerHTML = `
+            <input id="a" type="hidden" data-ezclassify-marking value="A">
+            <input id="b" type="hidden" data-ezclassify-marking data-ezclassify-no-rollup value="A">
+            <input id="out" type="hidden" data-ezclassify-aggregate>`;
+        const context = createContext();
+        ui = new EzClassifyUI(context);
+        const output = document.querySelector<HTMLInputElement>('#out')!;
+        await expect.poll(() => output.value).toBe('A');
+        const aggregate = vi.mocked(context.scheme.aggregateAssertions);
+        aggregate.mockClear();
+
+        await ui.store.publishRendered('b', 'B');
+        await ui.flushRollupNow();
+        expect(ui.store.get('b').rendered).toBe('B');
+        expect(output.value).toBe('A');
+        expect(aggregate).not.toHaveBeenCalled();
+    });
+});
+
+it('names each mounted banner independently and supports silent updates', async () => {
+    ui = await mount(`
+        <input id="a" type="hidden" data-ezclassify-marking value="A">
+        <div id="page" data-ezclassify-controller="banner" data-ezclassify-aggregate
+            data-ezclassify-banner-label="Detected on this page"></div>
+        <div id="screen" data-ezclassify-controller="banner" data-ezclassify-source="a"
+            data-ezclassify-banner-label="Visible on screen" data-ezclassify-banner-no-live></div>`);
+    const page = document.querySelector('#page .status-banner')!;
+    const screen = document.querySelector('#screen .status-banner')!;
+    expect(page.getAttribute('aria-label')).toBe('Detected on this page: A');
+    expect(page.getAttribute('aria-live')).toBe('polite');
+    expect(screen.getAttribute('aria-label')).toBe('Visible on screen: A');
+    expect(screen.getAttribute('aria-live')).toBe('off');
+    expect(screen.getAttribute('role')).toBe('group');
+
+    await ui.store.publishRendered('a', 'B');
+    await expect
+        .poll(() => page.getAttribute('aria-label'))
+        .toBe('Detected on this page: B');
+    expect(screen.getAttribute('aria-label')).toBe('Visible on screen: B');
+    expect(screen.getAttribute('aria-live')).toBe('off');
 });
 
 describe('whole containers', () => {

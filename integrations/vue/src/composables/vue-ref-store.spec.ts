@@ -560,6 +560,39 @@ describe('VueRefStore: whole-rollup recompute', () => {
 });
 
 describe('VueRefStore: aggregate recompute', () => {
+    it('notifies subscribers when an in-flight aggregate settles with the same held result', async () => {
+        const engine = passThrough();
+        let deferAggregate = false;
+        let failAggregate!: (reason: Error) => void;
+        const store = new VueRefStore({
+            ...engine,
+            aggregateAssertions: (sets, options) =>
+                deferAggregate
+                    ? new Promise<never>((_resolve, reject) => {
+                          failAggregate = reject;
+                      })
+                    : engine.aggregateAssertions(sets, options),
+        });
+        const updates: string[] = [];
+        await store.publishRendered('doc', 'tier:secret');
+        await flush();
+        store.subscribeAggregate(({ byBucket }) => {
+            updates.push([...byBucket.values()][0]!.rendered);
+        });
+
+        deferAggregate = true;
+        await store.publishRendered('doc', 'tier:top');
+        expect(updates).toEqual(['tier:secret']);
+        failAggregate(new Error('Unavailable.'));
+        await expect
+            .poll(() => updates)
+            .toEqual(['tier:secret', 'tier:secret']);
+        expect([...store.getAggregate().byBucket.values()][0]!.stale).toBe(
+            true,
+        );
+        store.destroy();
+    });
+
     it('resets the aggregate to the empty state when every marking is empty', async () => {
         const store = new VueRefStore(passThrough());
         store.subscribeAggregate(() => {});

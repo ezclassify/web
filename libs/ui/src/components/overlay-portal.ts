@@ -31,6 +31,7 @@ const THEME_PROPERTIES = [
     '--ez-dropdown-highlight',
     '--ez-dropdown-selected',
     '--ez-dropdown-group-bg',
+    '--ez-dropdown-group-sticky-bg',
     '--ez-dropdown-shadow',
     '--ez-tooltip-background',
     '--ez-tooltip-color',
@@ -42,28 +43,19 @@ const THEME_PROPERTIES = [
     '--ez-tooltip-rule-color',
     '--ez-border-radius',
     '--ez-border-width',
-    '--ez-font-family',
-    '--ez-font-size',
     '--ez-z-dropdown',
     '--ez-z-tooltip',
 ] as const;
 
-/** An EzClassify root: a host's themed region or a component's container. */
-const UI_ROOT = '.ez-root, [data-ezclassify]';
+/** The closest form, themed region, or component container owns typography. */
+const UI_FONT_SCOPE = 'form, .ez-root, [data-ezclassify]';
 
 /** Native controls whose own font a field's text layers mirror. */
 const FORM_CONTROL = 'input, textarea, select';
 
 /**
- * A host can unset its font token. A CSS-wide keyword must never reach the
- * overlay as if the host had chosen a font family.
- */
-const CSS_WIDE_KEYWORD = /^(?:inherit|initial|unset|revert|revert-layer)$/;
-
-/**
- * The font family library chrome uses for `owner`: the host's
- * `--ez-font-family` when one is set, otherwise the page font around the
- * EzClassify root that holds `owner`.
+ * Read the ordinary CSS font in the closest form or EzClassify scope that
+ * contains the owner.
  *
  * A field's text layers mirror the native control's font on purpose, so the
  * marked text keeps the control's metrics. Chrome is not field text, and a
@@ -77,20 +69,15 @@ const CSS_WIDE_KEYWORD = /^(?:inherit|initial|unset|revert|revert-layer)$/;
  * @returns The CSS style of the surrounding UI
  */
 function uiFontStyle(owner: HTMLElement): CSSStyleDeclaration {
-    let surrounding = owner.closest<HTMLElement>(UI_ROOT) ?? owner;
+    let surrounding = owner.closest<HTMLElement>(UI_FONT_SCOPE) ?? owner;
     while (surrounding.matches(FORM_CONTROL) && surrounding.parentElement)
         surrounding = surrounding.parentElement;
     return window.getComputedStyle(surrounding);
 }
 
-function uiFontFamily(style: CSSStyleDeclaration): string {
-    const host = style.getPropertyValue('--ez-font-family').trim();
-    return host && !CSS_WIDE_KEYWORD.test(host) ? host : style.fontFamily;
-}
-
 /**
  * Copy documented presentation tokens from an in-flow anchor to an overlay, and
- * give the overlay the surrounding UI font (see {@link uiFontFamily}).
+ * give the overlay the surrounding UI font.
  *
  * The overlay keeps the theme's base size and font family. Its stylesheet
  * supplies the relative sizes for labels and help text, independent of any font
@@ -115,13 +102,8 @@ export function copyOverlayTheme(
         else overlay.style.removeProperty(property);
     }
     const fontStyle = uiFontStyle(owner);
-    overlay.style.fontFamily = uiFontFamily(fontStyle);
-    if (
-        !style.getPropertyValue('--ez-font-size').trim() &&
-        fontStyle.fontSize
-    ) {
-        overlay.style.setProperty('--ez-font-size', fontStyle.fontSize);
-    }
+    overlay.style.fontFamily = fontStyle.fontFamily;
+    overlay.style.fontSize = fontStyle.fontSize;
 }
 
 /**

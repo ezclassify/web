@@ -1340,7 +1340,7 @@ describe('MarkedTextArea favorites', () => {
         expect(button.getAttribute('aria-expanded')).toBe('false');
     });
 
-    it('stamping a favorite into non-empty body text keeps the marking/body separator', async () => {
+    it('Add marking lets a Favorite fill an unmarked paragraph without losing its separator', async () => {
         // A wrapped favorite keeps the separator before the body text that follows it.
         const load = vi.fn(async () => [{ marking: 'S', label: 'Secret' }]);
         const value = '(U) First line\nsecond line here';
@@ -1361,18 +1361,39 @@ describe('MarkedTextArea favorites', () => {
         );
         await wait(80);
 
-        const row = document.body.querySelector(
-            '.ez-favorites-panel__embedded .proto-dropdown-item',
-        ) as HTMLElement;
-        row.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        const target = document.querySelector('.ez-marking-tools__target')!;
+        expect(target.textContent).toBe('Choose a marking');
+        expect(
+            document.querySelector<HTMLButtonElement>('[data-favorite-marking]')
+                ?.disabled,
+        ).toBe(true);
+        document.activeElement!.dispatchEvent(
+            new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+        );
+        ta.focus();
+        textareaEditor(ta).setSelectionRange(caret, caret);
+        textareaEditor(ta).dispatchEvent(
+            new KeyboardEvent('keydown', {
+                key: 'Enter',
+                ctrlKey: true,
+                bubbles: true,
+                cancelable: true,
+            }),
+        );
+        await wait(80);
+        await openFavoriteTools(
+            root.querySelector<HTMLButtonElement>('.ez-status-mark--tools')!,
+        );
+        document
+            .querySelector<HTMLButtonElement>('[data-favorite-marking]')!
+            .click();
         await wait(80);
 
         expect(ta.value).toBe('(U) First line\n(S) second line here');
     });
 
-    it('stamping a favorite at a mid-word caret on an already-marked line starts a new line instead of splitting the word', async () => {
-        // On an already-marked line, a mid-word caret starts the favorite on a
-        // new line instead of splitting the word.
+    it('applying a Favorite from a marked paragraph replaces only its marking', async () => {
+        // A caret in the body targets that paragraph's existing marking.
         const load = vi.fn(async () => [{ marking: 'S', label: 'Secret' }]);
         const value = '(U) Hello world';
         const { ta } = await mountDirect(value, { favorites: { load } });
@@ -1393,16 +1414,17 @@ describe('MarkedTextArea favorites', () => {
         );
         await wait(80);
 
+        expect(
+            document.querySelector('.ez-favorites-panel__target')?.textContent,
+        ).toBe('Editing marking 1 of 1');
+
         const row = document.body.querySelector(
             '.ez-favorites-panel__embedded .proto-dropdown-item',
         ) as HTMLElement;
         row.dispatchEvent(new MouseEvent('click', { bubbles: true }));
         await wait(80);
 
-        // "Hello world" stays intact on the first line; the new mark starts
-        // its own line rather than landing mid-word.
-        expect(ta.value).toBe('(U) Hello world\n(S) ');
-        expect(ta.value).toContain('Hello world');
+        expect(ta.value).toBe('(S) Hello world');
     });
 });
 
@@ -1756,7 +1778,7 @@ describe('MarkedTextArea favorites: caret-scoped selection and pinned row', () =
         ).toBe(true);
     });
 
-    it('clears the Favorite selection when the caret leaves the segment for body text', async () => {
+    it("keeps the paragraph's Favorite selected when the caret moves into its text", async () => {
         const load = vi.fn(async () => [
             { marking: 'U', label: 'Unclassified' },
         ]);
@@ -1795,7 +1817,7 @@ describe('MarkedTextArea favorites: caret-scoped selection and pinned row', () =
             document
                 .querySelector('[data-favorite-marking]')
                 ?.classList.contains('proto-dropdown-item--selected'),
-        ).toBe(false);
+        ).toBe(true);
     });
 
     it('leaves a different Favorite unselected', async () => {
@@ -1818,7 +1840,7 @@ describe('MarkedTextArea favorites: caret-scoped selection and pinned row', () =
         ).toBe(false);
     });
 
-    it("the pinned save row offers the caret segment's marking and is absent when the caret is in body text", async () => {
+    it('the pinned save row follows the paragraph marking when the caret is in body text', async () => {
         const save = vi.fn(async () => {});
         const load = vi.fn(async () => []);
         const value = '(U) Body text here.';
@@ -1829,24 +1851,8 @@ describe('MarkedTextArea favorites: caret-scoped selection and pinned row', () =
             '.ez-status-mark--tools',
         ) as HTMLButtonElement;
 
-        // Caret in body text: no concrete segment to save, so the pinned row
-        // is ABSENT (not just disabled).
         ta.focus();
         moveCaret(ta, value.length);
-        await wait(20);
-        await openFavoriteTools(button);
-        expect(
-            document.body.querySelector('.ez-favorites-panel__pinned'),
-        ).toBeNull();
-        button.dispatchEvent(
-            new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
-        );
-        await wait(20);
-
-        // Caret inside the "(U)" segment: the pinned row appears, offering
-        // to save exactly that segment's marking.
-        ta.focus();
-        moveCaret(ta, 1);
         await wait(20);
         await openFavoriteTools(button);
         const pinned = document.body.querySelector(

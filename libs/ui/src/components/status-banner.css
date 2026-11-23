@@ -26,35 +26,35 @@
 }
 
 .status-banner--prominent .status-banner-label {
-    font-size: var(--ez-banner-font-size, calc(var(--ez-font-size, 1em) * 1.5));
+    font-size: var(--ez-banner-font-size, calc(1em * 1.5));
 }
 
 .status-banner--compact .status-banner-label {
-    font-size: var(--ez-banner-font-size, var(--ez-font-size, 1em));
+    font-size: var(--ez-banner-font-size, 1em);
 }
 
 .status-banner-subtitle {
     margin-top: 0.25rem;
-    font-size: calc(var(--ez-font-size, 1em) * 0.8125);
+    font-size: calc(1em * 0.8125);
     opacity: 0.85;
 }
 
 /* ── Boundary-mode inline elements ───────────────── */
 .status-banner-boundary {
     font-weight: 600;
-    font-size: calc(var(--ez-font-size, 1em) * 0.875);
+    font-size: calc(1em * 0.875);
     overflow-wrap: break-word;
 }
 
 .status-banner-current {
     font-weight: 700;
-    font-size: calc(var(--ez-font-size, 1em) * 0.9375);
+    font-size: calc(1em * 0.9375);
     overflow-wrap: break-word;
 }
 
 .status-banner--compact .status-banner-boundary,
 .status-banner--compact .status-banner-current {
-    font-size: calc(var(--ez-font-size, 1em) * 0.8125);
+    font-size: calc(1em * 0.8125);
 }
 
 .status-banner-sep {
@@ -102,7 +102,7 @@
     font-weight: 800;
     letter-spacing: 0.06em;
     margin-right: 0.75rem;
-    font-size: calc(var(--ez-font-size, 1em) * 0.875);
+    font-size: calc(1em * 0.875);
     text-transform: uppercase;
 }
 
@@ -118,7 +118,7 @@
 
 .status-banner-incomplete {
     margin-top: 0.375rem;
-    font-size: calc(var(--ez-font-size, 1em) * 0.8125);
+    font-size: calc(1em * 0.8125);
     font-weight: 600;
     overflow-wrap: break-word;
 }
@@ -206,7 +206,7 @@
 
 .status-banner-bucket-label {
     margin-inline-end: 0.5rem;
-    font-size: calc(var(--ez-font-size, 1em) * 0.8125);
+    font-size: calc(1em * 0.8125);
     font-weight: 600;
     opacity: 0.85;
 }

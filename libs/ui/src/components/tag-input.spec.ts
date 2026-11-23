@@ -1444,7 +1444,7 @@ describe('TagInput favorites', () => {
         await mountDirect();
         expect(
             root.querySelector('.ez-status-mark')?.getAttribute('title'),
-        ).toMatch(/^Corrections \(/);
+        ).toMatch(/^Auto-fixes \(/);
     });
 
     it('opens Favorites from branding and replaces the whole chip set', async () => {
