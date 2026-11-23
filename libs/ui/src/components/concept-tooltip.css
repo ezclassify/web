@@ -162,7 +162,7 @@
 }
 .ez-status-list__undo:focus-visible {
     outline: 2px solid var(--ez-color-primary, #fdb827);
-    outline-offset: 2px;
+    outline-offset: -2px;
 }
 .ez-status-list__undo-description {
     margin-top: 0.25em;

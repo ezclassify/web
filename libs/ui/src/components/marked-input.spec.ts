@@ -649,7 +649,7 @@ describe('MarkedInput', () => {
         );
         const chrome = readFileSync(join(here, 'field-chrome.css'), 'utf8');
         expect(chrome).toMatch(
-            /\.marked-input-wrap > \.ez-field-chrome\s*\{\s*grid-area:\s*1 \/ 1 \/ 2 \/ -1;/,
+            /\.marked-input-wrap > \.ez-field-chrome\s*\{\s*grid-area:\s*1 \/ 1 \/ 2 \/ 2;/,
         );
         expect(chrome).toMatch(
             /\.ez-field-chrome\s*\{[^}]*top:\s*50%[^}]*transform:\s*translateY\(-50%\)/,

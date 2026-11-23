@@ -80,7 +80,7 @@ describe('branding-popover Favorites', () => {
             (tab) => tab.getAttribute('aria-label') === 'Favorites',
         )!;
         const corrections = tabs.find(
-            (tab) => tab.getAttribute('aria-label') === 'Corrections',
+            (tab) => tab.getAttribute('aria-label') === 'Auto-fixes',
         )!;
         expect(corrections.getAttribute('aria-description')).toBe('0 entries');
         expect(favorites.getAttribute('aria-description')).toBe('3 entries');
@@ -181,10 +181,10 @@ describe('branding-popover Favorites', () => {
     it('describes the available tools and platform shortcut without opening the window', () => {
         const { mark, wrap } = mount();
         const shortcut = `${isMacPlatform() ? 'Cmd' : 'Ctrl'}+Shift+Enter`;
-        expect(mark.title).toBe(`Corrections and Favorites (${shortcut})`);
+        expect(mark.title).toBe(`Auto-fixes and Favorites (${shortcut})`);
         expect(mark.getAttribute('aria-expanded')).toBe('false');
         setStatusMarkFavorites(wrap, null);
-        expect(mark.title).toBe(`Corrections (${shortcut})`);
+        expect(mark.title).toBe(`Auto-fixes (${shortcut})`);
         expect(mark.getAttribute('aria-expanded')).toBe('false');
     });
 
@@ -213,7 +213,7 @@ describe('branding-popover Favorites', () => {
             );
             const corrections = [
                 ...document.querySelectorAll<HTMLButtonElement>('[role="tab"]'),
-            ].find((tab) => tab.getAttribute('aria-label') === 'Corrections')!;
+            ].find((tab) => tab.getAttribute('aria-label') === 'Auto-fixes')!;
             corrections.click();
             // The branding button remains in the open tools domain. Asking
             // there keeps the current section and does not toggle closed.
@@ -307,7 +307,7 @@ describe('branding-popover Favorites', () => {
         expect(opened).toHaveBeenCalledOnce();
         expect(document.activeElement).not.toBe(input);
         expect(document.activeElement?.getAttribute('aria-label')).toBe(
-            'Corrections',
+            'Auto-fixes',
         );
     });
 
@@ -474,7 +474,7 @@ describe('branding-popover Favorites', () => {
             document
                 .querySelector('[role=tab][aria-selected=true]')
                 ?.getAttribute('aria-label'),
-        ).toBe('Corrections');
+        ).toBe('Auto-fixes');
         expect(
             document
                 .querySelector('[role=tab][aria-selected=true]')

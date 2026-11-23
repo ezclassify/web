@@ -3,9 +3,7 @@
     /* The field takes the first row with its inline chrome (field-chrome.css
        centers the chrome on that row alone); the footer takes the second. */
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    column-gap: 0.75em;
-    container-type: inline-size;
+    grid-template-columns: minmax(0, 1fr);
     width: 100%;
     /* Prevent grid/flex track blowout from the field's content. */
     min-width: 0;
@@ -15,7 +13,7 @@
     outline: none;
 }
 .marked-input-wrap > .marked-input-display {
-    grid-area: 1 / 1 / 2 / -1;
+    grid-area: 1 / 1 / 2 / 2;
 }
 
 /* Visible focus ring on the display layer: defined here so it never goes missing.
@@ -155,7 +153,6 @@
 /* Footer row for the marking action.
    Branding tools and clear sit in the field's inline chrome. */
 .marked-input-footer {
-    grid-column: 1 / -1;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -253,24 +250,12 @@
     display: none !important;
 }
 
-/* The rule-error list precedes the hint in reading and Tab order. The invisible native host
+/* Inline validation shares the footer with the keyboard hint. The invisible native host
    stretches over the whole wrap (inset: 0), so the list stacks above it the
    way the footer's buttons do, or its fix buttons could not be pressed. */
-.marked-input-wrap > .ez-validation-errors {
-    grid-column: 1 / -1;
+.marked-input-wrap > .marked-input-footer {
     position: relative;
     z-index: 3;
-}
-
-/* Keep the action beside the first finding when the field has room. */
-@container (min-width: 28em) {
-    .marked-input-wrap > .ez-validation-errors {
-        grid-area: 2 / 1;
-    }
-    .marked-input-wrap > .marked-input-footer {
-        grid-area: 2 / 2;
-        align-self: start;
-    }
 }
 
 /* Match the footer action to the common field-chrome touch targets. */

@@ -715,7 +715,12 @@ export class MarkingField extends ComposerFieldBase {
     }
 
     private async applyRuleFix(fix: Fix): Promise<void> {
-        if (this._destroyed || this._committing) return;
+        if (
+            this._destroyed ||
+            this._committing ||
+            (this.enhancedInput ?? this.host).matches(':disabled, [readonly]')
+        )
+            return;
         if (this.controller.isDirty()) {
             await this.controller.commit();
             return;

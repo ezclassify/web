@@ -20,6 +20,7 @@ import type {
     Assertion,
     ProcessResult,
     Change,
+    Fix,
     ProcessingContext,
     RenderAssessment,
     UnreadMark,
@@ -38,12 +39,14 @@ import { getMountHost } from '../mount-host-registry';
 import { wholeSettled } from '../whole-read-gate';
 import { revealClearOfPinned } from './composer/composer-placement';
 import { AppliedFixHistory } from './applied-fix-history';
+import { NO_RULE_ERRORS, placeUnderField, ruleErrorsFrom } from './rule-errors';
 import {
     statusMarkOwnsNode,
     statusMarkFavoriteApplyOwner,
     setStatusMarkError,
     setStatusMarkGroups,
     type StatusMarkGroup,
+    type StatusMarkFinding,
 } from './status-mark';
 import {
     cleanupTooltipForRoot,
@@ -399,6 +402,10 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
      * picker.
      */
     private lastSegmentedText = '';
+    private readonly proposedFixesBySegment = new WeakMap<
+        MarkedSegment,
+        readonly Fix[]
+    >();
 
     /**
      * The caret's entry, or the entry still owned by the active Favorite
@@ -825,6 +832,9 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
      */
     refreshWhole(): void {
         if (this.tornDown || !this.options.resolveContext) return;
+        for (const segment of this.segments)
+            this.proposedFixesBySegment.delete(segment);
+        this.updateStatusMark();
         if (this.picker) {
             this.picker.refreshContext();
             return;
@@ -893,6 +903,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         )
             return true;
         const seq = ++this.entryWriteSeq;
+        const scanAtProjection = this.scanSeq;
         const own = [
             ...this.segments.filter(
                 (segment): segment is MarkedSegment & { entryId: string } =>
@@ -1048,7 +1059,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                         (error) => error.message,
                     );
                     if (readFailure) errors.push(readFailure);
-                    return {
+                    const segment: MarkedSegment = {
                         ...span,
                         marking: projected.text.slice(span.start, span.end),
                         assertions: state.assertions.map((a) => ({ ...a })),
@@ -1069,6 +1080,25 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                             ? !read.valid || previous?.sourceUnresolved
                             : previous?.preserveSource,
                     };
+                    const proposals =
+                        read?.proposedFixes ??
+                        (previous &&
+                        previous.marking === segment.marking &&
+                        facts(previous.assertions) ===
+                            facts(state.assertions) &&
+                        previous.valid === segment.valid &&
+                        JSON.stringify(previous.validationErrors) ===
+                            JSON.stringify(segment.validationErrors)
+                            ? this.proposedFixesBySegment.get(previous)
+                            : undefined);
+                    if (
+                        scanAtProjection === this.scanSeq &&
+                        !state.stale &&
+                        !readFailure &&
+                        proposals?.length
+                    )
+                        this.proposedFixesBySegment.set(segment, proposals);
+                    return segment;
                 }),
         ].sort((a, b) => a.start - b.start);
         ++this.scanSeq;
@@ -1145,6 +1175,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
             this.onBrandDown,
             true,
         );
+        this.removeRuleErrors();
         this.destroyFieldTools();
         this.toolsButton = null;
         this.textareaEvents.abort();
@@ -1408,12 +1439,12 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         }
 
         let previousSegmentIndex = 0;
-        const previousReadFailures = prevMarkings.map((marking) => {
+        const previousRecognized = prevMarkings.map((marking) => {
             // Recognized spans can lack an entry ID after a failed empty read.
             // Walk in source order, skipping only additional unrecognized spans.
             while (previousSegmentIndex < previousSegments.length) {
                 const previous = previousSegments[previousSegmentIndex++];
-                if (previous.marking === marking) return previous.readFailure;
+                if (previous.marking === marking) return previous;
             }
             return undefined;
         });
@@ -1460,7 +1491,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
             const failure =
                 readFailures.get(i) ??
                 (!changedIndices.includes(i)
-                    ? previousReadFailures[i]
+                    ? previousRecognized[i]?.readFailure
                     : undefined);
             if (failure !== undefined) errors.push(failure);
             const warnings = [
@@ -1470,7 +1501,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                 !res.valid ||
                 res.recognition?.status !== 'complete' ||
                 unappliedFixes;
-            return {
+            const segment: MarkedSegment = {
                 start: r.start,
                 end: r.end,
                 marking: r.marking,
@@ -1490,6 +1521,12 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                 sourceUnresolved,
                 preserveSource: failure !== undefined || sourceUnresolved,
             };
+            if (!failure && processed?.proposedFixes?.length)
+                this.proposedFixesBySegment.set(
+                    segment,
+                    processed.proposedFixes,
+                );
+            return segment;
         });
 
         // Wrapped marks the scan could not read, such as "(junkxyz)", read like
@@ -1554,9 +1591,20 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                     (changed) => embedded[changed]?.start === segment.start,
                 )
             ) {
-                // A body-only edit must not turn structured store state into a
-                // fresh text projection that drops captured or suppressed facts.
+                // The scan sees embedded text without its whole. A prose-only
+                // edit preserves the last contextual judgment for this entry.
                 segment.assertions = previous.assertions;
+                segment.errors = previous.errors;
+                segment.warnings = previous.warnings;
+                segment.validationErrors = previous.validationErrors;
+                segment.valid = previous.valid;
+                segment.pendingFixes = previous.pendingFixes;
+                segment.readFailure = previous.readFailure;
+                segment.sourceUnresolved = previous.sourceUnresolved;
+                segment.preserveSource = previous.preserveSource;
+                const proposals = this.proposedFixesBySegment.get(previous);
+                if (!segment.readFailure && proposals)
+                    this.proposedFixesBySegment.set(segment, proposals);
             }
         });
         // An edit that extends the end of a mark and also changes its body
@@ -1746,10 +1794,94 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
      */
     private updateStatusMark(): void {
         setStatusMarkGroups(this.chrome.status, this.markGroups());
+        const text = this.textarea.value;
+        const findings = this.segments.flatMap(
+            (segment): StatusMarkFinding[] => {
+                if (!segment.errors.length && !segment.warnings?.length)
+                    return [];
+                const proposals =
+                    this.scanComplete && !segment.readFailure
+                        ? (this.proposedFixesBySegment.get(segment) ?? [])
+                        : [];
+                const fixes = ruleErrorsFrom(
+                    segment.validationErrors,
+                    proposals,
+                ).fixes;
+                return [
+                    {
+                        id: segment.entryId ?? String(segment.start),
+                        heading: t('tools.paragraph').replace(
+                            '{n}',
+                            String(paragraphNumber(text, segment.start)),
+                        ),
+                        report: {
+                            messages: segment.errors,
+                            errors: segment.validationErrors,
+                            warnings: segment.warnings ?? [],
+                            fixes,
+                        },
+                        apply:
+                            fixes.length &&
+                            !this.nativeTextarea.matches(':disabled') &&
+                            !this.nativeTextarea.readOnly
+                                ? (fix) => this.applyParagraphFix(segment, fix)
+                                : undefined,
+                    },
+                ];
+            },
+        );
+        this.setFieldFindings(findings);
+        this.showInlineReport(
+            this.container.ownerDocument,
+            {
+                ...NO_RULE_ERRORS,
+                messages: findings.flatMap(({ heading, report }) =>
+                    report.messages.map((message) => `${heading}: ${message}`),
+                ),
+                warnings: findings.flatMap(({ heading, report }) =>
+                    report.warnings.map((message) => `${heading}: ${message}`),
+                ),
+            },
+            (element) =>
+                placeUnderField(element, this.textarea, this.container),
+        );
         setStatusMarkError(
             this.chrome.status,
             this.scanComplete ? null : t('mark.scanIncomplete'),
         );
+    }
+
+    /** Apply the adapter's proposal to the still-current paragraph only. */
+    private applyParagraphFix(segment: MarkedSegment, fix: Fix): void {
+        const text = this.textarea.value;
+        if (
+            this.tornDown ||
+            this.picker ||
+            !this.scanComplete ||
+            this.nativeTextarea.matches(':disabled') ||
+            this.nativeTextarea.readOnly ||
+            text !== this.lastSegmentedText ||
+            !this.segments.includes(segment) ||
+            !this.proposedFixesBySegment.get(segment)?.includes(fix) ||
+            text.slice(segment.start, segment.end) !== segment.marking ||
+            !fix.rendered.trim() ||
+            /[\r\n]/.test(fix.rendered)
+        )
+            return;
+
+        const marking = this.wrapRendered(fix.rendered).trimEnd();
+        this.setHostValue(
+            text.slice(0, segment.start) + marking + text.slice(segment.end),
+        );
+        this.lastScannedText = '';
+        this.stageMarkReading(
+            segment.start,
+            marking,
+            this.fixedAssertions(fix, segment.assertions),
+            [],
+        );
+        this.focusAt(segment.start + marking.length);
+        void this.settleClosedEditor().then(() => this.revealCaret());
     }
 
     /** Each marking in text order, with the changes recorded for its entry. */

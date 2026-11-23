@@ -1,3 +1,4 @@
+import { openFieldTools } from '../../test-fixtures/marking-tools';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -2441,6 +2442,14 @@ it('retains the first text edit and its caret while availability is loading', as
 });
 
 describe('DecisionFlow: compact layout', () => {
+    function flowFixes(): HTMLButtonElement[] {
+        return [
+            ...(openFieldTools(container)?.querySelectorAll<HTMLButtonElement>(
+                '.ez-validation-errors__fix',
+            ) ?? []),
+        ];
+    }
+
     let container: HTMLDivElement;
     let flow: DecisionFlow;
 
@@ -3482,9 +3491,7 @@ describe('DecisionFlow: compact layout', () => {
             });
             await mountMultiScopeFix(engine);
             await enterFlow(container);
-            const old = container.querySelector<HTMLButtonElement>(
-                '.ez-decision-flow__fixes button',
-            )!;
+            const old = flowFixes()[0]!;
             old.focus();
             flow.applyStoreState({
                 rendered: flow.getRendered(),
@@ -3513,17 +3520,16 @@ describe('DecisionFlow: compact layout', () => {
                     .getAssertions()
                     .some((assertion) => assertion.conceptId === 'LEVEL_A'),
             ).toBe(true);
-            expect(
-                (document.activeElement as HTMLElement).dataset.conceptId,
-            ).toBe('LEVEL_A');
+            expect(document.activeElement).toBe(
+                container.querySelector('.ez-status-mark'),
+            );
             const outside = document.createElement('button');
             document.body.appendChild(outside);
             if (leave) outside.focus();
             release();
             await settle();
-            const fresh = container.querySelector<HTMLButtonElement>(
-                '.ez-decision-flow__fixes button',
-            )!;
+            if (leave) expect(document.activeElement).toBe(outside);
+            const fresh = flowFixes()[0]!;
             expect(fresh).not.toBe(old);
             fresh.click();
             await settle();
@@ -3533,22 +3539,15 @@ describe('DecisionFlow: compact layout', () => {
                     .getAssertions()
                     .some((assertion) => assertion.conceptId === 'LEVEL_B'),
             ).toBe(true);
-            if (leave) expect(document.activeElement).toBe(outside);
-            else
-                expect(
-                    (document.activeElement as HTMLElement).dataset.conceptId,
-                ).toBe('LEVEL_B');
+            // Reopening the tools is the next explicit user action.
+            expect(fresh.isConnected).toBe(false);
         },
     );
 
-    it('withdraws the focused remedy onto the newly selected option when a bound value becomes valid', async () => {
+    it('withdraws a focused remedy and returns to the tools when a bound value becomes valid', async () => {
         await mountMultiScopeFix(multiScopeFixEngine());
         await enterFlow(container);
-        container
-            .querySelector<HTMLButtonElement>(
-                '.ez-decision-flow__fixes button',
-            )!
-            .focus();
+        flowFixes()[0]!.focus();
         flow.applyStoreState({
             rendered: 'T:B',
             assertions: [
@@ -3571,12 +3570,10 @@ describe('DecisionFlow: compact layout', () => {
             },
         });
         await settle();
-        expect((document.activeElement as HTMLElement).dataset.conceptId).toBe(
-            'LEVEL_B',
+        expect(document.activeElement).toBe(
+            container.querySelector('.ez-status-mark'),
         );
-        expect(
-            container.querySelectorAll('.ez-decision-flow__fixes button'),
-        ).toHaveLength(0);
+        expect(flowFixes()).toHaveLength(0);
     });
 
     it.each(['context', 'parts'] as const)(
@@ -3590,9 +3587,7 @@ describe('DecisionFlow: compact layout', () => {
                 resolveParts: () => parts,
             });
             await enterFlow(container);
-            const old = container.querySelector<HTMLButtonElement>(
-                '.ez-decision-flow__fixes button',
-            )!;
+            const old = flowFixes()[0]!;
             const before = flow.getAssertions();
             old.focus();
             if (change === 'context') whole = 'New whole';
@@ -3600,9 +3595,9 @@ describe('DecisionFlow: compact layout', () => {
             old.click();
             expect(flow.getAssertions()).toEqual(before);
             expect(old.isConnected).toBe(false);
-            expect(
-                (document.activeElement as HTMLElement).dataset.conceptId,
-            ).toBe('LEVEL_A');
+            expect(document.activeElement).toBe(
+                container.querySelector('.ez-status-mark'),
+            );
             flow.updateValidationErrors([
                 {
                     constraintId: 'level-rule',
@@ -3610,11 +3605,7 @@ describe('DecisionFlow: compact layout', () => {
                 },
             ]);
             await settle();
-            container
-                .querySelector<HTMLButtonElement>(
-                    '.ez-decision-flow__fixes button',
-                )!
-                .click();
+            flowFixes()[0]!.click();
             await settle();
             expect(
                 flow
@@ -3661,17 +3652,11 @@ describe('DecisionFlow: compact layout', () => {
         flow.setAssertions([...flow.getAssertions(), added]);
         releaseProof();
         await settle();
-        expect(
-            container.querySelectorAll('.ez-decision-flow__fixes button'),
-        ).toHaveLength(0);
+        expect(flowFixes()).toHaveLength(0);
         expect(flow.getAssertions()).toContainEqual(added);
         releaseRead();
         await settle();
-        container
-            .querySelector<HTMLButtonElement>(
-                '.ez-decision-flow__fixes button',
-            )!
-            .click();
+        flowFixes()[0]!.click();
         await settle();
         expect(flow.getAssertions()).toContainEqual(added);
         expect(
@@ -3685,11 +3670,7 @@ describe('DecisionFlow: compact layout', () => {
         const engine = multiScopeFixEngine();
         await mountMultiScopeFix(engine);
         await enterFlow(container);
-        const fixes = [
-            ...container.querySelectorAll<HTMLButtonElement>(
-                '.ez-decision-flow__fixes button',
-            ),
-        ];
+        const fixes = [...flowFixes()];
         expect(fixes.map((button) => button.textContent)).toEqual([
             'Repair the complete marking',
         ]);
@@ -3750,9 +3731,7 @@ describe('DecisionFlow: compact layout', () => {
     it('offers no partial fallback when whole-output proof has no canonical remedies', async () => {
         await mountMultiScopeFix(multiScopeFixEngine(false, true));
         expect(container.textContent).toContain('Level A requires Level B.');
-        expect(
-            container.querySelectorAll('.ez-decision-flow__fixes button'),
-        ).toHaveLength(0);
+        expect(flowFixes()).toHaveLength(0);
         expect(container.textContent).not.toContain('Scope-local proposal');
     });
 
@@ -3790,9 +3769,7 @@ describe('DecisionFlow: compact layout', () => {
         await settle();
         release();
         await settle();
-        expect(
-            container.querySelectorAll('.ez-decision-flow__fixes button'),
-        ).toHaveLength(0);
+        expect(flowFixes()).toHaveLength(0);
         expect(container.textContent).not.toContain(
             'Level A requires Level B.',
         );
@@ -3876,7 +3853,7 @@ describe('DecisionFlow: compact layout', () => {
     }
 
     it.each(['start', 'end'] as const)(
-        'moves Down from the %s navigation arrow to the first remedy without applying it',
+        'keeps Down on the %s navigation arrow until the tools are opened',
         async (side) => {
             await mountFlowWithFixes();
             if (side === 'start') dots()[1].click();
@@ -3895,9 +3872,9 @@ describe('DecisionFlow: compact layout', () => {
             });
             navigation.dispatchEvent(event);
             expect(event.defaultPrevented).toBe(true);
-            expect(document.activeElement).toBe(
-                container.querySelector('.ez-decision-flow__fixes button'),
-            );
+            expect(document.activeElement).toBe(navigation);
+            expect(flowFixes()).toHaveLength(2);
+            expect(document.activeElement).toBe(flowFixes()[0]);
             expect(flow.getAssertions()).toEqual(before);
             expect(title()).toBe(phase);
         },
@@ -3962,7 +3939,7 @@ describe('DecisionFlow: compact layout', () => {
         expect(flow.getAssertions()).toEqual(before);
     });
 
-    it('uses wrapped rows before leaving options for the current dot or engine remedies', async () => {
+    it('uses wrapped option rows and keeps their lower edge inside the field', async () => {
         await mountFlowWithFixes();
         const options = [
             ...container.querySelectorAll<HTMLButtonElement>(
@@ -3997,11 +3974,10 @@ describe('DecisionFlow: compact layout', () => {
         expect(document.activeElement).toBe(options[1]);
         key('ArrowDown');
         key('ArrowDown');
-        expect(document.activeElement).toBe(
-            container.querySelector('.ez-decision-flow__fixes button'),
-        );
+        expect(document.activeElement).toBe(options[2]);
         key('ArrowUp');
-        expect(document.activeElement).toBe(options[1]);
+        expect(document.activeElement).toBe(options[0]);
+        key('ArrowRight');
         key('ArrowRight');
         key('ArrowRight');
         expect(document.activeElement).toBe(
@@ -4072,30 +4048,26 @@ describe('DecisionFlow: compact layout', () => {
         expect(document.activeElement).toBe(option);
     });
 
-    it('shows deduplicated engine remedies and navigates between options, dots and fixes without changing the marking', async () => {
+    it('shows one Quick fixes group, opens on the first remedy, and preserves the value until activation', async () => {
         await mountFlowWithFixes();
-        const fixes = () => [
-            ...container.querySelectorAll<HTMLButtonElement>(
-                '.ez-decision-flow__fixes .ez-validation-errors__fix',
-            ),
-        ];
-        expect(fixes().map((button) => button.textContent)).toEqual([
+        expect(
+            container.querySelector('.ez-validation-errors__fix'),
+        ).toBeNull();
+        const before = flow.getAssertions();
+        const fixes = flowFixes();
+        expect(fixes.map((button) => button.textContent)).toEqual([
             'Replace Partial with Full',
             'Remove Partial',
         ]);
-        const group = container.querySelector<HTMLElement>(
-            '.ez-decision-flow__fixes [role="group"]',
-        )!;
+        const popup = openFieldTools(container)!;
         expect(
-            document.getElementById(group.getAttribute('aria-labelledby')!)
+            popup.querySelector('[role="tab"]')?.getAttribute('aria-label'),
+        ).toBe('Needs attention');
+        expect(
+            popup.querySelector('.ez-validation-errors__fixes-heading')
                 ?.textContent,
-        ).toBe('Ways to fix');
-        expect(
-            container.querySelectorAll(
-                '.ez-decision-flow__fixes .ez-validation-errors__fixes-heading',
-            ),
-        ).toHaveLength(1);
-        const before = flow.getAssertions();
+        ).toBe('Quick fixes');
+        expect(document.activeElement).toBe(fixes[0]);
         const key = (value: string) =>
             document.activeElement!.dispatchEvent(
                 new KeyboardEvent('keydown', {
@@ -4104,38 +4076,12 @@ describe('DecisionFlow: compact layout', () => {
                     cancelable: true,
                 }),
             );
-        key('ArrowUp');
-        expect(document.activeElement).toBe(dots()[0]);
-        key('ArrowRight');
-        expect(document.activeElement).toBe(dots()[1]);
-        (document.activeElement as HTMLElement).click();
         key('ArrowDown');
-        expect((document.activeElement as HTMLElement).dataset.conceptId).toBe(
-            'IMPACT_LOW',
-        );
+        expect(document.activeElement).toBe(fixes[1]);
         key('ArrowUp');
-        key('ArrowLeft');
-        (document.activeElement as HTMLElement).click();
-        key('ArrowDown');
-        expect((document.activeElement as HTMLElement).dataset.conceptId).toBe(
-            'SCOPE_PARTIAL',
-        );
-        key('ArrowDown');
-        expect(document.activeElement).toBe(fixes()[0]);
-        const first = fixes()[0];
-        await settle();
-        expect(document.activeElement).toBe(first);
-        key('ArrowRight');
-        expect(document.activeElement).toBe(fixes()[1]);
-        key('ArrowLeft');
-        expect(document.activeElement).toBe(first);
-        key('ArrowUp');
-        expect((document.activeElement as HTMLElement).dataset.conceptId).toBe(
-            'SCOPE_PARTIAL',
-        );
+        expect(document.activeElement).toBe(fixes[0]);
         expect(flow.getAssertions()).toEqual(before);
-        key('ArrowDown');
-        (document.activeElement as HTMLElement).click();
+        fixes[0].click();
         await settle();
         expect(
             flow
@@ -4147,10 +4093,7 @@ describe('DecisionFlow: compact layout', () => {
         expect((document.activeElement as HTMLElement).dataset.conceptId).toBe(
             'SCOPE_FULL',
         );
-        expect(
-            container.querySelector<HTMLElement>('.ez-decision-flow__fixes')
-                ?.hidden,
-        ).toBe(true);
+        expect(fixes[0].isConnected).toBe(false);
     });
 
     it.each([false, true])(
@@ -4171,9 +4114,7 @@ describe('DecisionFlow: compact layout', () => {
                     ? pending.then(() => result)
                     : result;
             });
-            const fix = container.querySelector<HTMLButtonElement>(
-                '.ez-decision-flow__fixes button',
-            )!;
+            const fix = flowFixes()[0]!;
             fix.focus();
             fix.click();
             const outside = document.createElement('button');
@@ -4198,9 +4139,7 @@ describe('DecisionFlow: compact layout', () => {
 
     it('applies current same-render remedy facts without replacing its focused button', async () => {
         await mountFlowWithFixes();
-        const first = container.querySelector<HTMLButtonElement>(
-            '.ez-decision-flow__fixes button',
-        )!;
+        const first = flowFixes()[0]!;
         first.focus();
         const fix: Fix = {
             message: 'Replace Partial with Full.',
@@ -4228,9 +4167,7 @@ describe('DecisionFlow: compact layout', () => {
                 },
             ],
         );
-        expect(container.querySelector('.ez-decision-flow__fixes button')).toBe(
-            first,
-        );
+        expect(flowFixes()[0]).toBe(first);
         first.click();
         await settle();
         expect(

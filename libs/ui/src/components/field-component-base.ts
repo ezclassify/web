@@ -15,8 +15,10 @@ import {
 import {
     ensureStatusMark,
     setStatusMarkError,
+    setStatusMarkFindings,
     setStatusMarkFixes,
     type StatusMarkOptions,
+    type StatusMarkFinding,
 } from './status-mark';
 
 /** Shared feedback and actions for fields with different marking storage. */
@@ -24,6 +26,7 @@ export abstract class FieldComponentBase {
     protected fieldFavorites: FavoritesPanel | null = null;
     protected ruleErrorList: RuleErrorList | null = null;
     private feedbackStatus: HTMLElement | null = null;
+    private findings: readonly StatusMarkFinding[] = [];
     private inlineReport = false;
     private releaseNativeFieldDefaults: (() => void) | null = null;
 
@@ -43,6 +46,7 @@ export abstract class FieldComponentBase {
             shape: 'chrome',
             tools: true,
         });
+        setStatusMarkFindings(status, this.findings);
         this.fieldFavorites = ensureMarkingFavorites(status, favorites());
         return mark;
     }
@@ -53,6 +57,7 @@ export abstract class FieldComponentBase {
         this.fieldFavorites?.destroy();
         this.fieldFavorites = null;
         this.feedbackStatus = null;
+        this.findings = [];
     }
 
     protected createFieldClear(
@@ -62,6 +67,7 @@ export abstract class FieldComponentBase {
             ...options,
             clear: () => {
                 this.ruleErrorList?.update(NO_RULE_ERRORS, null);
+                this.setFieldFindings([]);
                 if (this.feedbackStatus) {
                     setStatusMarkFixes(this.feedbackStatus, []);
                     setStatusMarkError(this.feedbackStatus, null);
@@ -78,14 +84,50 @@ export abstract class FieldComponentBase {
         focus: (pointerType?: string) => void,
         apply: ((fix: Fix) => void) | null,
     ): void {
+        const hasMessages =
+            report.messages.length > 0 || report.warnings.length > 0;
+        this.setFieldFindings(
+            hasMessages || (apply && report.fixes.length)
+                ? [
+                      {
+                          report,
+                          apply: apply
+                              ? (fix, pointerType) => {
+                                    apply(fix);
+                                    focus(pointerType);
+                                }
+                              : undefined,
+                      },
+                  ]
+                : [],
+        );
+        this.showInlineReport(owner, report, place);
+    }
+
+    protected showInlineReport(
+        owner: Document,
+        report: RuleErrorReport,
+        place: (element: HTMLElement) => void,
+    ): void {
         if (!report.messages.length && !report.warnings.length) {
             this.ruleErrorList?.update(NO_RULE_ERRORS, null);
             return;
         }
-        this.ruleErrorList ??= new RuleErrorList(owner, focus);
+        if (!this.ruleErrorList) {
+            this.ruleErrorList = new RuleErrorList(owner);
+            this.ruleErrorList.element.classList.add(
+                'ez-validation-errors--inline',
+            );
+        }
         this.ruleErrorList.setSuppressed(this.inlineReport);
         place(this.ruleErrorList.element);
-        this.ruleErrorList.update(report, apply);
+        this.ruleErrorList.update({ ...report, fixes: [] }, null);
+    }
+
+    protected setFieldFindings(findings: readonly StatusMarkFinding[]): void {
+        this.findings = findings;
+        if (this.feedbackStatus)
+            setStatusMarkFindings(this.feedbackStatus, findings);
     }
 
     protected suppressFieldReport(inField: boolean): void {
@@ -96,6 +138,7 @@ export abstract class FieldComponentBase {
     protected removeRuleErrors(): void {
         this.ruleErrorList?.remove();
         this.ruleErrorList = null;
+        this.setFieldFindings([]);
     }
 
     /** Translate the Runtime's proposed edit once, preserving retained values. */

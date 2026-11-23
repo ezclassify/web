@@ -175,7 +175,8 @@ async function chromeOverlaps(page: Page): Promise<string[]> {
 
 /**
  * Status marks whose color does not say what the field has: muted while it has
- * nothing to say, the field's own text color once it has a message.
+ * nothing to say, red for unresolved errors, and the field's text color for
+ * changes the engine already made.
  *
  * @param page - The page under test.
  * @returns One entry per mismatched mark.
@@ -186,13 +187,16 @@ async function markToneMismatches(page: Page): Promise<string[]> {
         .evaluateAll((marks) =>
             marks.flatMap((mark) => {
                 const quiet = mark.classList.contains('ez-status-mark--quiet');
+                const error = mark.classList.contains('ez-status-mark--error');
                 const color = getComputedStyle(mark).color;
-                const expected = quiet
-                    ? 'rgb(156, 163, 175)'
-                    : getComputedStyle(mark.parentElement!).color;
+                const expected = error
+                    ? 'rgb(185, 28, 28)'
+                    : quiet
+                      ? 'rgb(156, 163, 175)'
+                      : getComputedStyle(mark.parentElement!).color;
                 return color === expected
                     ? []
-                    : [`${quiet ? 'quiet' : 'message'} mark is ${color}`];
+                    : [`mark is ${color}, expected ${expected}`];
             }),
         );
 }

@@ -6,6 +6,43 @@
     flex: 1 1 auto;
     width: min(20em, calc(100vw - 3em));
 }
+.ez-marking-tools:has([data-tools-tab='attention']) {
+    width: min(26em, calc(100vw - 3em));
+}
+.ez-marking-tools [data-tools-panel='attention'] .ez-validation-errors {
+    margin: 0;
+    font-size: inherit;
+}
+.ez-marking-tools
+    [data-tools-panel='attention']
+    .ez-validation-errors__item
+    + .ez-validation-errors__item {
+    margin-block-start: 0.375em;
+}
+.ez-marking-tools [data-tools-panel='attention'] .ez-validation-errors__fixes {
+    display: block;
+    margin-block-start: 0.625em;
+    padding-block-start: 0.625em;
+    border-block-start: 1px solid var(--ez-color-border, #d1d5db);
+}
+.ez-marking-tools
+    [data-tools-panel='attention']
+    .ez-validation-errors__fixes-heading {
+    margin-block-end: 0.25em;
+    font-size: calc(1em * 0.6875 / 0.85);
+    color: var(--ez-tooltip-rule-color, var(--ez-color-muted, #555));
+}
+.ez-marking-tools
+    [data-tools-panel='attention']
+    button.ez-validation-errors__fix {
+    display: block;
+    background: transparent;
+    border-radius: 0;
+    color: var(--ez-tooltip-body-color, var(--ez-color-text, #333));
+    font-weight: 500;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
 .ez-marking-tools__header {
     flex: none;
     display: flex;
@@ -52,6 +89,30 @@
     border-bottom-color: var(--ez-color-primary, #fdb827);
     font-weight: 600;
 }
+.ez-marking-tools:has(
+        [data-tools-panel='attention']
+            :is(
+                .ez-validation-errors__item:not(
+                    .ez-validation-errors__item--warning
+                ),
+                .ez-status-list__error
+            )
+    )
+    [data-tools-tab='attention'] {
+    color: var(--ez-color-error, #b91c1c);
+}
+.ez-marking-tools:has(
+        [data-tools-panel='attention']
+            :is(
+                .ez-validation-errors__item:not(
+                    .ez-validation-errors__item--warning
+                ),
+                .ez-status-list__error
+            )
+    )
+    [data-tools-tab='attention'][aria-selected='true'] {
+    border-bottom-color: currentColor;
+}
 .ez-marking-tools__count {
     font-size: calc(1em * 0.6875 / 0.85);
     font-weight: 500;
@@ -80,7 +141,7 @@
 .ez-marking-tools__close:focus-visible,
 .ez-marking-tools__section:focus-visible {
     outline: 2px solid var(--ez-color-primary, #fdb827);
-    outline-offset: 2px;
+    outline-offset: -2px;
 }
 @media (pointer: coarse) {
     .ez-marking-tools__tab {
@@ -212,7 +273,8 @@
     line-height: 1;
     font-variant-numeric: tabular-nums;
 }
-.ez-status-mark--unseen {
+.ez-status-mark--unseen,
+.ez-status-mark--error {
     width: auto;
     min-width: 1.5rem;
 }

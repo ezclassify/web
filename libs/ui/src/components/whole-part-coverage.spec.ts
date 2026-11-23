@@ -1,3 +1,4 @@
+import { openFieldTools } from '../../test-fixtures/marking-tools';
 /**
  * A field bound to a whole judges it against the parts that name it.
  *
@@ -186,9 +187,11 @@ describe('a whole field owns its coverage finding', () => {
     const wholeWrap = () => document.getElementById('whole-wrap')!;
     const fixButton = (name: string) =>
         [
-            ...wholeWrap().parentElement!.querySelectorAll<HTMLButtonElement>(
-                '.ez-validation-errors:not([hidden]) button',
-            ),
+            ...(openFieldTools(
+                wholeWrap(),
+            )?.querySelectorAll<HTMLButtonElement>(
+                '.ez-validation-errors__fix',
+            ) ?? []),
         ].find((b) => b.textContent === name);
 
     it('offers the level the parts need, with no rollup notice or action beside it, and the fix applies', async () => {

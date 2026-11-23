@@ -45,7 +45,7 @@
    field alone. MarkedInput's footer row works the same way. */
 .marking-field-wrap > .ez-field-chrome,
 .marked-input-wrap > .ez-field-chrome {
-    grid-area: 1 / 1 / 2 / -1;
+    grid-area: 1 / 1 / 2 / 2;
 }
 
 /* The reserve. !important because the layers carry the host's own padding

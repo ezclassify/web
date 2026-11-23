@@ -35,22 +35,38 @@ export function bindMarkingToolsShortcut(root: HTMLElement): void {
             event.preventDefault();
             event.stopPropagation();
             if (mark.getAttribute('aria-expanded') !== 'true') mark.click();
-            const popupId = mark.getAttribute('aria-describedby');
-            if (popupId)
-                document
-                    .getElementById(popupId)
-                    ?.querySelector<HTMLElement>(
-                        '[role="tab"][aria-selected="true"]',
-                    )
-                    ?.focus();
+            focusMarkingTools(mark);
         },
         true,
     );
 }
 
+/** Focus the enabled remedy for an unresolved error, or the selected tab. */
+export function focusMarkingTools(mark: HTMLElement): void {
+    const doc = mark.ownerDocument;
+    const popup = doc.getElementById(
+        mark.getAttribute('aria-describedby') ?? '',
+    );
+    const tab = popup?.querySelector<HTMLElement>(
+        '[role="tab"][aria-selected="true"]',
+    );
+    const panel = doc.getElementById(tab?.getAttribute('aria-controls') ?? '');
+    const hasError = panel?.querySelector(
+        '.ez-validation-errors__item:not(.ez-validation-errors__item--warning)',
+    );
+    const fix = hasError
+        ? panel?.querySelector<HTMLElement>(
+              '.ez-validation-errors__fix:not(:disabled)',
+          )
+        : null;
+    (fix ?? tab)?.focus({ preventScroll: true });
+}
+
 /** Content supplied by a field to its branding popover. */
 export interface MarkingToolsContent {
-    /** Current error, applied changes, and available undo. */
+    /** Unresolved errors, warnings, and available remedies. */
+    attention?: HTMLElement;
+    /** Applied changes and available undo. */
     corrections: HTMLElement;
     /** Host favorites and scheme presets, when either is available. */
     favorites?: HTMLElement;
@@ -76,24 +92,26 @@ export function updateMarkingToolsCounts(
     tools: HTMLElement,
     favoritesCount: number,
 ): void {
-    const counts = [
-        tools.querySelectorAll('.ez-status-list__change').length,
-        favoritesCount,
-    ];
-    tools
-        .querySelectorAll<HTMLElement>('[role="tab"]')
-        .forEach((tab, index) => {
-            const count = counts[index];
-            const badge = tab.querySelector('.ez-marking-tools__count');
-            if (badge) badge.textContent = String(count);
-            tab.setAttribute(
-                'aria-description',
-                t(count === 1 ? 'tools.entryOne' : 'tools.entryMany').replace(
-                    '{count}',
-                    String(count),
-                ),
-            );
-        });
+    tools.querySelectorAll<HTMLElement>('[role="tab"]').forEach((tab) => {
+        const panel = tools.querySelector(
+            `[data-tools-panel="${tab.dataset.toolsTab}"]`,
+        );
+        const count =
+            tab.dataset.toolsTab === 'favorites'
+                ? favoritesCount
+                : (panel?.querySelectorAll(
+                      '.ez-status-list__change, .ez-status-list__error, .ez-validation-errors__item',
+                  ).length ?? 0);
+        const badge = tab.querySelector('.ez-marking-tools__count');
+        if (badge) badge.textContent = String(count);
+        tab.setAttribute(
+            'aria-description',
+            t(count === 1 ? 'tools.entryOne' : 'tools.entryMany').replace(
+                '{count}',
+                String(count),
+            ),
+        );
+    });
 }
 
 /** Build the popover's tabs, close button, and keyboard-navigable sections. */
@@ -119,15 +137,37 @@ export function buildMarkingTools(content: MarkingToolsContent): HTMLElement {
     tools.appendChild(header);
 
     const sections = [
-        { label: t('tools.corrections'), element: content.corrections },
+        ...(content.attention
+            ? [
+                  {
+                      kind: 'attention',
+                      label: t('tools.findings'),
+                      element: content.attention,
+                  },
+              ]
+            : []),
+        {
+            kind: 'corrections',
+            label: t('tools.corrections'),
+            element: content.corrections,
+        },
         ...(content.favorites
-            ? [{ label: t('aria.favorites'), element: content.favorites }]
+            ? [
+                  {
+                      kind: 'favorites',
+                      label: t('aria.favorites'),
+                      element: content.favorites,
+                  },
+              ]
             : []),
     ];
     const tabs: HTMLButtonElement[] = [];
     const panels: HTMLElement[] = [];
     const id = 'ez-tools-' + Math.random().toString(36).slice(2, 10);
-    let selected = content.showCorrections || !content.favorites ? 0 : 1;
+    let selected =
+        content.attention || content.showCorrections || !content.favorites
+            ? 0
+            : sections.length - 1;
     const actions = (panel: HTMLElement) =>
         [
             ...panel.querySelectorAll<HTMLButtonElement | HTMLInputElement>(
@@ -154,15 +194,17 @@ export function buildMarkingTools(content: MarkingToolsContent): HTMLElement {
         panels.forEach((panel, i) => {
             panel.hidden = i !== index;
         });
-        if (index === 0 && tools.isConnected) content.onCorrectionsViewed();
+        if (sections[index].kind === 'corrections' && tools.isConnected)
+            content.onCorrectionsViewed();
         if (tools.isConnected) content.onResize();
     };
-    sections.forEach(({ label, element }, index) => {
+    sections.forEach(({ kind, label, element }, index) => {
         const tab = document.createElement('button');
         tab.type = 'button';
         tab.className = 'ez-marking-tools__tab';
         tab.id = `${id}-tab-${index}`;
         tab.setAttribute('role', 'tab');
+        tab.dataset.toolsTab = kind;
         tab.setAttribute('aria-label', label);
         tab.setAttribute('aria-controls', `${id}-panel-${index}`);
         tab.textContent = label;
@@ -174,6 +216,7 @@ export function buildMarkingTools(content: MarkingToolsContent): HTMLElement {
         panel.className = 'ez-marking-tools__section';
         panel.id = `${id}-panel-${index}`;
         panel.setAttribute('role', 'tabpanel');
+        panel.dataset.toolsPanel = kind;
         panel.setAttribute('aria-labelledby', tab.id);
         panel.tabIndex = -1;
         panel.appendChild(element);
@@ -226,7 +269,7 @@ export function buildMarkingTools(content: MarkingToolsContent): HTMLElement {
                     current + (event.key === 'ArrowDown' ? 1 : -1),
                 );
                 rows[next]?.focus();
-                rows[next]?.scrollIntoView({ block: 'nearest' });
+                rows[next]?.scrollIntoView?.({ block: 'nearest' });
             }
         });
     });

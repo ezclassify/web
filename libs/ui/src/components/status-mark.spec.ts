@@ -18,6 +18,7 @@ import {
     explainedChanges,
     schemeChangeWords,
     setStatusMarkError,
+    setStatusMarkFindings,
     setStatusMarkDraft,
     setStatusMarkFixes,
 } from './status-mark';
@@ -350,6 +351,71 @@ describe('the mark glyph and the plain input it sits on', () => {
     });
 });
 
+describe('field tools findings', () => {
+    it('opens Needs attention at the first fix and keeps errors counted after Auto-fixes are viewed', () => {
+        const root = document.createElement('div');
+        document.body.appendChild(root);
+        const mark = ensureStatusMark(root, {
+            root,
+            shape: 'chrome',
+            tools: true,
+        });
+        const badge = mark.querySelector('.ez-status-mark__count');
+        setStatusMarkFixes(root, [makeFix('r1')]);
+        setStatusMarkFindings(root, [
+            {
+                report: {
+                    messages: ['First error.', 'Second error.'],
+                    warnings: [],
+                    fixes: [
+                        {
+                            label: 'Resolve both',
+                            fix: {
+                                rendered: 'X',
+                                message: 'Resolve both.',
+                                adds: [],
+                                removes: [],
+                                keeps: [],
+                            },
+                        },
+                    ],
+                },
+                apply: () => setStatusMarkFindings(root, []),
+            },
+        ]);
+        expect(mark.classList).toContain('ez-status-mark--error');
+        expect(badge?.textContent).toBe('3');
+        mark.click();
+        const popup = document.getElementById(
+            mark.getAttribute('aria-describedby')!,
+        )!;
+        const attention = popup.querySelector<HTMLButtonElement>(
+            '[data-tools-tab="attention"]',
+        )!;
+        const corrections = popup.querySelector<HTMLButtonElement>(
+            '[data-tools-tab="corrections"]',
+        )!;
+        expect(popup.querySelector('[role="tab"]')).toBe(attention);
+        expect(attention.getAttribute('aria-selected')).toBe('true');
+        expect(document.activeElement).toBe(
+            popup.querySelector('.ez-validation-errors__fix'),
+        );
+        expect(badge?.textContent).toBe('3');
+        corrections.click();
+        expect(badge?.textContent).toBe('2');
+        expect(mark.classList).toContain('ez-status-mark--error');
+        attention.click();
+        expect(badge?.textContent).toBe('2');
+        popup
+            .querySelector<HTMLButtonElement>('.ez-validation-errors__fix')!
+            .click();
+        expect(badge?.textContent).toBe('');
+        expect(mark.classList).not.toContain('ez-status-mark--error');
+        cleanupTooltipForRoot(root);
+        root.remove();
+    });
+});
+
 describe('the unseen count', () => {
     const here = dirname(fileURLToPath(import.meta.url));
     it('stands on the leading side of the icon, so the icon keeps its place when it goes', () => {
@@ -659,7 +725,7 @@ describe('the error state', () => {
         expect(mark.classList.contains('ez-status-mark--unseen')).toBe(false);
         expect(mark.tabIndex).toBe(0);
         expect(mark.getAttribute('aria-label')).toBe(
-            `Enhanced by EzClassify. ${ERROR} 1 change made by a marking rule.`,
+            `Enhanced by EzClassify. ${ERROR} 1 change made by a marking rule, not yet reviewed.`,
         );
 
         setStatusMarkError(wrap, null);

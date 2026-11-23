@@ -78,3 +78,40 @@
         min-height: 2.75rem;
     }
 }
+
+/* Inline summaries share a line when there is space. Full popup reports keep
+   separate rows for each finding. */
+.ez-validation-errors--inline .ez-validation-errors__item,
+.ez-validation-errors--inline .ez-validation-errors__message {
+    display: inline;
+}
+.ez-validation-errors--inline
+    .ez-validation-errors__item
+    + .ez-validation-errors__item::before {
+    content: ' · ';
+    white-space: pre;
+}
+
+/* In marked text, leave the shortcut at the start except when an error shares
+   its footer. The messages wrap before moving the action to another line. */
+.ez-marked-field-footer:has(> .ez-validation-errors:not([hidden])) {
+    flex-wrap: wrap;
+    align-items: flex-start;
+}
+.ez-marked-field-footer > .ez-validation-errors {
+    margin: 0;
+}
+.ez-marked-field-footer > .ez-validation-errors:not([data-has-errors]) {
+    order: 1;
+}
+.ez-marked-field-footer > .ez-validation-errors[data-has-errors] {
+    flex: 1 1 14em;
+    inline-size: auto;
+    min-inline-size: 0;
+}
+.ez-marked-field-footer:has(
+        > .ez-validation-errors[data-has-errors]:not([hidden])
+    )
+    > button {
+    margin-inline-start: auto;
+}

@@ -819,6 +819,12 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
                 }
                 return;
             }
+            if (
+                (getMountHost(this.container) ?? this.enhancedInput)?.matches(
+                    ':disabled, [readonly]',
+                )
+            )
+                return;
             this.beginUserEdit();
             this.reprocessEdit(this.fixedAssertions(fix, this.assertions));
         };

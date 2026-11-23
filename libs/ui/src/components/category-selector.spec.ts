@@ -1,3 +1,4 @@
+import { openFieldTools } from '../../test-fixtures/marking-tools';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
     CategorySelector,
@@ -705,9 +706,11 @@ describe('CategorySelector', () => {
             });
             try {
                 const actions = () => [
-                    ...container.querySelectorAll<HTMLButtonElement>(
+                    ...(openFieldTools(
+                        container,
+                    )?.querySelectorAll<HTMLButtonElement>(
                         '.ez-validation-errors__fix',
-                    ),
+                    ) ?? []),
                 ];
                 await vi.waitFor(() =>
                     expect(
@@ -1246,9 +1249,11 @@ describe('CategorySelector', () => {
         );
         expect(errors()?.textContent).not.toContain('An unrelated category');
         expect(
-            [...errors()!.querySelectorAll('button')].map(
-                (button) => button.textContent,
-            ),
+            [
+                ...(openFieldTools(container)?.querySelectorAll(
+                    '.ez-validation-errors__fix',
+                ) ?? []),
+            ].map((button) => button.textContent),
         ).toEqual(['Remove Option Y']);
         selector.refreshFacetRefusal();
         expect(errors()?.textContent).toContain(
@@ -1263,7 +1268,9 @@ describe('CategorySelector', () => {
             'These options cannot be combined.',
         );
         refused = false;
-        errors()!.querySelector<HTMLButtonElement>('button')!.click();
+        openFieldTools(container)!
+            .querySelector<HTMLButtonElement>('.ez-validation-errors__fix')!
+            .click();
         await vi.waitFor(() =>
             expect(
                 selector

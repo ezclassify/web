@@ -1,3 +1,4 @@
+import { openFieldTools } from '../../test-fixtures/marking-tools';
 /**
  * A field holds the marking the engine settled on, and the errors and ways to
  * fix it shows are the engine's judgment of that marking.
@@ -142,9 +143,9 @@ async function mount(markup: string): Promise<void> {
 
 function fixButton(label: string): HTMLButtonElement {
     const button = Array.from(
-        root.querySelectorAll<HTMLButtonElement>(
+        openFieldTools(root)?.querySelectorAll<HTMLButtonElement>(
             '.ez-validation-errors button.ez-validation-errors__fix',
-        ),
+        ) ?? [],
     ).find((b) => b.textContent === label);
     expect(button, label).toBeDefined();
     return button!;
@@ -179,9 +180,9 @@ function errorsHidden(): boolean {
 
 function fixLabels(scope: ParentNode = root): string[] {
     return [
-        ...scope.querySelectorAll<HTMLButtonElement>(
+        ...(openFieldTools(scope)?.querySelectorAll<HTMLButtonElement>(
             '.ez-validation-errors button.ez-validation-errors__fix',
-        ),
+        ) ?? []),
     ].map((button) => button.textContent ?? '');
 }
 

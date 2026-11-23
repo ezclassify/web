@@ -725,17 +725,21 @@ async function mountRuled(markup: string, publish?: [string, string]) {
     return { form, ui };
 }
 
-/** Read the field's Corrections tab through its branding button. */
+/** Read the field's Auto-fixes tab through its branding button. */
 async function markLines(field: Element): Promise<string[]> {
     const mark = field.querySelector<HTMLElement>('.ez-status-mark')!;
     mark.click();
     await new Promise((r) => setTimeout(r, 400));
     const tipId = mark.getAttribute('aria-describedby');
     const tip = tipId ? document.getElementById(tipId) : null;
+    tip?.querySelector<HTMLButtonElement>(
+        '[data-tools-tab="corrections"]',
+    )?.click();
+    const panel = tip?.querySelector('[data-tools-panel="corrections"]');
     const lines =
-        tip && !tip.hidden
+        panel && !tip?.hidden
             ? [
-                  ...tip.querySelectorAll(
+                  ...panel.querySelectorAll(
                       '.ez-tooltip__header, .ez-status-list__text',
                   ),
               ].map((line) => line.textContent ?? '')
@@ -761,7 +765,10 @@ describe('a loaded marking takes what the engine fixed and says so', () => {
         expect(errorsOf(form)).toEqual(['TAG-G requires LEVEL B.']);
         expect(form.checkValidity()).toBe(false);
         const mark = form.querySelector('.ez-status-mark')!;
-        expect(mark.classList.contains('ez-status-mark--unseen')).toBe(true);
+        expect(mark.classList.contains('ez-status-mark--error')).toBe(true);
+        expect(mark.querySelector('.ez-status-mark__count')?.textContent).toBe(
+            '2',
+        );
         expect(await markLines(form)).toEqual([
             '1 change made by a marking rule',
             // The value as the field writes it, not the concept's name.

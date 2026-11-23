@@ -456,7 +456,7 @@ describe('RuleErrorList', () => {
         list.element.querySelector<HTMLButtonElement>('button')!.click();
 
         expect(onApply).toHaveBeenCalledTimes(1);
-        expect(onApply).toHaveBeenCalledWith(whole);
+        expect(onApply).toHaveBeenCalledWith(whole, 'keyboard');
         expect(
             fixAssertions(onApply.mock.calls[0][0], []).map((a) => a.conceptId),
         ).toEqual(['A']);
@@ -475,7 +475,7 @@ describe('RuleErrorList', () => {
             .click();
 
         expect(onApply).toHaveBeenCalledTimes(1);
-        expect(onApply).toHaveBeenCalledWith(errors.fixes[1].fix);
+        expect(onApply).toHaveBeenCalledWith(errors.fixes[1].fix, 'keyboard');
     });
 
     it('keeps the same nodes when the report has not changed, so it is not announced again', () => {
@@ -512,7 +512,7 @@ describe('RuleErrorList', () => {
             onApply,
         );
         list.element.querySelector<HTMLButtonElement>('button')!.click();
-        expect(onApply).toHaveBeenCalledWith(after);
+        expect(onApply).toHaveBeenCalledWith(after, 'keyboard');
     });
 
     it('never takes focus on a pointer press, and returns it to the field after any press', () => {
@@ -607,7 +607,7 @@ describe('RuleErrorList', () => {
         );
         button.click();
         expect(previous).not.toHaveBeenCalled();
-        expect(apply).toHaveBeenCalledWith(current);
+        expect(apply).toHaveBeenCalledWith(current, 'keyboard');
     });
 
     it('shows the message alone when the owner cannot apply fixes', () => {
@@ -667,19 +667,26 @@ describe('placeUnderField', () => {
         expect(wrap.querySelectorAll(':scope > div')).toHaveLength(3);
     });
 
-    it('goes before a marked field hint row', () => {
-        document.body.innerHTML = `
-            <div class="marked-input-wrap">
-                <div class="marked-input-display"></div>
-                <textarea id="host"></textarea>
-                <div class="marked-input-footer"><button>star</button></div>
-            </div>`;
-        const el = document.createElement('div');
-        placeUnderField(el, document.getElementById('host')!, document.body);
-        expect(el.nextElementSibling?.classList).toContain(
-            'marked-input-footer',
-        );
-    });
+    it.each(['marked-input', 'marked-textarea'])(
+        'shares the %s keyboard hint footer',
+        (control) => {
+            document.body.innerHTML = `
+                <div class="${control}-wrap">
+                    <div class="${control}-display"></div>
+                    <textarea id="host"></textarea>
+                    <div class="ez-marked-field-footer ${control}-footer"><button>Set marking</button></div>
+                    <div class="ez-field-chrome"><button>Tools</button></div>
+                </div>`;
+            const el = document.createElement('div');
+            placeUnderField(
+                el,
+                document.getElementById('host')!,
+                document.body,
+            );
+            expect(el.parentElement?.classList).toContain(`${control}-footer`);
+            expect(el.nextElementSibling?.textContent).toBe('Set marking');
+        },
+    );
 
     it('falls back to the mount when the field has no wrapper of its own', () => {
         document.body.innerHTML = `

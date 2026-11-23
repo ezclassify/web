@@ -244,7 +244,7 @@ The markup and the rest of `main.ts` stay as they are.
 ## Favorites
 
 Editable marking controls put Favorites in the EzClassify branding button's
-popover, beside Corrections. Enhanced native marking inputs and a
+popover, beside Auto-fixes. Enhanced native marking inputs and a
 GuideChecklist bound to a marking use the same tools. The checklist's computed
 result still belongs to its selected guide rules. The Favorites tab appears when the host supplies
 `favorites.load` or the scheme declares a preset for the field's scope. Without
@@ -303,13 +303,14 @@ The optional `clear(context)` hook clears that list without changing presets.
 
 Click the branding button or press Ctrl+Shift+Enter (Cmd+Shift+Enter on Mac)
 while editing a control to open its tools. Hover shows the shortcut hint.
-Opening tools focuses the selected tab and hides editing suggestions. Returning
-to the editor closes tools.
+Opening tools focuses the first available Quick fix for an error, or the
+selected tab when there is no fix to focus. Returning to the editor closes
+tools.
 With the popover open, Left/Right switches tabs from content controls. In the
 header, the arrows cycle through the available tabs and Close. Down from the
 selected tab enters its section; Up closes tools and returns to the branding
 button. Each tab shows its current entry count.
-On a saved marking, Right moves to its Remove button and Left enters Corrections'
+On a saved marking, Right moves to its Remove button and Left enters Auto-fixes'
 first action. Left on Remove returns to the marking. Up/Down moves through its actions, including Save, saved markings,
 and presets. Enter or Space activates a focused action. Delete removes a
 focused saved Favorite when the host provides `remove`. The adjacent Remove
@@ -653,17 +654,18 @@ The field's normal Tab, Enter and Escape behavior is unchanged.
 
 ## Rule errors
 
-A form field (`marking`, `tags`, `marked-input` and the other editable
-controllers) lists each rule its value breaks directly under the field, starting
-at the field's left edge. Under the errors, "Ways to fix" lists the fixes the
-engine proposed in `ProcessResult.proposedFixes` as buttons. Each fix is one
-whole valid marking: the concepts of the author's marking it keeps, the ones it
-adds, the ones it removes, the marking that results, and a message that says
-what it does. The button reads that message without its closing period, such
-as "Replace LOW with HIGH" or "Remove HOLD". Two fixes that end in the same
-marking are listed once. Pressing one makes what the fix keeps and adds the
-field's value in one write, the same way picking from its list does. The
-engine words the message; the heading comes from the `fix.heading` locale key.
+Editable controls summarize rule errors below the field and show them in the
+branding button's **Needs attention** tab. The button turns red when there are
+unresolved errors. **Quick fixes** in that tab lists any alternatives the
+engine proposed in `ProcessResult.proposedFixes`. Each names the marking it
+would write and the concepts it would keep, add, or remove. The action uses
+the engine's own message, and alternatives with the same rendered marking
+appear once. Activating a fix submits its marking to the engine for judgment.
+
+**Auto-fixes** lists changes the engine already applied. The branding button
+counts unresolved errors plus unseen automatic changes. Viewing Auto-fixes
+acknowledges those changes. Unresolved errors stay in the count until the
+marking passes the rule that raised them.
 
 A whole with parts, the fields inside its `data-ezclassify-whole` container or
 naming it with `data-ezclassify-part-of`, is judged against those parts. The

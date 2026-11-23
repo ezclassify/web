@@ -1,3 +1,4 @@
+import { openFieldTools } from '../../test-fixtures/marking-tools';
 /**
  * What a marking rule changed, as the author sees it: a value a rule added is
  * drawn in the family's inferred style after the author reviews it, an option
@@ -340,9 +341,9 @@ it('keeps a rule-added value inferred when MarkedInput applies a proposed fix', 
         schemeOnlyContext({ ...adapter, getScheme: () => scheme, process }),
     );
 
-    const fixButton = [...container.querySelectorAll('button')].find(
-        (button) => button.textContent === fix.message,
-    );
+    const fixButton = [
+        ...openFieldTools(container)!.querySelectorAll('button'),
+    ].find((button) => button.textContent === fix.message);
     expect(fixButton).toBeDefined();
     fixButton?.click();
 

@@ -310,6 +310,8 @@ export interface TooltipPlacement {
     readonly preferNearTarget?: boolean;
     /** A dialog in a mobile sheet follows the viewport as its keyboard moves. */
     readonly followViewport?: boolean;
+    /** A pointer activation may arrive in the frame that revealed its trigger. */
+    readonly pointerOpening?: boolean;
 }
 
 /** A rectangle in viewport coordinates. */
@@ -696,6 +698,15 @@ export function showTooltip(
         const fieldAtOpen = tip.classList.contains('ez-tooltip--tools')
             ? clearBox(placement?.clearOf)
             : null;
+        const openingFocus = target.ownerDocument.activeElement;
+        if (
+            placement?.pointerOpening &&
+            fieldAtOpen &&
+            openingFocus instanceof HTMLElement &&
+            !dialogFocusScroll.has(target)
+        ) {
+            observeDialogFocusScroll(target, openingFocus, fieldAtOpen.anchor);
+        }
         const pendingFocus = dialogFocusScroll.get(target);
         const focusScroll =
             tip.classList.contains('ez-tooltip--tools') &&

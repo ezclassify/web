@@ -565,7 +565,7 @@ export abstract class MarkedFieldBase<
      */
     protected appendFooter(): void {
         const footer = document.createElement('div');
-        footer.className = this.classNames.footer;
+        footer.className = `ez-marked-field-footer ${this.classNames.footer}`;
 
         // One direct action and Tab stop: its desktop keycap documents the
         // shortcut; coarse pointers keep the same plain action button.

@@ -1,4 +1,5 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { openFieldTools } from '../../test-fixtures/marking-tools';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { schemeOnlyContext } from '../../test-fixtures/context-doubles';
 import { MarkedTextArea } from './marked-text-area';
 import { mockRenderFormats } from '../render-format-layout-mock';
@@ -343,12 +344,12 @@ describe('MarkedTextArea repair rendering', () => {
         await wait();
 
         // Loading is validation-only: keep the source value, mark it invalid,
-        // and leave the enhancement indicator quiet.
+        // and show the unresolved finding.
         expect(textarea.value).toBe('(TSX) Some text.');
         expect(mta.getSegments()[0]?.valid).toBe(false);
         let marks = container.querySelectorAll('.ez-status-mark');
         expect(marks).toHaveLength(1);
-        expect(marks[0].classList.contains('ez-status-mark--quiet')).toBe(true);
+        expect(marks[0].classList.contains('ez-status-mark--error')).toBe(true);
 
         // Once the user edits this marking, the safe repair may commit.
         textarea.value = '(TSX ) Some text.';
@@ -450,6 +451,7 @@ describe('MarkedTextArea repair rendering', () => {
                 source: 'parse',
             },
         ];
+        let sourceNeedsRepair = true;
         const engine = createMockEngine({
             process: (input: string, opts?: any) => ({
                 assertions: opts?.assertions ?? assertions,
@@ -458,18 +460,23 @@ describe('MarkedTextArea repair rendering', () => {
                 inputWasValid: input !== 'TSX',
                 errors: [],
                 warnings: [],
-                appliedFixes: input === 'TSX' || opts?.assertions ? [fix] : [],
+                appliedFixes:
+                    input === 'TSX' || (sourceNeedsRepair && opts?.assertions)
+                        ? [fix]
+                        : [],
                 proposedFixes: [],
                 notices: [],
                 assessment: NO_LOSS,
             }),
             scan: (text: string) => {
                 const repairNeeded = text.startsWith('(TSX)');
+                sourceNeedsRepair = repairNeeded;
                 return scanned([
                     {
                         start: 0,
                         end: repairNeeded ? 5 : 4,
                         marking: repairNeeded ? '(TSX)' : '(TS)',
+                        inner: repairNeeded ? 'TSX' : 'TS',
                         wrapped: true,
                         result: {
                             assertions,
@@ -505,11 +512,104 @@ describe('MarkedTextArea repair rendering', () => {
         await wait();
 
         expect(textarea.value).toBe('(TS) Some text.');
+        expect(mta.getSegments().flatMap((segment) => segment.errors)).toEqual(
+            [],
+        );
         expect(
             container
                 .querySelector('.ez-status-mark')
                 ?.classList.contains('ez-status-mark--unseen'),
         ).toBe(true);
+    });
+
+    it('preserves paragraph fixes across prose edits and withdraws them for a changed whole', async () => {
+        const assertions = [
+            {
+                conceptId: 'S',
+                categoryId: 'level',
+                confidence: 'certain',
+                source: 'parse',
+            },
+        ];
+        const finding = {
+            constraintId: 'whole-review',
+            message: 'Update this mark.',
+        };
+        const invalid = {
+            assertions,
+            rendered: 'S',
+            valid: false,
+            recognition: { status: 'complete', unmatched: [] },
+            errors: [finding],
+            warnings: [],
+            appliedFixes: [],
+            proposedFixes: [
+                {
+                    message: 'Replace S with TS.',
+                    rendered: 'TS',
+                    keeps: [],
+                    removes: [{ categoryId: 'level', conceptId: 'S' }],
+                    adds: [{ categoryId: 'level', conceptId: 'TS' }],
+                },
+            ],
+            notices: [],
+            assessment: NO_LOSS,
+        };
+        let finishRead: ((result: typeof invalid) => void) | undefined;
+        let pending = false;
+        const engine = createMockEngine({
+            scan: vi.fn(() =>
+                scanned([
+                    {
+                        start: 0,
+                        end: 3,
+                        marking: '(S)',
+                        inner: 'S',
+                        wrapped: true,
+                        result: { ...invalid, valid: true, errors: [] },
+                    },
+                ]),
+            ),
+            process: () =>
+                pending
+                    ? new Promise<typeof invalid>((resolve) => {
+                          finishRead = resolve;
+                      })
+                    : invalid,
+        });
+        const textarea = document.createElement('textarea');
+        textarea.value = '(S) Keep this paragraph.';
+        container.appendChild(textarea);
+        const field = new MarkedTextArea();
+        try {
+            await field.init(container, toCtx(engine), {
+                resolveContext: () => undefined,
+            });
+            textarea.value = '(S) Edited prose.';
+            textarea.dispatchEvent(new Event('input', { bubbles: true }));
+            await vi.waitFor(() =>
+                expect(engine.scan).toHaveBeenCalledTimes(2),
+            );
+            expect(field.getSegments()[0]?.errors).toEqual([finding.message]);
+            const fix = openFieldTools(
+                container,
+            )!.querySelector<HTMLButtonElement>('.ez-validation-errors__fix')!;
+            expect(fix.textContent).toBe('Replace S with TS');
+
+            pending = true;
+            field.refreshWhole();
+            await vi.waitFor(() => expect(finishRead).toBeDefined());
+            fix.click();
+            expect(textarea.value).toBe('(S) Edited prose.');
+            expect(
+                openFieldTools(container)?.querySelector(
+                    '.ez-validation-errors__fix',
+                ),
+            ).toBeNull();
+        } finally {
+            finishRead?.({ ...invalid, proposedFixes: [] });
+            field.destroy();
+        }
     });
 
     it('never commits a proposed fix that requires an explicit author decision', async () => {

@@ -2,7 +2,7 @@
  * Enhancement status mark (ARCHITECTURE.md "Enhancement Status Indicator").
  *
  * Every enhanced input and textarea carries exactly one EzClassify status mark:
- * the 3-bar-plus-sparkle brand glyph. It cycles through three states as fixes
+ * the 3-bar-plus-sparkle brand glyph. It cycles through four states as fixes
  * arrive and get noticed:
  *
  * - **quiet**: no applied fixes. The whole glyph sits muted.
@@ -23,38 +23,38 @@
  * and forgets what was seen, so the next fix starts unseen again. State lives
  * in-memory per mark element; there is no persistence across mounts.
  *
- * Editable controls open their tabbed Corrections and Favorites tools only by a
+ * Editable controls open their tabbed Auto-fixes and Favorites tools only by a
  * press or Ctrl/Cmd+Shift+Enter; hover shows the shortcut hint. Opening puts
  * focus on the selected tab. The preview behavior below applies to marks that
  * do not provide tools.
  *
- * A proposed fix never changes the mark; only changes EzClassify actually made
- * do. Hovering (past the tooltip's hover-intent delay) or focusing an active
- * mark previews every change EzClassify made to what the author chose, one line
- * per change to the marking however many rules made it: what was added, removed
- * or replaced, in the field's own words for the value and its category, with
- * the rule that did it under it. A change that adds or removes nothing keeps
- * the engine's own words for it (its `message`). While the marking can go back
- * to what it was before the author's last edit, the list ends with that undo.
- * It lists only what the field's scopes write or what it changed, and only
- * changes to what the marking writes: a fact a rule derived that the marking
- * does not write, such as a member collapsed into its group's name, is not a
- * change the author signs. Pressing it (a tap, a click, Enter or Space) opens
- * that list until a second press, Escape, or a press or focus outside the field
- * closes it; a phone has no hover, so the press is its only way in. A hovered
- * list can be reached: the pointer can move from the mark into it, and it
- * closes a moment after the pointer has left both. Tab from the mark reaches
- * its undo. The list sits outside the field's box, so it never covers what it
- * explains, right next to the mark: on the side of the field the mark is
- * toward, its trailing edge lined up with the mark's. The indicator
- * communicates state; it is not a per-fix activity feed.
+ * Needs attention reports unresolved findings. Auto-fixes lists changes
+ * EzClassify already made. Hovering (past the tooltip's hover-intent delay) or
+ * focusing an active mark previews every change EzClassify made to what the
+ * author chose, one line per change to the marking however many rules made it:
+ * what was added, removed or replaced, in the field's own words for the value
+ * and its category, with the rule that did it under it. A change that adds or
+ * removes nothing keeps the engine's own words for it (its `message`). While
+ * the marking can go back to what it was before the author's last edit, the
+ * list ends with that undo. It lists only what the field's scopes write or what
+ * it changed, and only changes to what the marking writes: a fact a rule
+ * derived that the marking does not write, such as a member collapsed into its
+ * group's name, is not a change the author signs. Pressing it (a tap, a click,
+ * Enter or Space) opens that list until a second press, Escape, or a press or
+ * focus outside the field closes it; a phone has no hover, so the press is its
+ * only way in. A hovered list can be reached: the pointer can move from the
+ * mark into it, and it closes a moment after the pointer has left both. Tab
+ * from the mark reaches its undo. The list sits outside the field's box, so it
+ * never covers what it explains, right next to the mark: on the side of the
+ * field the mark is toward, its trailing edge lined up with the mark's. The
+ * indicator communicates state; it is not a per-fix activity feed.
  *
  * The module owns the single-mark invariant: `ensureStatusMark` is idempotent
  * per wrap element and `setStatusMarkFixes` mutates the existing mark in place,
  * so re-renders can never stack indicators.
  */
 
-import type { Assertion, AssertionRef, Change } from '@ezclassify/types';
+import type { Assertion, AssertionRef, Change, Fix } from '@ezclassify/types';
 import {
     attachTooltip,
     hideTooltip,
@@ -70,8 +70,14 @@ import type { WrittenFactTest } from '../written-facts';
 import { adoptStylesOnce } from '../styles/adopt';
 import statusMarkCss from './status-mark.css?inline';
 import {
+    ruleAttribution,
+    RuleErrorList,
+    type RuleErrorReport,
+} from './rule-errors';
+import {
     bindMarkingToolsShortcut,
     buildMarkingTools,
+    focusMarkingTools,
     updateMarkingToolsCounts,
 } from './marking-tools';
 
@@ -401,6 +407,51 @@ function statusMarkOf(wrap: HTMLElement): HTMLElement | null {
 /** The error each mark reports, when its field has one (see setStatusMarkError). */
 const markErrors = new WeakMap<HTMLElement, string>();
 
+/** An unresolved report and the field-owned action for that report. */
+export interface StatusMarkFinding {
+    readonly id?: string;
+    readonly heading?: string;
+    readonly report: RuleErrorReport;
+    readonly apply?: (fix: Fix, pointerType?: string) => void;
+}
+
+const markFindings = new WeakMap<HTMLElement, readonly StatusMarkFinding[]>();
+
+function visibleFindings(mark: HTMLElement): readonly StatusMarkFinding[] {
+    return markDraftFixes.has(mark) ? [] : (markFindings.get(mark) ?? []);
+}
+
+function findingError(mark: HTMLElement): string | undefined {
+    return visibleFindings(mark).find(({ report }) => report.messages.length)
+        ?.report.messages[0];
+}
+
+export function setStatusMarkFindings(
+    wrap: HTMLElement,
+    findings: readonly StatusMarkFinding[],
+): void {
+    const mark = statusMarkOf(wrap);
+    if (!mark) return;
+    const display = (items: readonly StatusMarkFinding[]) =>
+        JSON.stringify(
+            items.map(({ id, heading, report, apply }) => [
+                id,
+                heading,
+                report.messages,
+                report.errors?.map(({ constraintId }) => constraintId),
+                report.warnings,
+                !!apply,
+                report.fixes.map(({ fix, label }) => [fix.rendered, label]),
+            ]),
+        );
+    const changed = display(markFindings.get(mark) ?? []) !== display(findings);
+    // Keep the latest engine facts and callbacks even when the words repeat.
+    markFindings.set(mark, findings);
+    if (!changed) return;
+    applyVisualState(mark, deriveState(mark));
+    refreshCorrections(mark);
+}
+
 /** The changes each mark explains, one per effect (see effectKey). */
 const markFixes = new WeakMap<HTMLElement, Map<string, Change>>();
 
@@ -439,18 +490,38 @@ export function setStatusMarkDraft(
     else markDraftFixes.delete(mark);
     applyVisualState(mark, deriveState(mark));
 
-    // Keep the selected tab and its focus while the Runtime answers. Closing
-    // the dialog here would make the mobile editor treat the blur as a save.
+    refreshCorrections(mark);
+}
+
+function hasAttention(mark: HTMLElement): boolean {
+    return visibleFindings(mark).length > 0 || visibleError(mark) !== undefined;
+}
+
+function refreshCorrections(mark: HTMLElement): void {
     if (!popoverOpen(mark)) return;
     const tools = markToolsContent.get(mark);
-    const panel = tools?.querySelector<HTMLElement>('[role="tabpanel"]');
-    if (!panel) return;
-    if (panel.contains(document.activeElement)) {
+    const attention = tools?.querySelector<HTMLElement>(
+        '[data-tools-panel="attention"]',
+    );
+    const corrections = tools?.querySelector<HTMLElement>(
+        '[data-tools-panel="corrections"]',
+    );
+    if (!tools || !corrections) return;
+    const focused = mark.ownerDocument.activeElement;
+    if (hasAttention(mark) !== !!attention) {
+        const returnFocus = tools.contains(focused);
+        dismissStatusMarkPopover(mark);
+        if (returnFocus) mark.focus({ preventScroll: true });
+        attention?.replaceChildren();
+        return;
+    }
+    if (attention?.contains(focused) || corrections.contains(focused)) {
         tools
-            ?.querySelector<HTMLElement>('[role="tab"][aria-selected="true"]')
+            .querySelector<HTMLElement>('[role="tab"][aria-selected="true"]')
             ?.focus({ preventScroll: true });
     }
-    panel.replaceChildren(correctionsContent(mark));
+    attention?.replaceChildren(attentionContent(mark));
+    corrections.replaceChildren(correctionsContent(mark));
     refreshStatusMarkPopover(mark);
 }
 
@@ -560,7 +631,8 @@ function buildMarkSvg(): string {
 function deriveState(mark: HTMLElement): MarkState {
     const draft = draftFixesOf(mark);
     if (draft) return draft.length ? 'unseen' : 'quiet';
-    if (markErrors.has(mark)) return 'error';
+    if (markErrors.has(mark) || findingError(mark) !== undefined)
+        return 'error';
     const fixes = markFixes.get(mark);
     if (!fixes || fixes.size === 0) return 'quiet';
     const acknowledged = markAcknowledged.get(mark);
@@ -607,20 +679,29 @@ function applyVisualState(mark: HTMLElement, state: MarkState): void {
     }
 
     const count = linesOf(mark).length;
-    // The number beside the mark is aria-hidden, so the label carries the
-    // count and whether it has been reviewed.
+    const unseen = linesOf(mark, true).length;
+    const errors =
+        Number(visibleError(mark) !== undefined) +
+        visibleFindings(mark).reduce(
+            (sum, { report }) => sum + report.messages.length,
+            0,
+        );
+    // Unresolved errors remain counted until the next successful judgment.
+    const badge = errors + unseen;
     const countEl = mark.querySelector<HTMLElement>('.ez-status-mark__count');
-    if (countEl) countEl.textContent = state === 'unseen' ? String(count) : '';
+    if (countEl) countEl.textContent = badge ? String(badge) : '';
     const review =
-        state === 'unseen' && !markDraftFixes.has(mark)
-            ? t('mark.notReviewed')
-            : '';
+        unseen && !markDraftFixes.has(mark) ? t('mark.notReviewed') : '';
     const fixed = count > 0 ? ` ${changesLabel(count)}${review}.` : '';
-    const error = visibleError(mark);
+    const error = visibleError(mark) ?? findingError(mark);
+    const errorCount =
+        errors > 1
+            ? ` ${t('tools.errorCount').replace('{count}', String(errors))}.`
+            : '';
     mark.setAttribute(
         'aria-label',
         error !== undefined
-            ? `${ENHANCED_LABEL}. ${error}${fixed}`
+            ? `${ENHANCED_LABEL}. ${error}${errorCount}${fixed}`
             : active
               ? `${ENHANCED_LABEL}.${fixed}`
               : ENHANCED_LABEL,
@@ -643,6 +724,7 @@ const markOptions = new WeakMap<HTMLElement, StatusMarkOptions>();
  */
 function linesOf(
     mark: HTMLElement,
+    unseenOnly = false,
 ): { text: string; rule: string; group?: StatusGroupLabel }[] {
     const words = markOptions.get(mark)?.words;
     const groups = markGroups.get(mark);
@@ -652,6 +734,8 @@ function linesOf(
     const draft = draftFixesOf(mark);
     const fixes = draft?.map((change) => [effectKey(change), change] as const);
     for (const [key, change] of fixes ?? markFixes.get(mark) ?? []) {
+        if (unseenOnly && !draft && markAcknowledged.get(mark)?.has(key))
+            continue;
         const group = draft ? undefined : groups?.get(key);
         for (const text of changeLines(change, words)) {
             const once = `${group?.id ?? ''}\u0000${text}`;
@@ -711,18 +795,20 @@ function errorListsOf(field: HTMLElement): HTMLElement[] {
     );
 }
 
-/**
- * Where the mark's popover may sit: outside the field and its error list, so it
- * never covers what it explains (see TooltipPlacement.clearOf).
- */
+/** Interactive tools anchor to the field's current editing or painted box. */
 function popoverPlacement(mark: HTMLElement): TooltipPlacement {
     const field = fieldOf(mark);
-    const feedback = errorListsOf(field);
+    const tools = markOptions.get(mark)?.tools;
+    const surface = tools
+        ? ([
+              ...field.querySelectorAll<HTMLElement>(
+                  ':scope > .marked-input-display, :scope > .marked-textarea-display, :scope > .marking-field-display, :scope > .marking-field-host',
+              ),
+          ].find((layer) => layer.getClientRects().length > 0) ?? field)
+        : field;
     return {
-        clearOf: [field, ...feedback],
-        preferNearTarget:
-            feedback.length > 0 ||
-            field.classList.contains('marked-textarea-wrap'),
+        clearOf: tools ? surface : [field, ...errorListsOf(field)],
+        preferNearTarget: field.classList.contains('marked-textarea-wrap'),
         followViewport: mark.closest('.ez-composer__sheet-tools') !== null,
     };
 }
@@ -899,15 +985,19 @@ export function ensureStatusMark(
         if (opts.tools) {
             const snapshot = new Set(fixes?.keys());
             const favorites = markFavorites.get(mark);
+            const attention = hasAttention(mark)
+                ? attentionContent(mark)
+                : undefined;
             const showCorrections =
-                markDraftFixes.has(mark) ||
-                error !== undefined ||
-                deriveState(mark) === 'unseen';
+                markDraftFixes.has(mark) || linesOf(mark, true).length > 0;
             markContentSnapshot.set(
                 mark,
-                showCorrections || !favorites ? snapshot : new Set(),
+                !attention && (showCorrections || !favorites)
+                    ? snapshot
+                    : new Set(),
             );
             const tools = buildMarkingTools({
+                attention,
                 corrections: correctionsContent(mark),
                 favorites: favorites?.element,
                 favoritesCount: favorites?.count() ?? 0,
@@ -982,21 +1072,19 @@ export function ensureStatusMark(
             opts.onToolsOpen?.();
         const text = opts.tools || mayShow() ? content() : undefined;
         if (!text) return;
-        showTooltip(mark, text, opts.root, popoverPlacement(mark), () =>
-            collapse(mark),
+        showTooltip(
+            mark,
+            text,
+            opts.root,
+            {
+                ...popoverPlacement(mark),
+                pointerOpening: opts.tools && e.detail > 0,
+            },
+            () => collapse(mark),
         );
         expand(mark);
         shown();
-        if (opts.tools && popoverOpen(mark)) {
-            const id = mark.getAttribute('aria-describedby');
-            if (id)
-                document
-                    .getElementById(id)
-                    ?.querySelector<HTMLElement>(
-                        '[role=tab][aria-selected=true]',
-                    )
-                    ?.focus();
-        }
+        if (opts.tools && popoverOpen(mark)) focusMarkingTools(mark);
     });
     mark.addEventListener('keydown', (e) => {
         if (
@@ -1163,21 +1251,68 @@ function setMarkChanges(
     applyVisualState(mark, deriveState(mark));
 }
 
+function attentionContent(mark: HTMLElement): HTMLElement {
+    const findings = visibleFindings(mark);
+    const content = mark.ownerDocument.createElement('div');
+    findings.forEach((finding, index) => {
+        if (finding.heading) {
+            const label = mark.ownerDocument.createElement('div');
+            label.className = 'ez-status-list__marking';
+            label.textContent = finding.heading;
+            content.appendChild(label);
+        }
+        const list = new RuleErrorList(mark.ownerDocument, undefined, {
+            remediesOnly: true,
+            fixesHeading: t('tools.quickFixes'),
+            showRuleNames: true,
+        });
+        list.element.removeAttribute('aria-live');
+        list.update(
+            finding.report,
+            finding.apply
+                ? (fix, pointerType) => {
+                      if (
+                          mark.matches(':disabled') ||
+                          !popoverOpen(mark) ||
+                          !markToolsContent.get(mark)?.contains(list.element)
+                      )
+                          return;
+                      const current = visibleFindings(mark)[index];
+                      const live = current?.report.fixes.find(
+                          (item) => item.fix.rendered === fix.rendered,
+                      );
+                      if (!current?.apply || current.id !== finding.id || !live)
+                          return;
+                      dismissStatusMarkPopover(mark);
+                      mark.focus({ preventScroll: true });
+                      list.element.remove();
+                      current.apply(live.fix, pointerType);
+                  }
+                : null,
+        );
+        content.appendChild(list.element);
+    });
+    const error = visibleError(mark);
+    if (error !== undefined) {
+        const reason = mark.ownerDocument.createElement('div');
+        reason.className = 'ez-status-list__error';
+        reason.textContent = error;
+        content.prepend(reason);
+    }
+    return content;
+}
+
 function correctionsContent(mark: HTMLElement): HTMLElement {
     const opts = markOptions.get(mark);
     const draft = draftFixesOf(mark);
-    const error = visibleError(mark);
     const count = draft?.length ?? markFixes.get(mark)?.size ?? 0;
-    if (
-        error !== undefined ||
-        (count > 0 && opts?.shouldShowTooltip?.() !== false)
-    )
+    if (count > 0 && opts?.shouldShowTooltip?.() !== false)
         return changeList(
             mark,
-            error,
+            undefined,
             draft ? null : (opts?.undoLastEdit?.() ?? null),
         );
-    const empty = document.createElement('div');
+    const empty = mark.ownerDocument.createElement('div');
     empty.textContent = t('tools.emptyCorrections');
     return empty;
 }
@@ -1228,14 +1363,8 @@ function changeList(
         text.className = 'ez-status-list__text';
         text.textContent = line.text;
         item.appendChild(text);
-        // An engine-owned id (it begins with `_`, which a scheme rule's never
-        // does) names no rule the author could look up.
-        if (!line.rule.startsWith('_')) {
-            const rule = document.createElement('div');
-            rule.className = 'ez-status-list__rule';
-            rule.textContent = fill(t('mark.rule'), { rule: line.rule });
-            item.appendChild(rule);
-        }
+        const rule = ruleAttribution(mark.ownerDocument, line.rule);
+        if (rule) item.appendChild(rule);
         items.appendChild(item);
     }
     if (undo) {

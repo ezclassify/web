@@ -253,6 +253,120 @@
             "method": "POST",
             "statusCode": 200
         },
+        "1c15e8c62c411944e25c1c218fede7748abd82cfe34d6df10d6e7fc5153b8de4": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "rule-errors-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "rule-errors-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "LOW",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "HOLD",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "LOW" },
+                            { "categoryId": "caveat", "conceptId": "HOLD" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [
+                        {
+                            "affectedConcepts": ["HIGH"],
+                            "constraintId": "caveat-needs-high",
+                            "message": "HOLD requires HIGH."
+                        }
+                    ],
+                    "inputWasValid": false,
+                    "notices": [],
+                    "proposedFixes": [
+                        {
+                            "adds": [
+                                { "categoryId": "level", "conceptId": "HIGH" }
+                            ],
+                            "keeps": [
+                                { "categoryId": "caveat", "conceptId": "HOLD" }
+                            ],
+                            "message": "Replace LOW with HIGH.",
+                            "removes": [
+                                { "categoryId": "level", "conceptId": "LOW" }
+                            ],
+                            "rendered": "HIGH//HOLD"
+                        },
+                        {
+                            "adds": [],
+                            "keeps": [
+                                { "categoryId": "level", "conceptId": "LOW" }
+                            ],
+                            "message": "Remove HOLD.",
+                            "removes": [
+                                { "categoryId": "caveat", "conceptId": "HOLD" }
+                            ],
+                            "rendered": "LOW"
+                        }
+                    ],
+                    "rendered": "LOW//HOLD",
+                    "renders": {},
+                    "suggestionsFor": {
+                        "level": {
+                            "suggestions": [
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "LOW",
+                                    "description": "",
+                                    "group": "Level",
+                                    "label": "LOW",
+                                    "name": "LOW",
+                                    "order": 1,
+                                    "selected": false,
+                                    "views": { "default": "LOW" }
+                                },
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "HIGH",
+                                    "description": "",
+                                    "group": "Level",
+                                    "label": "HIGH",
+                                    "name": "HIGH",
+                                    "order": 2,
+                                    "selected": false,
+                                    "views": { "default": "HIGH" }
+                                }
+                            ],
+                            "warnings": []
+                        }
+                    },
+                    "valid": false,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "297d1b0ff49588da8c08f5ec9f8227428c707b256b717d3d39b1d696554dcf11": {
             "body": {
                 "resolution": {
@@ -427,6 +541,52 @@
             "body": [],
             "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
+            "statusCode": 200
+        },
+        "5b58b3718d48240ea43332d649b65506ebea61dd522fdade23b75919cd885739": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "rule-errors-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "rule-errors-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "suggestions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "LOW",
+                            "description": "",
+                            "group": "Level",
+                            "label": "LOW",
+                            "name": "LOW",
+                            "order": 1,
+                            "selected": true,
+                            "views": { "default": "LOW" }
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "HOLD",
+                            "description": "",
+                            "group": "Caveat",
+                            "label": "HOLD",
+                            "name": "HOLD",
+                            "order": 1,
+                            "selected": true,
+                            "views": { "default": "HOLD" }
+                        }
+                    ],
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
             "statusCode": 200
         },
         "7c2ec297003611165143f27cabd5c927666834e8f5573314363cf57faa17d896": {
