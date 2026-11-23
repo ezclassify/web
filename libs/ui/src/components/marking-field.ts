@@ -31,6 +31,7 @@ import { COMPONENT_CSS } from './component-utils';
 import { heightAtLeastFloor } from './dom-helpers';
 import { setStatusMarkFixes, statusMarkOwnsNode } from './status-mark';
 import {
+    mirrorHostAccent,
     mountFieldChrome,
     observeFieldTheme,
     type FieldChrome,
@@ -320,7 +321,10 @@ export class MarkingField extends ComposerFieldBase {
         // Branding and clear sit inline at the
         // field's trailing edge, at rest and while editing; the text layers
         // reserve the room they take.
-        this.chrome = mountFieldChrome(this.wrap, { root: this.options.root });
+        this.chrome = mountFieldChrome(this.wrap, {
+            root: this.options.root,
+            fontSource: this.display,
+        });
         this.toolsButton = this.mountFieldTools(
             this.chrome.status,
             {
@@ -820,6 +824,7 @@ export class MarkingField extends ComposerFieldBase {
         const csLive = window.getComputedStyle(
             this.editor ? this.enhancedInput! : this.host,
         );
+        if (!this.options.styleInputs) mirrorHostAccent(this.wrap, csLive);
         const captured: Record<string, string> = {};
         for (const p of layoutProps) {
             captured[p] = (csLive as unknown as Record<string, string>)[p];

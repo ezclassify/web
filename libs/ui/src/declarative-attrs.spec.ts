@@ -329,6 +329,34 @@ describe('Declarative attribute system (EzClassifyUI)', () => {
         forms.destroy();
     });
 
+    it.each([
+        ['checklist', 'group', '.category-checklist-name'],
+        ['selector', 'radiogroup', '.category-selector-label'],
+    ])(
+        'lets the host label a %s fieldset externally',
+        async (kind, role, internalLabel) => {
+            const label = document.createElement('span');
+            label.id = 'host-choice-label';
+            label.textContent = 'Host choice';
+            const fieldset = document.createElement('fieldset');
+            fieldset.setAttribute('aria-labelledby', label.id);
+            fieldset.setAttribute('data-ezclassify-controller', kind);
+            fieldset.setAttribute('data-ezclassify-category', 'level');
+            document.body.append(label, fieldset);
+
+            const forms = await createForms();
+            const mount = fieldset.nextElementSibling;
+            expect(mount?.querySelector(internalLabel)).toBeNull();
+            expect(
+                mount
+                    ?.querySelector(`[role="${role}"]`)
+                    ?.getAttribute('aria-labelledby'),
+            ).toBe(label.id);
+            expect(label.isConnected).toBe(true);
+            forms.destroy();
+        },
+    );
+
     it('ezclassify-banner on a <div> creates a StatusBanner', async () => {
         const div = document.createElement('div');
         div.setAttribute('data-ezclassify-controller', 'banner');

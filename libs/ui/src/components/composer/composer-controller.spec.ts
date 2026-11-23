@@ -1023,6 +1023,37 @@ describe('the commit table', () => {
 });
 
 describe('browsing after a click into the draft', () => {
+    it('keeps the same browse choices across a committed separator and token', async () => {
+        const [, first, second] = CONCEPTS;
+        const prefix = `${first.label}//`;
+        const text = `${prefix}${second.label}`;
+        port.value = {
+            assertions: [assertion(first), assertion(second)],
+            rendered: text,
+        };
+        const c = controller();
+        await c.open();
+        const groups = () => c.snapshot().groups.map((group) => group.id);
+        const available = groups();
+        await c.input(text, prefix.length);
+        expect(groups()).toEqual(available);
+        await c.input(text, prefix.length + 2);
+        expect(groups()).toEqual(available);
+    });
+
+    it('filters an unfinished token and browses again over the surrounding completed text', async () => {
+        const [, first, second] = CONCEPTS;
+        const text = `${first.label}//${second.label.slice(0, 2)}`;
+        const c = controller();
+        await c.open();
+        await typed(c, text);
+        expect(c.snapshot().mode).toBe('ranked');
+        await c.input(text, 3);
+        expect(c.snapshot().mode).toBe('browse');
+        await c.input(text, text.length);
+        expect(c.snapshot().mode).toBe('ranked');
+    });
+
     it('adds a browsed row after the word the caret sits inside, never splitting it', async () => {
         port.value = {
             assertions: [assertion(CONCEPTS[1])],

@@ -924,7 +924,7 @@ describe('MarkedTextArea', () => {
         const here = dirname(fileURLToPath(import.meta.url));
         const css = readFileSync(join(here, 'field-chrome.css'), 'utf8');
         expect(css).toMatch(
-            /\.ez-field-chrome--start\s*\{\s*top:\s*0\.25rem;\s*transform:\s*none;/,
+            /\.ez-field-chrome--start\s*\{\s*top:\s*var\(--ez-field-first-line-center, 1rem\);\s*transform:\s*translateY\(-50%\);/,
         );
         expect(
             readFileSync(join(here, 'marked-text-area.css'), 'utf8'),
@@ -1449,6 +1449,9 @@ it('opens the tapped paragraph marking independently of the native caret on phon
             new MouseEvent('click', { bubbles: true, detail: 1 }),
         );
         expect(document.activeElement).not.toBe(editor);
+        root.querySelector<HTMLButtonElement>(
+            '.ez-marking-touch-actions button',
+        )!.click();
         await expect
             .poll(
                 () =>
@@ -1458,6 +1461,276 @@ it('opens the tapped paragraph marking independently of the native caret on phon
             )
             .toBe('U');
         expect(native.value).toBe('(U) Body text here.');
+    } finally {
+        field.destroy();
+        vi.unstubAllGlobals();
+    }
+});
+
+it('protects the closing delimiter on a phone and removes only the selected marking on request', async () => {
+    vi.stubGlobal('innerWidth', 390);
+    vi.stubGlobal('matchMedia', () => ({ matches: true }));
+    const native = document.createElement('textarea');
+    const source = '(U) Body text here.';
+    native.value = source;
+    const container = document.createElement('div');
+    root.append(native, container);
+    const field = new MarkedTextArea();
+    try {
+        const context = await createTestContext();
+        const scan = context.scheme.scan.bind(context.scheme);
+        vi.spyOn(context.scheme, 'scan').mockImplementation(
+            async (text, options) => {
+                if (text === 'Body text here.') {
+                    const result = (await scan(source, options)) as ScanOutcome;
+                    return { ...result, results: [] };
+                }
+                return scan(text, options);
+            },
+        );
+        await field.init(container, context);
+        const editor = textareaEditor(native);
+        editor.focus();
+        editor.setSelectionRange(3, 3);
+        expect(
+            editor.dispatchEvent(
+                new InputEvent('beforeinput', {
+                    inputType: 'deleteContentBackward',
+                    bubbles: true,
+                    cancelable: true,
+                }),
+            ),
+        ).toBe(false);
+        const sheet = () =>
+            document.querySelector<HTMLElement>(
+                '.ez-composer[data-surface="sheet"]:not([hidden])',
+            );
+        await expect
+            .poll(
+                () =>
+                    sheet()?.querySelector<HTMLInputElement>(
+                        '.ez-composer__sheet-input',
+                    )?.value,
+            )
+            .toBe('U');
+        expect(native.value).toBe(source);
+        expect(sheet()!.querySelector('.ez-composer__sheet-remove')).toBeNull();
+        sheet()!
+            .querySelector<HTMLButtonElement>('.ez-composer__sheet-cancel')!
+            .click();
+        await expect.poll(sheet).toBeNull();
+        root.querySelector<HTMLElement>('.marked-textarea-chip')!.click();
+        root.querySelectorAll<HTMLButtonElement>(
+            '.ez-marking-touch-actions button',
+        )[1].click();
+        await expect.poll(() => native.value).toBe('Body text here.');
+        await expect
+            .poll(() => root.querySelector('.marked-textarea-chip'))
+            .toBeNull();
+    } finally {
+        field.destroy();
+        vi.unstubAllGlobals();
+    }
+});
+
+it('adds only on unmarked phone paragraphs and removes the marking that was tapped', async () => {
+    vi.stubGlobal('innerWidth', 390);
+    vi.stubGlobal('matchMedia', () => ({ matches: true }));
+    const source = '(U) First.\n\n(S) Second.';
+    const native = document.createElement('textarea');
+    native.value = source;
+    const container = document.createElement('div');
+    root.append(native, container);
+    const field = new MarkedTextArea();
+    try {
+        const context = await createTestContext();
+        const scan = context.scheme.scan.bind(context.scheme);
+        vi.spyOn(context.scheme, 'scan').mockImplementation(
+            async (text, options) => {
+                if (text === '(U) First.\n\nSecond.') {
+                    const result = (await scan(source, options)) as ScanOutcome;
+                    return { ...result, results: result.results.slice(0, 1) };
+                }
+                return scan(text, options);
+            },
+        );
+        await field.init(container, context);
+        const add = root.querySelector<HTMLButtonElement>(
+            '.marked-textarea-wrap > .ez-marked-field-add',
+        )!;
+        const editor = textareaEditor(native);
+        editor.focus();
+        editor.setSelectionRange(
+            source.indexOf('\n') + 1,
+            source.indexOf('\n') + 1,
+        );
+        document.dispatchEvent(new Event('selectionchange'));
+        expect(add.hidden).toBe(false);
+        expect(add.textContent).toBe('');
+        expect(native.value).toBe(source);
+        editor.setSelectionRange(6, 6);
+        document.dispatchEvent(new Event('selectionchange'));
+        expect(add.hidden).toBe(true);
+
+        const second = root.querySelectorAll<HTMLElement>(
+            '.marked-textarea-chip',
+        )[1];
+        second.dispatchEvent(
+            new MouseEvent('click', { bubbles: true, detail: 1 }),
+        );
+        root.querySelector<HTMLButtonElement>(
+            '.ez-marking-touch-actions button',
+        )!.click();
+        const sheet = () =>
+            document.querySelector<HTMLElement>(
+                '.ez-composer[data-surface="sheet"]:not([hidden])',
+            );
+        await expect
+            .poll(
+                () =>
+                    sheet()?.querySelector<HTMLInputElement>(
+                        '.ez-composer__sheet-input',
+                    )?.value,
+            )
+            .toBe('S');
+        sheet()!
+            .querySelector<HTMLButtonElement>('.ez-composer__sheet-cancel')!
+            .click();
+        await expect.poll(sheet).toBeNull();
+        root.querySelectorAll<HTMLElement>('.marked-textarea-chip')[1].click();
+        root.querySelectorAll<HTMLButtonElement>(
+            '.ez-marking-touch-actions button',
+        )[1].click();
+        await expect.poll(() => native.value).toBe('(U) First.\n\nSecond.');
+    } finally {
+        field.destroy();
+        vi.unstubAllGlobals();
+    }
+});
+
+it.each(['replace', 'lock', 'lock then unlock', 'lock asynchronously'])(
+    'preserves the host value when it can %s during a phone Add marking action',
+    async (action) => {
+        vi.stubGlobal('innerWidth', 390);
+        vi.stubGlobal('matchMedia', () => ({ matches: true }));
+        const native = document.createElement('textarea');
+        native.value = '(U) First.\n\n(S) Second.';
+        const container = document.createElement('div');
+        root.append(native, container);
+        const field = new MarkedTextArea();
+        const expected =
+            action === 'replace' ? '(U) Body text here.' : native.value;
+        try {
+            await field.init(container, await createTestContext());
+            native.addEventListener(
+                'input',
+                () => {
+                    if (action === 'replace') field.setValue(expected);
+                    else if (action === 'lock then unlock')
+                        native.readOnly = native.value.includes('()');
+                    else if (action === 'lock asynchronously')
+                        queueMicrotask(() => {
+                            native.readOnly = true;
+                        });
+                    else native.readOnly = true;
+                },
+                { once: action !== 'lock then unlock' },
+            );
+            const editor = textareaEditor(native);
+            const emptyLine = native.value.indexOf('\n') + 1;
+            editor.focus();
+            editor.setSelectionRange(emptyLine, emptyLine);
+            document.dispatchEvent(new Event('selectionchange'));
+            const add = root.querySelector<HTMLButtonElement>(
+                '.ez-marked-field-add',
+            )!;
+            expect(add.hidden).toBe(false);
+            add.click();
+            await expect.poll(() => native.value).toBe(expected);
+            await expect
+                .poll(
+                    () =>
+                        root.querySelector('.marked-textarea-display')
+                            ?.textContent,
+                )
+                .toBe(expected);
+            expect(native.value).toBe(expected);
+            expect(textareaEditor(native).value).toBe(expected);
+            expect(
+                document.querySelector(
+                    '.ez-composer[data-surface="sheet"]:not([hidden])',
+                ),
+            ).toBeNull();
+        } finally {
+            field.destroy();
+            vi.unstubAllGlobals();
+        }
+    },
+);
+
+it('retries a superseded scan before opening a protected phone marking', async () => {
+    vi.stubGlobal('innerWidth', 390);
+    vi.stubGlobal('matchMedia', () => ({ matches: true }));
+    const native = document.createElement('textarea');
+    const source = '(U) Body text here.';
+    const edited = '(U)Body text here.';
+    native.value = source;
+    const container = document.createElement('div');
+    root.append(native, container);
+    const field = new MarkedTextArea();
+    try {
+        const context = await createTestContext();
+        const scan = context.scheme.scan.bind(context.scheme);
+        let start!: () => void;
+        const started = new Promise<void>((resolve) => {
+            start = resolve;
+        });
+        let finish!: () => void;
+        const pending = new Promise<void>((resolve) => {
+            finish = resolve;
+        });
+        let editedReads = 0;
+        vi.spyOn(context.scheme, 'scan').mockImplementation(
+            async (text, options) => {
+                if (text === edited && ++editedReads === 1) {
+                    start();
+                    await pending;
+                }
+                return scan(source, options);
+            },
+        );
+        await field.init(container, context);
+        const editor = textareaEditor(native);
+        const type = (value: string) => {
+            editor.value = value;
+            editor.setSelectionRange(3, 3);
+            editor.dispatchEvent(new InputEvent('input', { bubbles: true }));
+        };
+        type(edited);
+        await started;
+        type(source);
+        finish();
+        await wait(0);
+        type(edited);
+        expect(
+            editor.dispatchEvent(
+                new InputEvent('beforeinput', {
+                    inputType: 'deleteContentBackward',
+                    bubbles: true,
+                    cancelable: true,
+                }),
+            ),
+        ).toBe(false);
+        await expect
+            .poll(
+                () =>
+                    document.querySelector<HTMLInputElement>(
+                        '.ez-composer[data-surface="sheet"]:not([hidden]) .ez-composer__sheet-input',
+                    )?.value,
+            )
+            .toBe('U');
+        expect(native.value).toBe(edited);
+        expect(editedReads).toBe(2);
     } finally {
         field.destroy();
         vi.unstubAllGlobals();

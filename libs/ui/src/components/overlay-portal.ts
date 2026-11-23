@@ -11,15 +11,10 @@
 import { adoptStyles, type AdoptedStyles } from '../styles/adopt';
 
 const THEME_PROPERTIES = [
-    '--ez-color-background',
-    '--ez-color-border',
     '--ez-color-border-focus',
     '--ez-focus-ring-width',
     '--ez-focus-ring-offset',
-    '--ez-color-text',
     '--ez-color-muted',
-    '--ez-color-primary',
-    '--ez-color-primary-contrast',
     '--ez-color-success',
     '--ez-color-warning',
     '--ez-color-error',
@@ -41,10 +36,17 @@ const THEME_PROPERTIES = [
     '--ez-tooltip-heading-color',
     '--ez-tooltip-body-color',
     '--ez-tooltip-rule-color',
-    '--ez-border-radius',
-    '--ez-border-width',
     '--ez-z-dropdown',
     '--ez-z-tooltip',
+] as const;
+const FRAME_THEME_PROPERTIES = [
+    'color-background',
+    'color-border',
+    'color-text',
+    'color-primary',
+    'color-primary-contrast',
+    'border-radius',
+    'border-width',
 ] as const;
 
 /** The closest form, themed region, or component container owns typography. */
@@ -100,6 +102,17 @@ export function copyOverlayTheme(
         const value = style.getPropertyValue(property);
         if (value) overlay.style.setProperty(property, value);
         else overlay.style.removeProperty(property);
+    }
+    // A portal must keep a local palette's absent override from picking up
+    // an unrelated override inherited from the document it lands in.
+    for (const name of FRAME_THEME_PROPERTIES) {
+        for (const prefix of ['--ez-', '--_ez-default-']) {
+            const property = prefix + name;
+            overlay.style.setProperty(
+                property,
+                style.getPropertyValue(property) || 'initial',
+            );
+        }
     }
     const fontStyle = uiFontStyle(owner);
     overlay.style.fontFamily = fontStyle.fontFamily;

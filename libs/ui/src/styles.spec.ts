@@ -95,7 +95,7 @@ describe('styles', () => {
                 expect(block).not.toContain('--ez-color-border-focus:');
             }
             expect(css).toMatch(
-                /border-color: var\(\s*--ez-color-border-focus,\s*var\(--ez-color-primary, #fdb827\)\s*\)/,
+                /border-color: var\(\s*--ez-color-border-focus,\s*var\(--ez-color-primary, var\(--_ez-default-color-primary, #fdb827\)\)\s*\)/,
             );
         });
 
@@ -106,8 +106,8 @@ describe('styles', () => {
             );
             const root = css.match(/:where\(:root\)\s*\{([\s\S]*?)\n\}/)![1];
             for (const token of [
-                '--ez-border-radius',
-                '--ez-border-width',
+                '--_ez-default-border-radius',
+                '--_ez-default-border-width',
                 '--ez-spacing-xs',
                 '--ez-spacing-sm',
                 '--ez-spacing-md',

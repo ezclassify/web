@@ -168,8 +168,11 @@ export interface ComposerPort {
     gated?(query: string, live: readonly Assertion[]): Promise<Suggestion[]>;
     /** The value the field currently stores. */
     committed(): ComposerCommitted;
-    /** Store a complete reading as the field's value. */
-    store(reading: ComposerReading, commit: ComposerCommit): Promise<void>;
+    /** Store a complete reading, or return false if its final write is refused. */
+    store(
+        reading: ComposerReading,
+        commit: ComposerCommit,
+    ): Promise<void | false>;
     /** The active format's separators, which bound tokens. */
     separators(): readonly string[];
     /**
@@ -323,6 +326,8 @@ export interface ComposerOptions {
     readonly cap?: number;
     /** Polite announcements for the field's live region. */
     readonly announce?: (text: string) => void;
+    /** An existing mark can require a separate, explicit removal action. */
+    readonly emptyCommitProblem?: string;
 }
 
 type Listener = (snapshot: ComposerSnapshot) => void;
@@ -451,6 +456,7 @@ export class ComposerController {
     /** Whether the draft is the whole marking or text added over a base. */
     readonly shape: ComposerDraftShape;
     private readonly announceText: (text: string) => void;
+    private readonly emptyCommitProblem?: string;
     private cap: number;
 
     private _open = false;
@@ -550,6 +556,7 @@ export class ComposerController {
         this.shape = options.shape;
         this.cap = options.cap ?? 8;
         this.announceText = options.announce ?? (() => {});
+        this.emptyCommitProblem = options.emptyCommitProblem;
         this.resetToCommitted();
     }
 
@@ -766,6 +773,8 @@ export class ComposerController {
         ({ text, caret } = this.attachSeparator(text, caret));
         const textChanged = text !== this.text;
         const caretMoved = caret !== this.caret;
+        const previousQuery =
+            !textChanged && caretMoved ? this.currentToken().query : '';
         this.text = text;
         this.caret = caret;
         // Only typing ends browsing: a click or caret move into a finished
@@ -778,6 +787,8 @@ export class ComposerController {
                 this.activeIndex = -1;
                 this.navigated = false;
                 this.showMore = false;
+                if (this.currentToken().query !== previousQuery)
+                    this.refreshGated();
                 this.arm();
             }
             this.emit();
@@ -948,7 +959,12 @@ export class ComposerController {
             this.port.separators(),
             (q) => reachesAny(q, this.catalog, this.aliasesOf),
         );
-        if (this.browsing && !this.tokenUnread(token)) {
+        // Navigation over recognized text inside the draft keeps the full
+        // catalog available. Only an unread fragment there needs completion.
+        if (
+            (this.browsing || this.hasTextAfterCaret()) &&
+            !this.tokenUnread(token)
+        ) {
             return { start: this.caret, end: this.caret, query: '' };
         }
         return token;
@@ -1315,11 +1331,15 @@ export class ComposerController {
      * the user is starting the next part of the marking.
      */
     private startsNewPart(token: CaretToken): boolean {
-        if (token.query) return false;
+        if (token.query || this.hasTextAfterCaret()) return false;
         const before = this.text.slice(0, this.caret).trimEnd();
         return this.port
             .separators()
             .some((sep) => sep.trim() !== '' && before.endsWith(sep.trim()));
+    }
+
+    private hasTextAfterCaret(): boolean {
+        return this.text.slice(this.caret).trim().length > 0;
     }
 
     /** Single-choice categories the current reading already holds a value in. */
@@ -1905,26 +1925,33 @@ export class ComposerController {
         // Storing it would drop what was typed since, so nothing is stored.
         const current = this.readingKey === this.readKey();
         const reading = current ? this.reading : null;
-        if (!reading || !reading.complete) {
-            this.invalid = true;
-            this.problem = current
-                ? this.describeProblem(reading)
-                : {
-                      fragment: this.text.trim(),
-                      rule: t('composer.readFailed'),
-                  };
-            this.emit();
-            this.announceText(
-                t('a11y.composer.notSaved').replace(
-                    '{problem}',
-                    this.problemText(this.problem),
-                ),
+        const emptyProblem =
+            this.emptyCommitProblem &&
+            (!this.text.trim() ||
+                (reading?.complete && !reading.rendered.trim()))
+                ? { fragment: '', rule: this.emptyCommitProblem }
+                : null;
+        if (emptyProblem || !reading || !reading.complete) {
+            return this.refuseCommit(
+                emptyProblem ??
+                    (current
+                        ? this.describeProblem(reading)
+                        : {
+                              fragment: this.text.trim(),
+                              rule: t('composer.readFailed'),
+                          }),
             );
-            return 'invalid';
         }
         const stored = this.text;
         const resets = this.resets;
-        await this.port.store(reading, { replaces: this.replacesCommitted() });
+        const result = await this.port.store(reading, {
+            replaces: this.replacesCommitted(),
+        });
+        if (result === false)
+            return this.refuseCommit({
+                fragment: this.text.trim(),
+                rule: t('composer.readFailed'),
+            });
         if (this.text === stored || this.resets !== resets) {
             // Nothing typed during the store, or the user reverted during it:
             // either way the draft becomes the value just stored.
@@ -1993,6 +2020,19 @@ export class ComposerController {
     }
 
     /** Human text for a problem, shared by the note and the announcement. */
+    private refuseCommit(problem: ComposerProblem): 'invalid' {
+        this.invalid = true;
+        this.problem = problem;
+        this.emit();
+        this.announceText(
+            t('a11y.composer.notSaved').replace(
+                '{problem}',
+                this.problemText(problem),
+            ),
+        );
+        return 'invalid';
+    }
+
     problemText(problem: ComposerProblem): string {
         if (problem.rule) return problem.rule;
         const base = t('composer.notRecognized').replace(

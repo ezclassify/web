@@ -1,0 +1,86 @@
+/* Phone actions use the same trailing chrome and reserve as the host field. */
+.ez-marked-field-add {
+    display: none;
+}
+
+@media (pointer: coarse) and (width < 768px) {
+    .ez-marked-field-footer > .marked-input-touch-add,
+    .ez-marked-field-footer > .marked-textarea-touch-add,
+    .ez-marked-field-footer:not(:has(.ez-validation-errors:not([hidden]))) {
+        display: none;
+    }
+
+    .ez-marked-field-tap-target {
+        -webkit-touch-callout: none;
+    }
+
+    .ez-marked-field-add:not([hidden]) {
+        display: inline-grid;
+        place-content: center;
+        inline-size: 2em;
+        min-block-size: 2.75rem;
+        border: none;
+        border-radius: var(
+            --ez-border-radius,
+            var(--_ez-default-border-radius, 0.25rem)
+        );
+        background: transparent;
+        color: var(
+            --ez-color-primary,
+            var(--_ez-default-color-primary, currentColor)
+        );
+        font: inherit;
+        font-size: 0.875em;
+        padding: 0;
+        touch-action: manipulation;
+        cursor: pointer;
+    }
+
+    .ez-marked-field-add::before {
+        content: '[+]';
+    }
+
+    .ez-marked-field-add:focus-visible {
+        outline: 2px solid var(--ez-color-border-focus, currentColor);
+        outline-offset: -2px;
+    }
+}
+
+.ez-marking-touch-actions {
+    position: fixed;
+    z-index: var(--ez-z-dropdown, 1000);
+    display: flex;
+    max-width: calc(100vw - 1rem);
+    overflow: hidden;
+    border: 1px solid
+        var(--ez-color-border, var(--_ez-default-color-border, #d1d5db));
+    border-radius: var(
+        --ez-border-radius,
+        var(--_ez-default-border-radius, 0.5rem)
+    );
+    background: var(--ez-color-surface, #fff);
+    color: var(--ez-color-text, var(--_ez-default-color-text, #1a1a2e));
+    box-shadow: var(--ez-dropdown-shadow, 0 4px 12px rgb(0 0 0 / 18%));
+    font: inherit;
+}
+
+.ez-marking-touch-actions button {
+    border: 0;
+    padding: 0.75em;
+    min-height: 44px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+}
+
+.ez-marking-touch-actions button + button {
+    border-inline-start: 1px solid
+        var(--ez-color-border, var(--_ez-default-color-border, #d1d5db));
+}
+
+.ez-marking-touch-actions button:focus-visible {
+    outline: 2px solid
+        var(--ez-color-primary, var(--_ez-default-color-primary, #fdb827));
+    outline-offset: -3px;
+}

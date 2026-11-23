@@ -178,6 +178,7 @@ describe('CategoryChecklist', () => {
     // A checklist mounted by hand binds the first text input beside it, so a
     // container left from another test would feed this one its value.
     afterEach(() => {
+        vi.restoreAllMocks();
         checklist.destroy();
         container.remove();
     });
@@ -185,6 +186,19 @@ describe('CategoryChecklist', () => {
     async function init(
         opts?: Partial<CategoryChecklistOptions>,
     ): Promise<void> {
+        const originalRect = HTMLElement.prototype.getBoundingClientRect;
+        vi.spyOn(
+            HTMLElement.prototype,
+            'getBoundingClientRect',
+        ).mockImplementation(function (this: HTMLElement) {
+            if (!this.matches('.category-checklist-item'))
+                return originalRect.call(this);
+            const list = this.closest('.category-checklist-list')!;
+            const index = Array.from(
+                list.querySelectorAll('.category-checklist-item'),
+            ).indexOf(this);
+            return new DOMRect(0, index * 32, 100, 32);
+        });
         await checklist.init(container, toCtx(engine), {
             categoryId: 'items',
             ...opts,
@@ -219,9 +233,11 @@ describe('CategoryChecklist', () => {
             )!;
             header.style.direction = direction;
             const buttons = [
-                ...header.querySelectorAll<HTMLButtonElement>('button'),
+                ...header.querySelectorAll<HTMLElement>(
+                    'button, .category-checklist-master',
+                ),
             ];
-            expect(buttons).toHaveLength(3);
+            expect(buttons).toHaveLength(2);
             const physical =
                 direction === 'rtl' ? [...buttons].reverse() : buttons;
             physical.forEach((button, index) => {
@@ -280,38 +296,18 @@ describe('CategoryChecklist', () => {
         },
     );
 
-    it('skips unavailable header actions and leaves vertical action contracts alone', async () => {
+    it('contains header arrows when the bulk checkbox is unavailable', async () => {
         await init();
-        const buttons = [
-            ...container.querySelectorAll<HTMLButtonElement>(
-                '.category-checklist-header button',
-            ),
-        ];
-        buttons.forEach((button, index) => {
-            button.getBoundingClientRect = () =>
-                ({
-                    left: index * 80,
-                    right: index * 80 + 70,
-                    top: 10,
-                    bottom: 40,
-                    width: 70,
-                    height: 30,
-                }) as DOMRect;
-        });
-        buttons[1].disabled = true;
-        buttons[0].focus();
-        press(buttons[0], 'ArrowRight');
-        expect(document.activeElement).toBe(buttons[2]);
-        buttons[1].disabled = false;
-        buttons[1].hidden = true;
-        press(buttons[2], 'ArrowLeft');
-        expect(document.activeElement).toBe(buttons[0]);
-        const vertical = vi.fn();
-        buttons[0].addEventListener('keydown', vertical);
-        expect(press(buttons[0], 'ArrowDown').defaultPrevented).toBe(false);
-        expect(vertical).toHaveBeenCalledOnce();
-        expect(press(buttons[0], 'Enter').defaultPrevented).toBe(false);
-        expect(press(buttons[0], ' ').defaultPrevented).toBe(false);
+        const brand = container.querySelector<HTMLElement>('.ez-status-mark')!;
+        const bulk = container.querySelector<HTMLInputElement>(
+            '.category-checklist-master',
+        )!;
+        bulk.disabled = true;
+        brand.focus();
+        expect(press(brand, 'ArrowRight').defaultPrevented).toBe(true);
+        expect(document.activeElement).toBe(brand);
+        press(brand, 'ArrowDown');
+        expect(document.activeElement).toBe(boxes()[0]);
     });
 
     const suggestions = (ids: string[]): Suggestion[] =>
@@ -396,7 +392,7 @@ describe('CategoryChecklist', () => {
         );
     });
 
-    it('uses the Runtime’s tier order and depth for the current suggestions', async () => {
+    it('keeps each top-level choice with its indented Runtime suggestions', async () => {
         const tier = (id: string, depth: number) => ({
             ...suggestions([id])[0],
             depth,
@@ -428,12 +424,49 @@ describe('CategoryChecklist', () => {
                 ),
             );
         expect(indents()).toEqual(['', '0.75rem', '1.5rem', '']);
+        expect(
+            [...container.querySelectorAll('.category-checklist-column')].map(
+                (column) =>
+                    [...column.querySelectorAll<HTMLInputElement>('input')].map(
+                        (input) => input.dataset.conceptId,
+                    ),
+            ),
+        ).toEqual([['item-a', 'item-d', 'item-c'], ['item-b']]);
 
         boxes()[0].click();
         await expect.poll(visibleChoices).toEqual(['item-a', 'item-b']);
         checklist.applyAllowableOptions([tier('item-b', 0), tier('item-a', 1)]);
         expect(visibleChoices()).toEqual(['item-b', 'item-a']);
         expect(indents()).toEqual(['', '0.75rem']);
+    });
+
+    it('moves vertically inside a branch and across a row even when its entries have different depths', async () => {
+        await init();
+        checklist.applyAllowableOptions(
+            suggestions(['item-a', 'item-b', 'item-c', 'item-d']).map(
+                (choice, index) => ({ ...choice, depth: [0, 1, 0, 2][index] }),
+            ),
+        );
+        const [rootA, childA, rootB, childB] = boxes();
+        for (const [index, box] of boxes().entries()) {
+            const left = index < 2 ? 0 : 120;
+            const top = index % 2 ? 32 : 0;
+            box.parentElement!.getBoundingClientRect = () =>
+                new DOMRect(left, top, 100, 32);
+        }
+        rootA.focus();
+        press(rootA, 'ArrowDown');
+        expect(document.activeElement).toBe(childA);
+        press(childA, 'ArrowRight');
+        expect(document.activeElement).toBe(childB);
+        press(childB, 'ArrowUp');
+        expect(document.activeElement).toBe(rootB);
+        childA.parentElement!.getBoundingClientRect = () =>
+            new DOMRect(0, 64, 100, 32);
+        childA.focus();
+        press(childA, 'ArrowRight');
+        expect(document.activeElement).toBe(childB);
+        expect(checklist.getAssertions()).toEqual([]);
     });
 
     it('refreshes additional options when the store updates the choice or its sibling context', async () => {
@@ -474,7 +507,7 @@ describe('CategoryChecklist', () => {
         const brand = container.querySelector<HTMLElement>('.ez-status-mark')!;
         const clear = [
             ...container.querySelectorAll<HTMLButtonElement>(
-                '.category-checklist-toggle button',
+                '.category-checklist-master',
             ),
         ].at(-1)!;
         expect(first.tabIndex).toBe(0);
@@ -524,8 +557,8 @@ describe('CategoryChecklist', () => {
             press(boxes()[2], 'Tab', { shiftKey: true }).defaultPrevented,
         ).toBe(false);
         expect(
-            container.querySelectorAll('.category-checklist-toggle button'),
-        ).toHaveLength(2);
+            container.querySelectorAll('.category-checklist-master'),
+        ).toHaveLength(1);
         expect(
             container
                 .querySelector('.ez-status-mark')
@@ -694,7 +727,7 @@ describe('CategoryChecklist', () => {
                     : container.querySelector<HTMLElement>(
                           location === 'search'
                               ? '.category-checklist-search'
-                              : '.category-checklist-toggle button',
+                              : '.category-checklist-master',
                       )!;
             target.focus();
             allow(['item-a', 'item-c']);
@@ -731,15 +764,20 @@ describe('CategoryChecklist', () => {
             header.querySelector('.category-checklist-name')?.textContent,
         ).toBe('Items');
         expect(header.querySelector('h1, h2, h3, h4, h5, h6')).toBeNull();
-        // The row ends with the count, Select all, Clear all and the mark.
         const controls = header.querySelector('.category-checklist-controls')!;
         expect([...controls.children].map((child) => child.className)).toEqual([
-            'category-checklist-count',
-            'category-checklist-toggle',
             'ez-field-chrome ez-field-chrome--inline',
         ]);
         expect(controls.querySelector('.ez-status-mark')).not.toBeNull();
-        // Clear all is its clear: the chrome adds no second one.
+        expect(
+            controls.querySelector(
+                '.ez-field-chrome > .category-checklist-toggle',
+            ),
+        ).not.toBeNull();
+        expect(
+            container.querySelector('.category-checklist-frame')
+                ?.lastElementChild?.className,
+        ).toBe('category-checklist-count');
         expect(container.querySelector('.ez-clear-button')).toBeNull();
     });
 
@@ -964,53 +1002,57 @@ describe('CategoryChecklist', () => {
         expect(empty?.textContent).toBe('No matching items.');
     });
 
-    it('should show toggle buttons by default', async () => {
+    it('exposes empty, checked, and mixed states and toggles the category through the adapter', async () => {
         await init();
-        const toggle = container.querySelector('.category-checklist-toggle');
-        expect(toggle).not.toBeNull();
-        const buttons = toggle?.querySelectorAll('button');
-        expect(buttons?.length).toBe(2);
-        expect(buttons?.[0].textContent).toBe('Select all');
-        expect(buttons?.[1].textContent).toBe('Clear all');
-    });
+        const toggle = container.querySelector<HTMLInputElement>(
+            '.category-checklist-master',
+        )!;
+        expect(toggle.getAttribute('aria-label')).toBe('Select all Items');
+        expect(toggle.checked).toBe(false);
+        expect(toggle.indeterminate).toBe(false);
 
-    it('should hide toggle buttons when showToggleAll is false', async () => {
-        await init({ showToggleAll: false });
-        const toggle = container.querySelector('.category-checklist-toggle');
-        expect(toggle).toBeNull();
-    });
-
-    it('should select all items when "Select all" is clicked', async () => {
-        await init();
-        const selectAllBtn = container.querySelector(
-            '.category-checklist-toggle button:first-child',
-        ) as HTMLElement;
-        selectAllBtn.click();
-        const assertions = checklist.getAssertions();
-        expect(assertions.filter((a) => a.categoryId === 'items').length).toBe(
-            5,
-        );
-    });
-
-    it('should clear all items when "Clear all" is clicked', async () => {
-        await init();
-        // First select some
-        const cb1 = container.querySelector(
-            '[data-concept-id="item-a"]',
-        ) as HTMLInputElement;
-        cb1.checked = true;
-        cb1.dispatchEvent(new Event('change', { bubbles: true }));
-        expect(checklist.getAssertions().length).toBeGreaterThan(0);
-
-        // Clear all
-        const clearAllBtn = container.querySelector(
-            '.category-checklist-toggle button:last-child',
-        ) as HTMLElement;
-        clearAllBtn.click();
+        toggle.click();
+        expect(toggle.checked).toBe(true);
+        expect(toggle.indeterminate).toBe(false);
         expect(
-            checklist.getAssertions().filter((a) => a.categoryId === 'items')
-                .length,
-        ).toBe(0);
+            checklist
+                .getAssertions()
+                .filter((item) => item.categoryId === 'items'),
+        ).toHaveLength(5);
+
+        toggle.click();
+        expect(toggle.checked).toBe(false);
+        expect(toggle.indeterminate).toBe(false);
+        expect(
+            checklist
+                .getAssertions()
+                .filter((item) => item.categoryId === 'items'),
+        ).toHaveLength(0);
+
+        boxes()[0].click();
+        expect(toggle.indeterminate).toBe(true);
+        toggle.click();
+        expect(toggle.checked).toBe(true);
+        expect(toggle.indeterminate).toBe(false);
+        expect(
+            checklist
+                .getAssertions()
+                .filter((item) => item.categoryId === 'items'),
+        ).toHaveLength(5);
+        toggle.click();
+        expect(toggle.checked).toBe(false);
+        expect(
+            checklist
+                .getAssertions()
+                .filter((item) => item.categoryId === 'items'),
+        ).toHaveLength(0);
+    });
+
+    it('can hide the bulk checkbox', async () => {
+        await init({ showToggleAll: false });
+        expect(
+            container.querySelector('.category-checklist-master'),
+        ).toBeNull();
     });
 
     it('clears old corrections even if the Runtime fills the category again', async () => {
@@ -1039,9 +1081,7 @@ describe('CategoryChecklist', () => {
             renders: {},
             valid: true,
             errors: [],
-            assertions: [
-                { ...defaultItem, source: 'infer', confidence: 'inferred' },
-            ],
+            assertions: [{ ...defaultItem, source: 'user' }],
             appliedFixes: [initialFix],
         } as never);
         expect(checklist.getAppliedFixes()).toEqual([initialFix]);
@@ -1051,11 +1091,7 @@ describe('CategoryChecklist', () => {
             rendered: 'item-a,other-1',
             assertions: [defaultItem, sibling],
         }));
-        container
-            .querySelector<HTMLButtonElement>(
-                '.category-checklist-toggle button:last-child',
-            )!
-            .click();
+        checklist['clearAll']();
 
         expect(checklist.getAppliedFixes()).toEqual([]);
         expect(checklist.getAssertions()).toEqual([defaultItem]);
@@ -1254,9 +1290,6 @@ describe('CategoryChecklist header layout', () => {
         const controls = rule('.category-checklist-controls');
         expect(controls).toMatch(/flex-wrap:\s*nowrap/);
         expect(controls).toMatch(/margin-inline-start:\s*auto/);
-        // The buttons stay one unit, each on one line.
-        expect(rule('.category-checklist-toggle button')).toMatch(
-            /white-space:\s*nowrap/,
-        );
+        expect(rule('.category-checklist-count')).toMatch(/place-self:\s*end/);
     });
 });

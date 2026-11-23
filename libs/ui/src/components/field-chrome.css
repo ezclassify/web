@@ -16,12 +16,104 @@
     z-index: 4;
     display: inline-flex;
     align-items: center;
-    gap: 0.25rem;
 }
 .ez-field-chrome__status {
     display: inline-flex;
     align-items: center;
     gap: 0.25rem;
+}
+.ez-field-chrome .ez-field-action {
+    font: inherit;
+}
+.ez-field-chrome .ez-field-action__glyph {
+    inline-size: min(1em, 1lh, calc(1.5rem - 2px));
+    block-size: min(1em, 1lh, calc(1.5rem - 2px));
+    pointer-events: none;
+}
+
+/* The trailing action can be a button or a native bulk checkbox. */
+.ez-field-action--toggle {
+    position: relative;
+    display: inline-grid;
+    place-items: center;
+    inline-size: 1.5rem;
+    block-size: 1.5rem;
+}
+.ez-field-action__checkbox {
+    position: absolute;
+    inset: 0;
+    inline-size: 100% !important;
+    block-size: 100% !important;
+    margin: 0 !important;
+    opacity: 0 !important;
+    cursor: pointer;
+}
+.ez-field-action__glyph--toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    border: 2px solid var(--ez-color-muted, #6b7280);
+    border-radius: 0.25rem;
+    background: var(
+        --ez-color-background,
+        var(--_ez-default-color-background, #fff)
+    );
+    color: transparent;
+}
+.ez-field-action__glyph--toggle svg {
+    inline-size: 0.875em;
+    block-size: 0.875em;
+}
+.ez-field-action__checkbox:is(:checked, :indeterminate)
+    + .ez-field-action__glyph--toggle {
+    background: var(
+        --ez-color-primary,
+        var(--_ez-default-color-primary, #fdb827)
+    );
+    border-color: var(
+        --ez-color-primary,
+        var(--_ez-default-color-primary, #fdb827)
+    );
+    color: var(
+        --ez-color-primary-contrast,
+        var(--_ez-default-color-primary-contrast, #1c1c1c)
+    );
+}
+.ez-field-action__glyph--toggle path:last-child,
+.ez-field-action__checkbox:indeterminate
+    + .ez-field-action__glyph--toggle
+    path:first-child {
+    display: none;
+}
+.ez-field-action__checkbox:indeterminate
+    + .ez-field-action__glyph--toggle
+    path:last-child {
+    display: inline;
+}
+.ez-field-action__checkbox:focus-visible + .ez-field-action__glyph--toggle {
+    outline: 2px solid
+        var(--ez-color-primary, var(--_ez-default-color-primary, #fdb827));
+    outline-offset: 2px;
+}
+.ez-field-action__checkbox:disabled + .ez-field-action__glyph--toggle {
+    opacity: 0.45;
+}
+@media (forced-colors: active) {
+    .ez-field-action__glyph--toggle {
+        border-color: ButtonText;
+        background: Canvas;
+        forced-color-adjust: none;
+    }
+    .ez-field-action__checkbox:is(:checked, :indeterminate)
+        + .ez-field-action__glyph--toggle {
+        background: Highlight;
+        border-color: Highlight;
+        color: HighlightText;
+    }
+    .ez-field-action__checkbox:focus-visible + .ez-field-action__glyph--toggle {
+        outline-color: Highlight;
+    }
 }
 
 /* A control with a header row of its own places the row at that row's
@@ -33,11 +125,10 @@
     margin-inline-start: auto;
 }
 
-/* A multi-line field pins the row to its first line, the way a native
-   textarea's own controls sit at its top corner. */
+/* A wrapped field centers its controls on the first line's text. */
 .ez-field-chrome--start {
-    top: 0.25rem;
-    transform: none;
+    top: var(--ez-field-first-line-center, 1rem);
+    transform: translateY(-50%);
 }
 
 /* MarkingField shares its first grid row between the field layers and the
@@ -63,11 +154,25 @@
     ) !important;
 }
 
-/* The small branding glyph keeps a 44px touch target. Reserve its trailing
-   half-overhang before clear, which also grows to 44px on a coarse pointer. */
+/* Adjacent touch buttons keep separate hit areas without crowding the text. */
 @media (pointer: coarse) {
-    .ez-field-chrome {
-        gap: 0.75rem;
+    .ez-field-chrome .ez-status-mark--chrome,
+    .ez-field-chrome .ez-field-action {
+        min-inline-size: 2rem;
+        block-size: 2rem;
+    }
+    .ez-field-chrome .ez-status-mark--chrome {
+        padding-inline: max(0px, calc((2rem - 1cap) / 2));
+    }
+    .ez-field-chrome .ez-status-mark--chrome::after {
+        content: none;
+    }
+    .ez-field-chrome .ez-field-action {
+        inline-size: 2rem;
+    }
+    .ez-field-chrome .ez-field-action__glyph {
+        inline-size: min(1em, 1lh, calc(2rem - 2px));
+        block-size: min(1em, 1lh, calc(2rem - 2px));
     }
 }
 
@@ -83,17 +188,45 @@
     min-width: 0;
     min-height: 2rem;
     padding: 0.375rem 0.5rem;
-    background: var(--ez-color-background, inherit);
-    border: var(--ez-border-width, 1px) solid var(--ez-color-border, #d1d5db);
-    border-radius: var(--ez-border-radius, 0.25rem);
-    color: var(--ez-color-text, inherit);
+    background: var(
+        --ez-color-background,
+        var(
+            --_ez-native-color-background,
+            var(--_ez-default-color-background, inherit)
+        )
+    );
+    border-width: var(
+        --ez-border-width,
+        var(--_ez-native-border-width, var(--_ez-default-border-width, 1px))
+    );
+    border-style: var(--_ez-native-border-style, solid);
+    border-color: var(
+        --ez-color-border,
+        var(--_ez-native-color-border, var(--_ez-default-color-border, #d1d5db))
+    );
+    border-radius: var(
+        --ez-border-radius,
+        var(
+            --_ez-native-border-radius,
+            var(--_ez-default-border-radius, 0.25rem)
+        )
+    );
+    color: var(
+        --ez-color-text,
+        var(--_ez-native-color-text, var(--_ez-default-color-text, inherit))
+    );
+    font: var(--_ez-native-font, inherit);
+    line-height: var(--_ez-native-line-height, inherit);
 }
 /* Inset, like the text fields' own ring, so every control draws focus the
    same way inside its own edge. Focus on a chrome control shows that
    control's own ring instead: clearing is a form action, not editing. */
 .ez-field-frame:focus-within:not(:has(.ez-field-chrome :focus)) {
     outline: var(--ez-focus-ring-width, 2px) solid
-        var(--ez-color-border-focus, var(--ez-color-primary, #fdb827));
+        var(
+            --ez-color-border-focus,
+            var(--ez-color-primary, var(--_ez-default-color-primary, #fdb827))
+        );
     outline-offset: var(--ez-focus-ring-offset, -2px);
 }
 /* A control whose host is locked reads as a disabled input. */

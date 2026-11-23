@@ -13,7 +13,10 @@
  * grouped under the scope's label when they fall in more than one.
  */
 
-import { suspendNativeChoiceFallback } from '../native-control-host';
+import {
+    suspendNativeChoiceFallback,
+    useAuthoredChoiceLabel,
+} from '../native-control-host';
 import { ComponentBase, type ComponentOptions } from './component-base';
 import { createAnnouncer, announce } from './component-utils';
 import type {
@@ -35,7 +38,11 @@ import {
 } from './rule-errors';
 import { markingTarget } from './marking-target';
 import { statedAssertions } from './composer/composer-controller';
-import { focusGridNeighbor, type FocusGridArrow } from './focus-grid';
+import {
+    focusableFieldActions,
+    focusGridNeighbor,
+    type FocusGridArrow,
+} from './focus-grid';
 import { getMountHost } from '../mount-host-registry';
 import { createChoiceButton } from './choice-button';
 import {
@@ -416,7 +423,11 @@ export class CategorySelector extends ComponentBase {
         // Inject styles
         this.injectComponentStyles(choiceButtonCss);
         this.injectComponentStyles(CATEGORY_SELECTOR_CSS);
-        this.restoreFallback = suspendNativeChoiceFallback(this.container);
+        this.restoreFallback = suspendNativeChoiceFallback(
+            this.container,
+            this.options.resolveFacetJudgment,
+            boundCategoryId,
+        );
 
         // Preview bar
         this.preview = this.createPreviewBar();
@@ -425,8 +436,8 @@ export class CategorySelector extends ComponentBase {
         this.bodyEl = document.createElement('div');
         this.bodyEl.className = 'category-selector-body';
         this.bodyEl.addEventListener('keydown', this.onHeaderKeydown, true);
-        this.applySuiteFrame(this.bodyEl);
         this.container.appendChild(this.bodyEl);
+        this.applySuiteFrame(this.bodyEl, getMountHost(this.container));
         this.reason = new ChoiceExplanation(
             this.container.ownerDocument,
             'ez-choice-reason',
@@ -631,12 +642,17 @@ export class CategorySelector extends ComponentBase {
         // first line also carries the suite's chrome at its trailing end.
         const head = document.createElement('div');
         head.className = 'category-selector-head';
-        const label = document.createElement('div');
-        label.className = 'category-selector-label';
-        label.textContent = row.category.label;
-        label.id = `category-label-${row.category.id}`;
-        rowEl.setAttribute('aria-labelledby', label.id);
-        head.appendChild(label);
+        if (
+            this.categoryRows.length !== 1 ||
+            !useAuthoredChoiceLabel(rowEl, this.container)
+        ) {
+            const label = document.createElement('div');
+            label.className = 'category-selector-label';
+            label.textContent = row.category.label;
+            label.id = `category-label-${row.category.id}`;
+            rowEl.setAttribute('aria-labelledby', label.id);
+            head.appendChild(label);
+        } else rowEl.classList.add('category-selector-row--host-label');
         rowEl.appendChild(head);
 
         // Options container
@@ -869,29 +885,22 @@ export class CategorySelector extends ComponentBase {
             case 'ArrowUp':
             case 'ArrowDown': {
                 const current = e.currentTarget as HTMLButtonElement;
-                const buttons = [
-                    ...this.bodyEl.querySelectorAll<HTMLButtonElement>(
-                        '.category-selector-btn:not(:disabled)',
-                    ),
-                ].filter(
-                    (button) =>
-                        button === current ||
-                        button.getAttribute('aria-disabled') !== 'true',
-                );
+                const inline = this.actionsInline();
+                const options = this.focusableOptions(current);
+                const horizontal =
+                    e.key === 'ArrowLeft' || e.key === 'ArrowRight';
                 const next = focusGridNeighbor(
-                    buttons,
+                    inline && horizontal
+                        ? [...options, ...this.headerActions()]
+                        : options,
                     current,
                     e.key as FocusGridArrow,
                 );
-                if (!next && e.key === 'ArrowUp')
+                if (!next && !inline && e.key === 'ArrowUp')
                     this.suiteChrome?.status
                         .querySelector<HTMLElement>('.ez-status-mark')
                         ?.focus({ preventScroll: true });
-                if (next)
-                    this.moveFocus(
-                        Number(next.dataset.rowIndex),
-                        Number(next.dataset.colIndex),
-                    );
+                next?.focus();
                 break;
             }
             case 'Home': {
@@ -942,10 +951,34 @@ export class CategorySelector extends ComponentBase {
             });
     }
 
-    /** Return to the last category's remembered or default Tab stop. */
+    private actionsInline(): boolean {
+        return (
+            this.bodyEl.firstElementChild?.matches(
+                '.category-selector-row--host-label',
+            ) ?? false
+        );
+    }
+
+    private headerActions(): HTMLElement[] {
+        return this.suiteChrome
+            ? focusableFieldActions(this.suiteChrome.element, 'button')
+            : [];
+    }
+
+    private focusableOptions(current?: HTMLButtonElement): HTMLButtonElement[] {
+        return [
+            ...this.bodyEl.querySelectorAll<HTMLButtonElement>(
+                '.category-selector-btn:not(:disabled)',
+            ),
+        ].filter(
+            (button) =>
+                button === current ||
+                button.getAttribute('aria-disabled') !== 'true',
+        );
+    }
+
     private readonly onHeaderKeydown = (event: KeyboardEvent): void => {
         if (
-            event.key !== 'ArrowDown' ||
             event.altKey ||
             event.ctrlKey ||
             event.metaKey ||
@@ -954,17 +987,21 @@ export class CategorySelector extends ComponentBase {
             event.defaultPrevented
         )
             return;
-        const target = event.target;
-        if (
-            target !==
-                this.suiteChrome?.status.querySelector('.ez-status-mark') &&
-            target !==
-                this.suiteChrome?.element.querySelector('.ez-clear-button')
-        )
-            return;
+        const target = event.target as HTMLElement;
+        if (!this.suiteChrome?.element.contains(target)) return;
+        if (!this.actionsInline()) {
+            if (event.key !== 'ArrowDown') return;
+            this.refocusButton();
+        } else {
+            if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+            focusGridNeighbor(
+                [...this.focusableOptions(), ...this.headerActions()],
+                target,
+                event.key,
+            )?.focus();
+        }
         event.preventDefault();
         event.stopPropagation();
-        this.refocusButton();
     };
 
     private refocusButton(): void {

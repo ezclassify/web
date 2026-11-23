@@ -76,6 +76,7 @@ import type { ClearButton } from './clear-button';
 import { isUndoChord, MarkingUndo } from './marking-undo';
 import { announce, createAnnouncer } from './accessibility-helpers';
 import {
+    mirrorHostAccent,
     mountFieldChrome,
     observeFieldTheme,
     type FieldChrome,
@@ -83,6 +84,12 @@ import {
 import { FieldComponentBase } from './field-component-base';
 import type { FavoritesPanelHost } from './favorites-panel';
 import { markingTarget } from './marking-target';
+import { hideTooltip } from './tooltip-manager';
+import {
+    showMarkingActions,
+    usesPhoneMarkingActions,
+} from './marking-touch-actions';
+import markingTouchCss from './marking-touch-actions.css?inline';
 
 /**
  * CSS class-name set a concrete field uses. Keeps the shared scaffolding (wrap,
@@ -191,11 +198,6 @@ export abstract class MarkedFieldBase<
      * 'chrome'`; clear follows it.
      */
     protected chrome!: FieldChrome;
-    /**
-     * Where the chrome sits on the field's trailing edge: centered on a
-     * single-line field, pinned to the first line of a multi-line one.
-     */
-    protected readonly chromeAlign: 'center' | 'start' = 'center';
     private clearControl?: ClearButton;
     /**
      * The undo of a clear (see marking-undo.ts). The field's value is its text,
@@ -424,6 +426,7 @@ export abstract class MarkedFieldBase<
     protected injectStyle(): void {
         this.container.setAttribute('data-ezclassify', '');
         adoptStylesOnce(COMPONENT_CSS + this.css, this.container);
+        adoptStylesOnce(markingTouchCss, this.container);
     }
 
     /**
@@ -459,6 +462,16 @@ export abstract class MarkedFieldBase<
     protected setMeasuredFontSize(size: string): void {
         this.host.style.setProperty('--ez-field-measured-font-size', size);
         this.display.style.setProperty('--ez-field-measured-font-size', size);
+        const { borderTopWidth, paddingTop, lineHeight } = this.display.style;
+        const inset =
+            (parseFloat(borderTopWidth) || 0) + (parseFloat(paddingTop) || 0);
+        const halfLine = lineHeight.endsWith('px')
+            ? `${parseFloat(lineHeight) / 2}px`
+            : '0.5lh';
+        const center = `calc(${inset}px + ${halfLine})`;
+        const property = '--ez-field-first-line-center';
+        if (this.wrap.style.getPropertyValue(property) !== center)
+            this.wrap.style.setProperty(property, center);
     }
 
     /**
@@ -471,6 +484,8 @@ export abstract class MarkedFieldBase<
         hostInputClass: string,
         paintHost: HTMLElement = this.host,
     ): void {
+        if (!this.options.styleInputs)
+            mirrorHostAccent(this.wrap, window.getComputedStyle(paintHost));
         if (typeof MutationObserver === 'undefined') return;
         // Replace any prior observer (defensive against a double install).
         this.disconnectThemeObserver();
@@ -514,6 +529,7 @@ export abstract class MarkedFieldBase<
                     paintHost.classList.remove(hostInputClass);
                 }
                 const cs = window.getComputedStyle(paintHost);
+                if (!this.options.styleInputs) mirrorHostAccent(this.wrap, cs);
                 for (const property of [...layout, ...paintProperties])
                     paint[property] = cs[property];
             } finally {
@@ -572,9 +588,8 @@ export abstract class MarkedFieldBase<
     protected appendFooter(): void {
         const footer = document.createElement('div');
         footer.className = `ez-marked-field-footer ${this.classNames.footer}`;
-
-        // One direct action and Tab stop: its desktop keycap documents the
-        // shortcut; coarse pointers keep the same plain action button.
+        // The desktop action doubles as a visible shortcut reminder. Phones
+        // use the interactive marking or inline Add action.
         const touchAdd = document.createElement('button');
         touchAdd.type = 'button';
         touchAdd.className = this.classNames.touchAdd;
@@ -603,8 +618,30 @@ export abstract class MarkedFieldBase<
         // before the chrome.
         this.chrome = mountFieldChrome(this.wrap, {
             root: this.container,
-            align: this.chromeAlign,
+            align: 'start',
+            fontSource: this.display,
         });
+        const add = document.createElement('button');
+        add.type = 'button';
+        add.className = 'ez-marked-field-add';
+        add.setAttribute('aria-label', t('hint.addMarking'));
+        add.hidden = true;
+        let pressed: (() => void) | undefined;
+        // Keep the paragraph caret and action while a touch activates chrome.
+        add.addEventListener('pointerdown', (event) => {
+            event.preventDefault();
+            pressed = this.phoneAddAction;
+        });
+        add.addEventListener('pointercancel', () => {
+            pressed = undefined;
+        });
+        add.addEventListener('click', (event) => {
+            const action = event.detail ? pressed : this.phoneAddAction;
+            pressed = undefined;
+            if (usesPhoneMarkingActions(add)) action?.();
+        });
+        this.phoneAddButton = add;
+        this.chrome.element.append(add);
         this.clearControl = this.createFieldClear({
             label: t('aria.clearText'),
             host: this.host,
@@ -676,6 +713,50 @@ export abstract class MarkedFieldBase<
         } finally {
             this._selfDispatch = false;
         }
+    }
+
+    private phoneMarkingSource?: {
+        expected: string;
+        native: HTMLInputElement | HTMLTextAreaElement;
+        draft?: { original: string; proposed: string };
+    };
+
+    protected holdPhoneMarkingSource(
+        expected: string,
+        native: HTMLInputElement | HTMLTextAreaElement,
+        draft?: { original: string; proposed: string },
+    ): void {
+        this.phoneMarkingSource = { expected, native, draft };
+    }
+
+    protected writePhoneMarkingValue(value: string): void {
+        const source = this.phoneMarkingSource;
+        if (source) {
+            source.expected = value;
+            if (source.draft?.proposed !== value) source.draft = undefined;
+        }
+        this.setHostValue(value);
+    }
+
+    /** A native host replacement wins over the older editor and its snapshot. */
+    protected discardStalePhoneMarking(): boolean {
+        const source = this.phoneMarkingSource;
+        if (!source) return false;
+        const matches =
+            source.expected === source.native.value &&
+            source.expected === this.host.value;
+        const locked = source.native.matches(':disabled, [readonly]');
+        if (matches && !locked) return false;
+        // Roll back a placeholder only while both editors still hold our
+        // exact provisional write. This ends the edit even if the host unlocks.
+        if (matches && locked && source.draft?.proposed === source.expected)
+            this.writePhoneMarkingValue(source.draft.original);
+        this.finishClose();
+        this._editorAssertions = null;
+        this.host.value = source.native.value;
+        this.afterCancel(false);
+        this.afterClose();
+        return true;
     }
 
     /**
@@ -820,6 +901,7 @@ export abstract class MarkedFieldBase<
             | 'openList'
             | 'resolveParts'
             | 'sheetTools'
+            | 'protectExistingMarking'
             | 'textToolsEdges'
         >,
         finishBlur: () => void,
@@ -846,12 +928,20 @@ export abstract class MarkedFieldBase<
                         finishBlur();
                 },
                 onCancel: (fromSheet) => this.escapeClosePicker(fromSheet),
+                onChange: (...args) => {
+                    if (!this.discardStalePhoneMarking())
+                        options.onChange?.(...args);
+                },
                 focusTarget: this.wrap,
                 isFieldChrome: (node) => this.isFieldChrome(node),
                 root: this.container,
             },
         );
         if (openSeq !== this.pickerOpenSeq) {
+            picker.destroy();
+            return false;
+        }
+        if (this.discardStalePhoneMarking()) {
             picker.destroy();
             return false;
         }
@@ -866,10 +956,15 @@ export abstract class MarkedFieldBase<
 
     /** A superseded or invalid session cannot write a mark to the host. */
     protected async commitPicker(): Promise<boolean> {
+        if (this.discardStalePhoneMarking()) return false;
         const picker = this.picker;
         if (!picker) return false;
         const outcome = await picker.commit();
-        return this.picker === picker && outcome !== 'invalid';
+        return (
+            this.picker === picker &&
+            !this.discardStalePhoneMarking() &&
+            outcome !== 'invalid'
+        );
     }
 
     /** Carry the editor's facts into the next read of the same written mark. */
@@ -882,6 +977,7 @@ export abstract class MarkedFieldBase<
 
     protected destroyPicker(): void {
         this.pickerOpenSeq++;
+        this.phoneMarkingSource = undefined;
         this.picker?.destroy();
         this.picker = null;
         this.pickerMount?.remove();
@@ -889,25 +985,30 @@ export abstract class MarkedFieldBase<
     }
 
     /**
-     * Keep the display layer hidden from assistive technology everywhere except
-     * the path to the inline editor. The display mirrors the host's text for
-     * sighted users and is `aria-hidden` for that reason; an editor mounted
-     * inside it would be hidden too, leaving a focused combobox with no name
-     * and nothing announced. While an editor is mounted, the layer itself is
-     * exposed and every sibling along the editor's ancestor chain is hidden
-     * instead. Call at the end of every display render.
+     * Expose controls in the visual mirror without reading the text twice. The
+     * native textarea owns the text alternative. Only the inline editor and
+     * phone marking actions need to be visible to assistive technology.
      */
     protected exposePickerInDisplay(): void {
         const mount = this.pickerMount;
-        if (!mount || !this.display.contains(mount)) {
+        const exposed = new Set<Element>(
+            this.display.querySelectorAll('[data-ez-phone-mark-action]'),
+        );
+        if (mount && this.display.contains(mount)) exposed.add(mount);
+        if (!exposed.size) {
             this.display.setAttribute('aria-hidden', 'true');
             return;
         }
         this.display.removeAttribute('aria-hidden');
         const hideAround = (parent: Node): void => {
             for (const child of [...parent.childNodes]) {
-                if (child === mount) continue;
-                if (child.contains(mount)) {
+                if (child instanceof Element && exposed.has(child)) continue;
+                if (
+                    child instanceof Element &&
+                    child.querySelector('[data-ez-phone-mark-action]')
+                ) {
+                    hideAround(child);
+                } else if (mount && child.contains(mount)) {
                     hideAround(child);
                 } else if (child.nodeType === Node.TEXT_NODE) {
                     const span = document.createElement('span');
@@ -943,6 +1044,7 @@ export abstract class MarkedFieldBase<
      * there the user is navigating away from work they mean to keep.
      */
     protected cancelPicker(): void {
+        if (this.discardStalePhoneMarking()) return;
         const snap = this._pickerCancelSnapshot;
         // Nothing from this editing session may be committed or reused.
         this._editorAssertions = null;
@@ -1164,6 +1266,7 @@ export abstract class MarkedFieldBase<
         },
         open?: (event: Event) => void,
         openAttentionOnDesktop = false,
+        remove?: () => void,
     ) {
         const attention = this.segmentAttention(segment);
         chip.className = !segment.valid
@@ -1173,6 +1276,12 @@ export abstract class MarkedFieldBase<
               : className;
         if (open) {
             chip.classList.add('ez-marked-field-tap-target');
+            if (remove && usesPhoneMarkingActions(chip)) {
+                chip.dataset.ezPhoneMarkAction = '';
+                chip.setAttribute('role', 'button');
+                chip.setAttribute('aria-expanded', 'false');
+                chip.tabIndex = 0;
+            }
             // On touch layouts the painted chip owns the tap. Let scrolling
             // cancel the click and keep the native editor from taking focus.
             chip.addEventListener('mousedown', (event) => {
@@ -1181,20 +1290,32 @@ export abstract class MarkedFieldBase<
                 else if (attention && openAttentionOnDesktop) open(event);
             });
             chip.addEventListener('click', (event) => {
-                if (
-                    event.detail < 2 &&
-                    window.matchMedia?.('(pointer: coarse)').matches
-                )
+                if (event.detail >= 2) return;
+                if (remove && usesPhoneMarkingActions(chip)) {
+                    this.openPhoneMarkingActions(
+                        chip,
+                        open,
+                        remove,
+                        event.detail === 0,
+                    );
+                } else if (window.matchMedia?.('(pointer: coarse)').matches) {
                     open(event);
+                }
+            });
+            chip.addEventListener('keydown', (event) => {
+                if (event.key !== 'Enter' && event.key !== ' ') return;
+                if (remove && usesPhoneMarkingActions(chip)) {
+                    event.preventDefault();
+                    this.openPhoneMarkingActions(chip, open, remove, true);
+                } else if (attention && openAttentionOnDesktop) {
+                    open(event);
+                }
             });
         }
         if (attention && open && openAttentionOnDesktop) {
             chip.tabIndex = 0;
             chip.setAttribute('role', 'button');
             chip.setAttribute('aria-label', attention.label);
-            chip.addEventListener('keydown', (event) => {
-                if (event.key === 'Enter' || event.key === ' ') open(event);
-            });
         }
         if (!attention || !this.shouldShowTooltip()) return attention;
         chip.dataset.ezSegmentTooltip = '';
@@ -1202,12 +1323,59 @@ export abstract class MarkedFieldBase<
             chip,
             () => attention.tooltip,
             this.container,
-            () => chip.isConnected && this.shouldShowTooltip(),
+            () =>
+                chip.isConnected &&
+                this.shouldShowTooltip() &&
+                (!remove || !usesPhoneMarkingActions(chip)),
             undefined,
             undefined,
             () => ({ clearOf: this.wrap }),
         );
         return attention;
+    }
+
+    private closeTouchActions?: () => void;
+    private openPhoneMarkingActions(
+        chip: HTMLElement,
+        edit: (event: Event) => void,
+        remove: () => void,
+        focus: boolean,
+    ): void {
+        hideTooltip(this.container);
+        this.closeTouchActions?.();
+        this.closeTouchActions = showMarkingActions(
+            this.wrap,
+            chip,
+            edit,
+            remove,
+            focus,
+        );
+    }
+
+    private phoneAddButton?: HTMLButtonElement;
+    private phoneAddAction?: () => void;
+
+    protected setPhoneAddAction(add?: () => void): void {
+        this.phoneAddAction = add;
+        if (this.phoneAddButton) this.phoneAddButton.hidden = !add;
+    }
+
+    private phoneEditOpening = false;
+
+    /** A held Backspace can repeat before the async editor has mounted. */
+    protected openFromPhoneEdit(
+        event: Event,
+        open: () => Promise<void>,
+    ): boolean {
+        if (!event.cancelable || event.defaultPrevented) return false;
+        event.preventDefault();
+        if (!this.phoneEditOpening && !this.picker) {
+            this.phoneEditOpening = true;
+            void open().finally(() => {
+                this.phoneEditOpening = false;
+            });
+        }
+        return true;
     }
 
     private hoveredSegment: HTMLElement | undefined;
@@ -1280,6 +1448,7 @@ export abstract class MarkedFieldBase<
      * @param teardown - The field's own teardown
      */
     protected destroyAfterDraft(teardown: () => void): void {
+        this.closeTouchActions?.();
         teardownAfterWrite(
             this,
             this.picker?.hasDraft() ? () => this.commitOpenEditor() : null,

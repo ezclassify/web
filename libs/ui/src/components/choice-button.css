@@ -3,10 +3,20 @@
 .ez-choice-button {
     min-height: 2rem;
     box-sizing: border-box;
-    border: 0.0625rem solid var(--ez-color-border, #d1d5db);
-    border-radius: var(--ez-border-radius, var(--ez-choice-radius, 0.25rem));
-    background: var(--ez-color-background, #fff);
-    color: var(--ez-color-text, var(--ez-choice-text, inherit));
+    border: 0.0625rem solid
+        var(--ez-color-border, var(--_ez-default-color-border, #d1d5db));
+    border-radius: var(
+        --ez-border-radius,
+        var(--_ez-default-border-radius, var(--ez-choice-radius, 0.25rem))
+    );
+    background: var(
+        --ez-color-background,
+        var(--_ez-default-color-background, #fff)
+    );
+    color: var(
+        --ez-color-text,
+        var(--_ez-default-color-text, var(--ez-choice-text, inherit))
+    );
     font-family: inherit;
     cursor: pointer;
     user-select: none;
@@ -18,20 +28,35 @@
     );
 }
 .ez-choice-button:hover {
-    border-color: var(--ez-category-accent, var(--ez-color-primary, #fdb827));
+    border-color: var(
+        --ez-category-accent,
+        var(--ez-color-primary, var(--_ez-default-color-primary, #fdb827))
+    );
 }
 .ez-choice-button:focus-visible {
     outline: 0.125rem solid
-        var(--ez-category-accent, var(--ez-color-primary, #fdb827));
+        var(
+            --ez-category-accent,
+            var(--ez-color-primary, var(--_ez-default-color-primary, #fdb827))
+        );
     outline-offset: 0.125rem;
 }
 .ez-choice-button:focus:not(:focus-visible) {
     outline: none;
 }
 .ez-choice-button:is([aria-checked='true'], [aria-pressed='true']) {
-    background: var(--ez-category-accent, var(--ez-color-primary, #fdb827));
-    color: var(--ez-color-primary-contrast, #1c1c1c);
-    border-color: var(--ez-category-accent, var(--ez-color-primary, #fdb827));
+    background: var(
+        --ez-category-accent,
+        var(--ez-color-primary, var(--_ez-default-color-primary, #fdb827))
+    );
+    color: var(
+        --ez-color-primary-contrast,
+        var(--_ez-default-color-primary-contrast, #1c1c1c)
+    );
+    border-color: var(
+        --ez-category-accent,
+        var(--ez-color-primary, var(--_ez-default-color-primary, #fdb827))
+    );
 }
 .ez-choice-button[role='checkbox'][aria-checked='true']::before {
     content: '\2713\FE0E';
@@ -43,7 +68,10 @@
     color: var(--ez-color-muted, #6b7280);
 }
 .ez-choice-button[data-blocked]:hover {
-    border-color: var(--ez-color-border, #d1d5db);
+    border-color: var(
+        --ez-color-border,
+        var(--_ez-default-color-border, #d1d5db)
+    );
 }
 @media (pointer: coarse) {
     .ez-choice-button {
@@ -82,11 +110,21 @@
 .ez-choice-button.ez-choice-button--inferred {
     font-style: italic;
     border-style: dashed;
-    border-color: var(--ez-category-accent, var(--ez-color-primary, #fdb827));
+    border-color: var(
+        --ez-category-accent,
+        var(--ez-color-primary, var(--_ez-default-color-primary, #fdb827))
+    );
     --ez-contrast-fill: color-mix(
         in srgb,
-        var(--ez-category-accent, var(--ez-color-primary, #fdb827)) 18%,
-        var(--ez-color-background, #fff)
+        var(
+                --ez-category-accent,
+                var(
+                    --ez-color-primary,
+                    var(--_ez-default-color-primary, #fdb827)
+                )
+            )
+            18%,
+        var(--ez-color-background, var(--_ez-default-color-background, #fff))
     );
 }
 @supports (color: color(from red xyz-d65 max(0, sign(0.179 - y)) y z)) {

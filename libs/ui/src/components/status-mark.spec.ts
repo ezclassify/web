@@ -551,7 +551,7 @@ describe('the unseen count', () => {
             '',
         );
         const rule = css.match(/\.ez-status-mark__count\s*\{([^}]*)\}/)?.[1];
-        expect(rule).toMatch(/margin-inline-end:/);
+        expect(rule).toMatch(/margin-inline-end:\s*0;/);
         expect(rule).not.toMatch(/margin-inline-start:/);
         // Nothing resizes the mark while it is hovered or focused.
         expect(css).not.toMatch(
@@ -1742,7 +1742,7 @@ describe('status mark tone', () => {
         const dark = paletteBlock("[data-color-scheme='dark'],");
         expect(dark).toMatch(/--ez-status-mark-color:\s*#9ca3af;/);
         expect(dark).toMatch(
-            /--ez-status-mark-strong-color:\s*var\(--ez-color-primary, #fdb827\);/,
+            /--ez-status-mark-strong-color:\s*var\(\s*--ez-color-primary,\s*var\(--_ez-default-color-primary, #fdb827\)\s*\);/,
         );
     });
 });

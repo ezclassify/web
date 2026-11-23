@@ -406,17 +406,15 @@ export class SingleSelect extends ComponentBase {
         field.appendChild(select);
         this.container.appendChild(field);
         this.mountSuiteChrome(field, 'overlay', undefined, select);
-        if (!native) {
-            this.stopHostFrame = mirrorHostFrame(
-                field,
-                host ?? this.enhancedInput,
-                {
-                    container: this.container,
-                    styleInputs: this.options.styleInputs,
-                    explicitPalette: () => !!this.options.theme,
-                },
-            );
-        }
+        this.stopHostFrame = mirrorHostFrame(
+            field,
+            host ?? this.enhancedInput,
+            {
+                container: this.container,
+                styleInputs: this.options.styleInputs,
+                explicitPalette: () => !!this.options.theme,
+            },
+        );
         this.dropdownSupplement = document.createElement('div');
         this.dropdownSupplement.className = 'select-dropdown-supplement';
         this.container.appendChild(this.dropdownSupplement);
@@ -726,7 +724,7 @@ export class SingleSelect extends ComponentBase {
                     '--ez-indicator-bg',
                     colors?.border ??
                         colors?.background ??
-                        'var(--ez-color-primary, ' + categoryColor + ')',
+                        `var(--ez-color-primary, var(--_ez-default-color-primary, ${categoryColor}))`,
                 );
                 indicator.classList.add('select-card-indicator--active');
             }

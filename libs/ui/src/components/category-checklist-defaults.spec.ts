@@ -124,9 +124,7 @@ describe('category clearing through engine defaults', () => {
                         .some((a) => a.conceptId === 'PARTNER'),
                 )
                 .toBe(true);
-            root.querySelector<HTMLButtonElement>(
-                '.category-checklist-toggle button:last-child',
-            )!.click();
+            checklist['clearAll']();
 
             await expect
                 .poll(() =>

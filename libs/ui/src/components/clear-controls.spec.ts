@@ -138,7 +138,7 @@ describe('editable component clear controls', () => {
         expect(root.querySelector('.ez-clear-button')).toBeNull();
     });
 
-    it('keeps the checklist Clear all action without adding a second clear button', async () => {
+    it('adds one bulk checkbox for a checklist and no separate clear button', async () => {
         const root = document.createElement('div');
         document.body.appendChild(root);
         root.innerHTML = '<input value="LOW">';
@@ -149,11 +149,7 @@ describe('editable component clear controls', () => {
         });
         expect(mounted.getAssertions()).not.toEqual([]);
         expect(root.querySelector('.ez-clear-button')).toBeNull();
-        const clear = Array.from(root.querySelectorAll('button')).find(
-            (button) => button.textContent === 'Clear all',
-        )!;
-        clear.click();
-        await vi.waitFor(() => expect(mounted!.getAssertions()).toEqual([]));
+        expect(root.querySelector('.category-checklist-master')).not.toBeNull();
     });
     for (const field of fields.filter((field) =>
         ['MarkingField', 'TagInput', 'SingleSelect'].includes(field.name),

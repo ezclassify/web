@@ -1406,8 +1406,8 @@ describe('MarkingField', () => {
             'utf8',
         );
         const rule = css.match(/\.marking-field-wrap:focus\s*\{([^}]*)\}/)?.[1];
-        expect(rule).toContain(
-            'outline: 0.125rem solid var(--ez-color-primary',
+        expect(rule).toMatch(
+            /outline: 0\.125rem solid\s+var\(\s*--ez-color-primary/,
         );
         expect(rule).toContain('outline-offset: -0.125rem');
     });

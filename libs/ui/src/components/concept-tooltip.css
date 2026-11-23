@@ -11,10 +11,23 @@
     max-width: 32rem;
     padding: 0.625rem 0.75rem;
     line-height: 1.5;
-    color: var(--ez-tooltip-color, var(--ez-color-text, #1a1a2e));
-    background: var(--ez-tooltip-background, var(--ez-color-background, #fff));
-    border: 1px solid var(--ez-tooltip-border, var(--ez-color-border, #d1d5db));
-    border-radius: var(--ez-border-radius, 0.375rem);
+    color: var(
+        --ez-tooltip-color,
+        var(--ez-color-text, var(--_ez-default-color-text, #1a1a2e))
+    );
+    background: var(
+        --ez-tooltip-background,
+        var(--ez-color-background, var(--_ez-default-color-background, #fff))
+    );
+    border: 1px solid
+        var(
+            --ez-tooltip-border,
+            var(--ez-color-border, var(--_ez-default-color-border, #d1d5db))
+        );
+    border-radius: var(
+        --ez-border-radius,
+        var(--_ez-default-border-radius, 0.375rem)
+    );
     box-shadow: var(--ez-tooltip-shadow, 0 4px 16px rgba(0, 0, 0, 0.15));
     pointer-events: none;
     word-wrap: break-word;
@@ -41,15 +54,24 @@
     box-sizing: border-box;
     max-height: var(--ez-tools-max-height, none);
     overflow: clip;
-    color: var(--ez-dropdown-color, var(--ez-color-text, #1a1a2e));
-    background: var(--ez-dropdown-background, var(--ez-color-background, #fff));
+    color: var(
+        --ez-dropdown-color,
+        var(--ez-color-text, var(--_ez-default-color-text, #1a1a2e))
+    );
+    background: var(
+        --ez-dropdown-background,
+        var(--ez-color-background, var(--_ez-default-color-background, #fff))
+    );
 }
 
 .ez-tooltip__header {
     font-weight: 700;
     font-size: calc(1em * 0.8125);
     margin-bottom: 0.375rem;
-    color: var(--ez-tooltip-header-color, var(--ez-color-text, #111));
+    color: var(
+        --ez-tooltip-header-color,
+        var(--ez-color-text, var(--_ez-default-color-text, #111))
+    );
 }
 
 .ez-tooltip__heading {
@@ -64,7 +86,10 @@
 
 .ez-tooltip__body {
     font-size: calc(1em * 0.75);
-    color: var(--ez-tooltip-body-color, var(--ez-color-text, #333));
+    color: var(
+        --ez-tooltip-body-color,
+        var(--ez-color-text, var(--_ez-default-color-text, #333))
+    );
     margin-bottom: 0.25rem;
 }
 
@@ -118,7 +143,10 @@
    under it, then the undo of the author's last edit. Its text takes the body
    color the line-built tooltip content takes. */
 .ez-status-list {
-    color: var(--ez-tooltip-body-color, var(--ez-color-text, #333));
+    color: var(
+        --ez-tooltip-body-color,
+        var(--ez-color-text, var(--_ez-default-color-text, #333))
+    );
 }
 .ez-status-list__error {
     margin-bottom: 0.5em;
@@ -153,15 +181,23 @@
     font-weight: 600;
     color: inherit;
     background: transparent;
-    border: 1px solid var(--ez-tooltip-border, var(--ez-color-border, #d1d5db));
-    border-radius: var(--ez-border-radius, 0.375em);
+    border: 1px solid
+        var(
+            --ez-tooltip-border,
+            var(--ez-color-border, var(--_ez-default-color-border, #d1d5db))
+        );
+    border-radius: var(
+        --ez-border-radius,
+        var(--_ez-default-border-radius, 0.375em)
+    );
     cursor: pointer;
 }
 .ez-status-list__undo:hover {
     background: var(--ez-color-hover, rgba(0, 0, 0, 0.05));
 }
 .ez-status-list__undo:focus-visible {
-    outline: 2px solid var(--ez-color-primary, #fdb827);
+    outline: 2px solid
+        var(--ez-color-primary, var(--_ez-default-color-primary, #fdb827));
     outline-offset: -2px;
 }
 .ez-status-list__undo-description {

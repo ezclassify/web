@@ -124,12 +124,17 @@ describe('the EzClassify suite', () => {
     it('draws the shared frame from the tokens, at the weight of a plain input', () => {
         const frame = rule(css('field-chrome.css'), '.ez-field-frame');
         expect(frame).toMatch(
-            /border:\s*var\(--ez-border-width, 1px\) solid var\(--ez-color-border, #d1d5db\)/,
+            /border-width:\s*var\(\s*--ez-border-width,\s*var\(\s*--_ez-native-border-width,/,
         );
         expect(frame).toMatch(
-            /border-radius:\s*var\(--ez-border-radius, 0\.25rem\)/,
+            /border-color:\s*var\(\s*--ez-color-border,\s*var\(\s*--_ez-native-color-border,/,
         );
-        expect(frame).toMatch(/background:\s*var\(--ez-color-background/);
+        expect(frame).toMatch(
+            /border-radius:\s*var\(\s*--ez-border-radius,\s*var\(\s*--_ez-native-border-radius,/,
+        );
+        expect(frame).toMatch(
+            /background:\s*var\(\s*--ez-color-background,\s*var\(\s*--_ez-native-color-background,/,
+        );
         expect(frame).toMatch(/padding:\s*0\.375rem 0\.5rem/);
         expect(frame).toMatch(/min-height:\s*2rem/);
         // No panel: nothing a plain input does not draw.
@@ -142,7 +147,7 @@ describe('the EzClassify suite', () => {
 
     it('draws a shared, token-driven focus ring', () => {
         const ring =
-            /outline:\s*var\(--ez-focus-ring-width, 2px\) solid\s+var\(--ez-color-border-focus, var\(--ez-color-primary, #fdb827\)\);\s*outline-offset:\s*var\(--ez-focus-ring-offset, -2px\)/;
+            /outline:\s*var\(--ez-focus-ring-width, 2px\) solid\s+var\(\s*--ez-color-border-focus,\s*var\(\s*--ez-color-primary,\s*var\(--_ez-default-color-primary, #fdb827\)\s*\)\s*\);\s*outline-offset:\s*var\(--ez-focus-ring-offset, -2px\)/;
         expect(
             rule(
                 css('field-chrome.css'),

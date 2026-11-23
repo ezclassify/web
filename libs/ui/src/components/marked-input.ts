@@ -20,6 +20,12 @@ import type {
     ComponentEngineSource,
 } from './component-base-readonly';
 import { returnToField, partsOption } from './component-base-readonly';
+import {
+    editTouchesMark,
+    markingEditRange,
+    removeMarkingText,
+    usesPhoneMarkingActions,
+} from './marking-touch-actions';
 import { getMountHost } from '../mount-host-registry';
 import { accessibleLabel } from './composer/composer-view';
 import { bindNativeTextEditor } from './native-text-editor';
@@ -314,6 +320,12 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
 
         this.input.addEventListener('input', this.boundInput);
         this.input.addEventListener('keydown', this.boundKeydown);
+        this.input.addEventListener('beforeinput', (event) =>
+            this.onPhoneMarkEdit(event, event.inputType),
+        );
+        this.input.addEventListener('cut', (event) =>
+            this.onPhoneMarkEdit(event, 'deleteByCut'),
+        );
         this.stopTextToolsEdges = bindTextToolsEdges(
             this.wrap,
             () =>
@@ -1092,6 +1104,7 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
      * itself for onInput() to pick up.
      */
     private onPaste(e: ClipboardEvent): void {
+        if (this.onPhoneMarkEdit(e, 'insertFromPaste')) return;
         // A caret paste landing inside the marking region would corrupt the
         // token exactly like a typed keystroke there: onKeydown already guards
         // printable keys with the same `collapsed && s < markEnd` check (see
@@ -1130,7 +1143,7 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
     private onInput(): void {
         // Ignore the component's own setHostValue dispatch; the originating
         // code path already ran the sync it needed.
-        if (this._selfDispatch) return;
+        if (this._selfDispatch || this.discardStalePhoneMarking()) return;
         this._userEdited = true;
         this._editorAssertions = null;
         this.updateMarkEnd();
@@ -1178,6 +1191,18 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
         };
 
         const mark = this.getMarkString();
+        this.setPhoneAddAction(
+            !mark && !this.picker && this.canChangeMarking(v)
+                ? () => {
+                      if (
+                          !this.picker &&
+                          this.canChangeMarking(v) &&
+                          !this.getMarkString()
+                      )
+                          void this.openPicker();
+                  }
+                : undefined,
+        );
         // The open editor's marking takes presses above the native host (see
         // marked-input.css), so the display rises while it is mounted.
         this.wrap.classList.toggle(
@@ -1210,9 +1235,11 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
                         warnings: this.warnings,
                     },
                     () => {
-                        if (!this.picker && this.getMarkString() === mark)
+                        if (!this.picker && this.canChangeMarking(v))
                             this.openFromClick(undefined);
                     },
+                    false,
+                    () => this.removeMarking(v, mark.length),
                 );
                 chip.dataset.start = '0';
                 chip.dataset.end = String(this.markEnd);
@@ -1345,12 +1372,15 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
         this.destroyPicker();
 
         // Escape cancels the edit: snapshot the value + caret to restore.
+        const source = this.input.value;
         this._pickerCancelSnapshot = {
-            value: this.input.value,
+            value: source,
             caret: this.input.selectionStart ?? this.input.value.length,
         };
 
         const mark = this.getMarkString();
+        if (usesPhoneMarkingActions(this.input))
+            this.holdPhoneMarkingSource(source, this.nativeInput);
         const inner = mark ? this.extractInner(mark) : '';
         this._pickerFreeText = this.getFreeText();
         let draft: string | undefined;
@@ -1377,7 +1407,7 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
                 draft,
                 onChange: () => this.onPickerChange(),
                 onExit: (_direction, fromSheet) => {
-                    this.finishPicker();
+                    if (!this.finishPicker()) return;
                     if (!fromSheet) this.input.focus();
                     const afterMark =
                         this.markEnd +
@@ -1386,13 +1416,14 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
                     void this.syncFromInput();
                 },
                 sheetTools: () => this.toolsButton,
+                protectExistingMarking:
+                    !!mark && usesPhoneMarkingActions(this.input),
                 textToolsEdges: () => this.getFreeText().length === 0,
                 label: () =>
                     accessibleLabel(this.input, t('aria.markingInput')),
             },
             () => {
-                this.finishPicker();
-                this.afterClose();
+                if (this.finishPicker()) this.afterClose();
             },
         );
         if (!mounted) return;
@@ -1453,9 +1484,11 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
             const full = this.wrapRendered(rendered);
             // User-driven picker edit: hosts observing ordinary input events
             // must see it (Host Form Contract).
-            this.setHostValue(this.joinMarkingAndText(full, freeText));
+            this.writePhoneMarkingValue(
+                this.joinMarkingAndText(full, freeText),
+            );
         } else {
-            this.setHostValue(freeText);
+            this.writePhoneMarkingValue(freeText);
         }
 
         this.updateMarkEnd();
@@ -1475,7 +1508,8 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
     }
 
     /** Close an editor whose value is already committed. */
-    private finishPicker(): void {
+    private finishPicker(): boolean {
+        if (this.discardStalePhoneMarking()) return false;
         // Save the picker's assertions so syncFromInput can skip re-parsing the
         // rendered text (rendering round-trips are not always lossless).
         if (this.picker) {
@@ -1491,9 +1525,52 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
 
         this.finishClose();
         this.renderDisplay();
+        return true;
     }
 
     private stopTextToolsEdges: (() => void) | null = null;
+
+    private canChangeMarking(source: string): boolean {
+        return (
+            !this.destroyed &&
+            this.input.value === source &&
+            this.nativeInput.value === source &&
+            !this.nativeInput.matches(':disabled, [readonly]')
+        );
+    }
+
+    private removeMarking(source: string, end: number): void {
+        if (!end || !this.canChangeMarking(source)) return;
+        this.finishClose();
+        this._editorAssertions = null;
+        this._userEdited = true;
+        this.setHostValue(removeMarkingText(source, { start: 0, end }));
+        this.input.setSelectionRange(0, 0);
+        void this.syncFromInput();
+        returnToField(this.input, this.wrap, 'touch');
+    }
+
+    private onPhoneMarkEdit(event: Event, inputType: string): boolean {
+        if (
+            !usesPhoneMarkingActions(this.input) ||
+            !this.canChangeMarking(this.input.value)
+        )
+            return false;
+        const mark = this.getMarkString();
+        const edit = markingEditRange(this.input, inputType);
+        if (
+            !mark ||
+            !edit ||
+            !(
+                editTouchesMark(edit, { start: 0, end: mark.length }) ||
+                (edit.start === 0 &&
+                    edit.end === 0 &&
+                    inputType.startsWith('insert'))
+            )
+        )
+            return false;
+        return this.openFromPhoneEdit(event, () => this.openPicker());
+    }
 
     private onKeydown(e: KeyboardEvent): void {
         if (this.picker && e.key === 'Escape') {
@@ -1517,6 +1594,15 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
             e.preventDefault();
             return;
         }
+
+        if (
+            e.key.length === 1 &&
+            !e.ctrlKey &&
+            !e.metaKey &&
+            !e.altKey &&
+            this.onPhoneMarkEdit(e, 'insertText')
+        )
+            return;
 
         // A printable keystroke with the caret inside the marking region would
         // corrupt the token before the async auto-open (mouseup RAF /
@@ -1569,6 +1655,8 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
 
     /** Caret target just past the marking (one space accounted for). */
     protected captureCaretTarget(): number {
+        if (this.picker && usesPhoneMarkingActions(this.input))
+            return this.markEnd;
         return this.markEnd + (this.input.value[this.markEnd] === ' ' ? 1 : 0);
     }
 
@@ -1608,6 +1696,7 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
             if (
                 !hasSelection &&
                 !this.pressing &&
+                !usesPhoneMarkingActions(this.input) &&
                 this.markEnd > 0 &&
                 cursorPos < this.markEnd &&
                 !this.picker &&

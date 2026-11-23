@@ -23,7 +23,8 @@
     display: block;
     margin-block-start: 0.625em;
     padding-block-start: 0.625em;
-    border-block-start: 1px solid var(--ez-color-border, #d1d5db);
+    border-block-start: 1px solid
+        var(--ez-color-border, var(--_ez-default-color-border, #d1d5db));
 }
 .ez-marking-tools
     [data-tools-panel='attention']
@@ -42,7 +43,10 @@
     background: transparent;
     border: 0;
     border-radius: 0;
-    color: var(--ez-tooltip-body-color, var(--ez-color-text, #333));
+    color: var(
+        --ez-tooltip-body-color,
+        var(--ez-color-text, var(--_ez-default-color-text, #333))
+    );
     font-weight: 500;
     text-align: start;
     white-space: normal;
@@ -56,7 +60,8 @@
 .ez-marking-tools
     [data-tools-panel='attention']
     button.ez-validation-errors__fix:focus-visible {
-    outline: 2px solid var(--ez-color-primary, #fdb827);
+    outline: 2px solid
+        var(--ez-color-primary, var(--_ez-default-color-primary, #fdb827));
     outline-offset: -0.125em;
 }
 .ez-marking-tools--with-target {
@@ -87,9 +92,16 @@
     inline-size: 100%;
     min-height: 2.75em;
     padding: 0.375em 0.625em;
-    border: 1px solid var(--ez-color-border, #d1d5db);
-    border-radius: var(--ez-border-radius, 0.25em);
-    background: var(--ez-dropdown-background, var(--ez-color-background, #fff));
+    border: 1px solid
+        var(--ez-color-border, var(--_ez-default-color-border, #d1d5db));
+    border-radius: var(
+        --ez-border-radius,
+        var(--_ez-default-border-radius, 0.25em)
+    );
+    background: var(
+        --ez-dropdown-background,
+        var(--ez-color-background, var(--_ez-default-color-background, #fff))
+    );
     color: inherit;
     font: inherit;
     text-align: start;
@@ -115,7 +127,8 @@
     cursor: default;
 }
 .ez-marking-tools__target:focus-visible {
-    outline: 2px solid var(--ez-color-primary, #fdb827);
+    outline: 2px solid
+        var(--ez-color-primary, var(--_ez-default-color-primary, #fdb827));
     outline-offset: -2px;
 }
 .ez-marking-tools__target-options:not([hidden]) {
@@ -124,9 +137,16 @@
     inset: 0;
     z-index: 1;
     overflow: auto;
-    background: var(--ez-dropdown-background, var(--ez-color-background, #fff));
-    border: 1px solid var(--ez-color-border, #d1d5db);
-    border-radius: var(--ez-border-radius, 0.25em);
+    background: var(
+        --ez-dropdown-background,
+        var(--ez-color-background, var(--_ez-default-color-background, #fff))
+    );
+    border: 1px solid
+        var(--ez-color-border, var(--_ez-default-color-border, #d1d5db));
+    border-radius: var(
+        --ez-border-radius,
+        var(--_ez-default-border-radius, 0.25em)
+    );
 }
 .ez-marking-tools__target-options [role='option'] {
     padding: 0.5em 0.625em;
@@ -153,7 +173,8 @@
     display: flex;
     align-items: center;
     gap: 0.75em;
-    border-bottom: 1px solid var(--ez-color-border, #d1d5db);
+    border-bottom: 1px solid
+        var(--ez-color-border, var(--_ez-default-color-border, #d1d5db));
     margin-bottom: 0.625em;
 }
 .ez-marking-tools__header:has(.ez-marking-tools__field-notice) {
@@ -173,9 +194,27 @@
 .ez-marking-tools__tabs {
     display: flex;
     flex: 1;
-    flex-wrap: wrap;
     column-gap: 1em;
     min-width: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    scroll-padding-inline: 0.75em;
+}
+.ez-marking-tools__tabs[data-overflow-left] {
+    --_ez-tabs-mask-left: transparent;
+}
+.ez-marking-tools__tabs[data-overflow-right] {
+    --_ez-tabs-mask-right: transparent;
+}
+.ez-marking-tools__tabs:is([data-overflow-left], [data-overflow-right]) {
+    mask-image: linear-gradient(
+        to right,
+        var(--_ez-tabs-mask-left, black),
+        black 0.75em,
+        black calc(100% - 0.75em),
+        var(--_ez-tabs-mask-right, black)
+    );
 }
 .ez-marking-tools__tab,
 .ez-marking-tools__close {
@@ -191,16 +230,20 @@
 }
 .ez-marking-tools__tab {
     display: inline-flex;
+    flex: none;
     align-items: center;
+    white-space: nowrap;
     gap: 0.375em;
     min-height: 2.75em;
     border: 0;
     border-bottom: 2px solid transparent;
     padding: 0.375em 0;
-    margin-bottom: -1px;
 }
 .ez-marking-tools__tab[aria-selected='true'] {
-    border-bottom-color: var(--ez-color-primary, #fdb827);
+    border-bottom-color: var(
+        --ez-color-primary,
+        var(--_ez-default-color-primary, #fdb827)
+    );
     font-weight: 600;
 }
 .ez-marking-tools:has(
@@ -255,23 +298,13 @@
 }
 .ez-marking-tools__close:focus-visible,
 .ez-marking-tools__section:focus-visible {
-    outline: 2px solid var(--ez-color-primary, #fdb827);
+    outline: 2px solid
+        var(--ez-color-primary, var(--_ez-default-color-primary, #fdb827));
     outline-offset: -2px;
 }
 @media (pointer: coarse) {
     .ez-marking-tools__tab {
         min-height: max(2.75rem, 2.75em);
-    }
-}
-@media (pointer: coarse) and (width < 768px) {
-    .ez-marking-tools__tabs {
-        flex-wrap: nowrap;
-        overflow-x: auto;
-        scrollbar-width: none;
-    }
-    .ez-marking-tools__tab {
-        flex: none;
-        white-space: nowrap;
     }
 }
 /* One brand-logo mark per enhanced field: 3 bars + a sparkle, always drawn in
@@ -307,6 +340,7 @@
     height: 1cap;
     flex: 0 0 auto;
     overflow: visible;
+    pointer-events: none;
 }
 .ez-status-mark.ez-status-mark--tools {
     cursor: pointer;
@@ -331,7 +365,8 @@
     color: var(--ez-color-error, #b91c1c);
 }
 .ez-status-mark:focus-visible {
-    outline: 2px solid var(--ez-color-primary, #fdb827);
+    outline: 2px solid
+        var(--ez-color-primary, var(--_ez-default-color-primary, #fdb827));
     outline-offset: 2px;
 }
 /* A plain enhanced input places the mark at the trailing edge, centered on
@@ -388,12 +423,13 @@
     display: none;
 }
 .ez-status-mark__count {
-    margin-inline-end: 0.125rem;
+    margin-inline-end: 0;
     font-family: inherit;
-    font-size: calc(1em * 0.75);
+    font-size: 0.8125em;
     font-weight: 700;
-    line-height: 1;
-    font-variant-numeric: tabular-nums;
+    line-height: 1cap;
+    text-box: trim-both cap alphabetic;
+    font-variant-numeric: lining-nums tabular-nums;
 }
 .ez-status-mark--unseen,
 .ez-status-mark--error {
@@ -423,10 +459,8 @@
     }
 }
 
-/* The bracket height follows the field's capital letters. The button pads
-   the small glyph like its neighboring clear button; a finger gets a 44px
-   target centered around it. field-chrome.css reserves the target's overhang
-   before the neighboring clear button. */
+/* Standalone status marks get a 44px touch area through their centered
+   pseudo-element. */
 @media (pointer: coarse) {
     .ez-status-mark::after {
         content: '';

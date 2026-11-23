@@ -133,6 +133,7 @@ export interface ComposerViewOptions {
      * open.
      */
     readonly sheetTools?: () => HTMLElement | null;
+    /** Hosts can offer explicit removal of the marking in the phone sheet. */
     /** Whole-field text may reach its tools at the collapsed trailing edge. */
     readonly textToolsEdges?: () => boolean;
     /** An owned chip preceding the filter, retaining its unfinished draft. */

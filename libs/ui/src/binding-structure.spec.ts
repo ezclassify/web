@@ -424,6 +424,37 @@ describe('marking adapter calls', () => {
         expect(ui.store.get('a').rendered).toBe('B');
     });
 
+    it.each(['selector', 'checklist'])(
+        'returns committed %s choices to the native form and reads later native edits',
+        async (controller) => {
+            document.body.innerHTML = `
+                <form>
+                    <input id="a" type="hidden" data-ezclassify-marking value="B">
+                    <fieldset data-ezclassify-controller="${controller}"
+                            data-ezclassify-facet-of="a" data-ezclassify-category="level">
+                        <input name="choice" type="checkbox" value="A" checked>
+                        <input name="choice" type="checkbox" value="B">
+                    </fieldset>
+                </form>`;
+            const form = document.querySelector('form')!;
+            const [a, b] =
+                form.querySelectorAll<HTMLInputElement>('[name=choice]');
+            const context = createContext();
+            ui = new EzClassifyUI(context);
+            await expect.poll(() => ui?.isReady).toBe(true);
+
+            ui.destroy();
+            ui = undefined;
+            expect(new FormData(form).getAll('choice')).toEqual(['B']);
+
+            a.checked = true;
+            b.checked = false;
+            ui = new EzClassifyUI(context);
+            await expect.poll(() => ui?.isReady).toBe(true);
+            expect(ui.store.get('a').rendered).toBe('A');
+        },
+    );
+
     it('updates collection membership from committed facts without remounting or reading the marking', async () => {
         document.body.innerHTML = `
             <section data-ezclassify-collection="folder"></section>

@@ -22,8 +22,8 @@ const CLEAR_ICON =
 const UNDO_ICON =
     '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>';
 
-/** Create a stable form action; clearing and draft disposal belong to the field. */
-export function createClearButton(options: {
+export interface ClearActionOptions {
+    mode?: 'clear';
     label: string;
     host?: HTMLInputElement | HTMLTextAreaElement;
     empty: () => boolean;
@@ -34,12 +34,63 @@ export function createClearButton(options: {
     undo?: () => Promise<unknown>;
     /** Put focus in the field itself. */
     focusField?: () => void;
-}): ClearButton {
+}
+
+interface ToggleActionOptions {
+    mode: 'toggle';
+    label: string;
+    toggle: () => void;
+}
+
+export interface ToggleAction {
+    element: HTMLLabelElement;
+    input: HTMLInputElement;
+    update(state: 'none' | 'some' | 'all', disabled: boolean): void;
+}
+
+export function createFieldAction(options: ClearActionOptions): ClearButton;
+export function createFieldAction(options: ToggleActionOptions): ToggleAction;
+export function createFieldAction(
+    options: ClearActionOptions | ToggleActionOptions,
+): ClearButton | ToggleAction {
+    return options.mode === 'toggle'
+        ? createToggleAction(options)
+        : createClearAction(options);
+}
+
+function createToggleAction(options: ToggleActionOptions): ToggleAction {
+    const element = document.createElement('label');
+    element.className = 'ez-field-action ez-field-action--toggle';
+    element.dataset.mode = 'toggle';
+    const input = document.createElement('input');
+    input.type = 'checkbox';
+    input.className = 'ez-field-action__checkbox';
+    input.setAttribute('aria-label', options.label);
+    input.addEventListener('change', options.toggle);
+    const glyph = document.createElement('span');
+    glyph.className = 'ez-field-action__glyph ez-field-action__glyph--toggle';
+    glyph.setAttribute('aria-hidden', 'true');
+    glyph.innerHTML =
+        '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 8.5 6.5 11.5 12.5 4.5"/><path d="M4 8h8"/></svg>';
+    element.append(input, glyph);
+    return {
+        element,
+        input,
+        update(state, disabled) {
+            input.checked = state === 'all';
+            input.indeterminate = state === 'some';
+            input.disabled = disabled;
+        },
+    };
+}
+
+/** Clearing and draft disposal belong to the field. */
+function createClearAction(options: ClearActionOptions): ClearButton {
     const button = document.createElement('button');
     button.type = 'button';
-    button.className = 'ez-clear-button';
+    button.className = 'ez-clear-button ez-field-action';
     const icon = document.createElement('span');
-    icon.className = 'ez-clear-button__icon';
+    icon.className = 'ez-clear-button__icon ez-field-action__glyph';
     button.appendChild(icon);
     const status = createAnnouncer();
     button.appendChild(status);

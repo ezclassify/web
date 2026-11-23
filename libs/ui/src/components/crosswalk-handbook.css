@@ -3,15 +3,19 @@
 .ez-crosswalk-handbook {
     font-family: inherit;
     font-size: calc(1em * 0.8125);
-    color: var(--ez-color-text, #1a1a2e);
+    color: var(--ez-color-text, var(--_ez-default-color-text, #1a1a2e));
     line-height: 1.5;
 }
 
 .ez-crosswalk-handbook__overview {
     padding: 0.75rem;
     margin-bottom: 0.75rem;
-    border: 1px solid var(--ez-color-border, #d1d5db);
-    border-radius: var(--ez-border-radius, 0.375rem);
+    border: 1px solid
+        var(--ez-color-border, var(--_ez-default-color-border, #d1d5db));
+    border-radius: var(
+        --ez-border-radius,
+        var(--_ez-default-border-radius, 0.375rem)
+    );
     background: var(--ez-handbook-overview-bg, rgba(0, 0, 0, 0.02));
 }
 
@@ -19,7 +23,7 @@
     font-weight: 700;
     font-size: calc(1em * 0.75);
     letter-spacing: 0.02em;
-    color: var(--ez-color-text, #111);
+    color: var(--ez-color-text, var(--_ez-default-color-text, #111));
     margin-bottom: 0.25rem;
     overflow-wrap: anywhere;
 }
@@ -52,7 +56,10 @@
     position: sticky;
     top: 0;
     z-index: 2;
-    background: var(--ez-color-background, #fff);
+    background: var(
+        --ez-color-background,
+        var(--_ez-default-color-background, #fff)
+    );
     padding-bottom: 0.5rem;
 }
 
@@ -60,18 +67,29 @@
     width: 100%;
     padding: 0.5rem 0.75rem;
     font: inherit;
-    color: var(--ez-color-text, #1a1a2e);
-    background: var(--ez-color-background, #fff);
-    border: 1px solid var(--ez-color-border, #d1d5db);
-    border-radius: var(--ez-border-radius, 0.375rem);
+    color: var(--ez-color-text, var(--_ez-default-color-text, #1a1a2e));
+    background: var(
+        --ez-color-background,
+        var(--_ez-default-color-background, #fff)
+    );
+    border: 1px solid
+        var(--ez-color-border, var(--_ez-default-color-border, #d1d5db));
+    border-radius: var(
+        --ez-border-radius,
+        var(--_ez-default-border-radius, 0.375rem)
+    );
     outline: none;
     min-height: 2.75rem;
     box-sizing: border-box;
 }
 
 .ez-crosswalk-handbook__search-input:focus-visible {
-    border-color: var(--ez-color-primary, #fdb827);
-    box-shadow: 0 0 0 1px var(--ez-color-primary, #fdb827);
+    border-color: var(
+        --ez-color-primary,
+        var(--_ez-default-color-primary, #fdb827)
+    );
+    box-shadow: 0 0 0 1px
+        var(--ez-color-primary, var(--_ez-default-color-primary, #fdb827));
 }
 
 .ez-crosswalk-handbook__section-title {
@@ -96,18 +114,24 @@
 .ez-crosswalk-handbook__list--nested {
     margin-top: 0.375rem;
     padding-left: 0.75rem;
-    border-left: 2px solid var(--ez-color-border, #d1d5db);
+    border-left: 2px solid
+        var(--ez-color-border, var(--_ez-default-color-border, #d1d5db));
 }
 
 .ez-crosswalk-handbook__entry {
     padding: 0.5rem 0.75rem;
-    border: 1px solid var(--ez-color-border, #d1d5db);
-    border-radius: var(--ez-border-radius, 0.375rem);
+    border: 1px solid
+        var(--ez-color-border, var(--_ez-default-color-border, #d1d5db));
+    border-radius: var(
+        --ez-border-radius,
+        var(--_ez-default-border-radius, 0.375rem)
+    );
 }
 
 .ez-crosswalk-handbook__candidate {
     padding-top: 0.375rem;
-    border-top: 1px solid var(--ez-color-border, #d1d5db);
+    border-top: 1px solid
+        var(--ez-color-border, var(--_ez-default-color-border, #d1d5db));
 }
 
 .ez-crosswalk-handbook__candidate:first-child {

@@ -25,7 +25,8 @@
 }
 
 .ez-coverage-action__trigger:focus-visible {
-    outline: 0.125rem solid var(--ez-color-primary, #fdb827);
+    outline: 0.125rem solid
+        var(--ez-color-primary, var(--_ez-default-color-primary, #fdb827));
     outline-offset: 0.125rem;
 }
 
@@ -48,8 +49,12 @@
     width: 0.5rem;
     height: 0.5rem;
     border-radius: 50%;
-    background: var(--ez-color-primary, #fdb827);
-    box-shadow: 0 0 0 0.125rem var(--ez-color-background, #fff);
+    background: var(
+        --ez-color-primary,
+        var(--_ez-default-color-primary, #fdb827)
+    );
+    box-shadow: 0 0 0 0.125rem
+        var(--ez-color-background, var(--_ez-default-color-background, #fff));
 }
 
 .ez-coverage-action--unseen .ez-coverage-action__dot {
@@ -63,10 +68,14 @@
     inset-inline-end: 0;
     width: min(24rem, calc(100vw - 2rem));
     padding: 1rem;
-    border: 0.0625rem solid var(--ez-color-border, #d1d5db);
+    border: 0.0625rem solid
+        var(--ez-color-border, var(--_ez-default-color-border, #d1d5db));
     border-radius: 0.5rem;
-    background: var(--ez-color-background, #fff);
-    color: var(--ez-color-text, #1f2937);
+    background: var(
+        --ez-color-background,
+        var(--_ez-default-color-background, #fff)
+    );
+    color: var(--ez-color-text, var(--_ez-default-color-text, #1f2937));
     box-shadow: var(
         --ez-dropdown-shadow,
         0 0.25rem 0.75rem rgba(0, 0, 0, 0.14)
@@ -87,7 +96,8 @@
 .ez-coverage-action__apply {
     margin-block-start: 0.875rem;
     padding: 0.5rem 0.75rem;
-    border: 0.0625rem solid var(--ez-color-primary, #fdb827);
+    border: 0.0625rem solid
+        var(--ez-color-primary, var(--_ez-default-color-primary, #fdb827));
     border-radius: 0.375rem;
     background: transparent;
     color: inherit;
@@ -100,7 +110,7 @@
 .ez-coverage-action__apply:focus-visible {
     background: color-mix(
         in srgb,
-        var(--ez-color-primary, #fdb827) 14%,
+        var(--ez-color-primary, var(--_ez-default-color-primary, #fdb827)) 14%,
         transparent
     );
 }

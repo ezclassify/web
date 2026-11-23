@@ -78,6 +78,7 @@ import {
     bindMarkingToolsShortcut,
     buildMarkingTools,
     focusMarkingTools,
+    observeMarkingToolsTabs,
     type MarkingToolsTargets,
     updateMarkingToolsCounts,
 } from './marking-tools';
@@ -793,6 +794,7 @@ const markPinned = new WeakSet<HTMLElement>();
 const markDismissers = new WeakMap<HTMLElement, () => void>();
 /** Retain outgoing chrome ownership until its focusout has settled. */
 const markToolsContent = new WeakMap<HTMLElement, HTMLElement>();
+const markToolsTabObservers = new WeakMap<HTMLElement, () => void>();
 /** The selected paragraph in the currently displayed tools. */
 const markToolsTarget = new WeakMap<HTMLElement, string>();
 
@@ -883,6 +885,8 @@ function dismissStaleStatusMarkPopover(mark: HTMLElement): void {
  */
 function collapse(mark: HTMLElement): void {
     markToolsTarget.delete(mark);
+    markToolsTabObservers.get(mark)?.();
+    markToolsTabObservers.delete(mark);
     markFavorites.get(mark)?.close();
     markPinned.delete(mark);
     markDismissers.get(mark)?.();
@@ -1126,6 +1130,16 @@ export function ensureStatusMark(
             // Opening Favorites can insert its loading row synchronously.
             // Position that content before deciding whether it clears the field.
             refreshStatusMarkPopover(mark);
+            if (popoverOpen(mark)) {
+                const tools = markToolsContent.get(mark);
+                if (tools) {
+                    markToolsTabObservers.get(mark)?.();
+                    markToolsTabObservers.set(
+                        mark,
+                        observeMarkingToolsTabs(tools),
+                    );
+                }
+            }
         } else guardPopover(mark);
     };
 

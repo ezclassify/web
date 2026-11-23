@@ -5,24 +5,35 @@
  * Multi-select. Shows a count of selected items ("7 of 18"). Think "which of
  * these 18 identifiers are present?"
  *
- * Supports filtering/searching via a search input at the top, and a "select all
- * / clear all" toggle. The search input shows when the list is longer than the
- * room it is given (it scrolls), or while it holds a filter.
+ * Supports filtering/searching via a search input at the top and a bulk
+ * checkbox. The search input shows when the list is longer than the room it is
+ * given (it scrolls), or while it holds a filter.
  */
 
-import { suspendNativeChoiceFallback } from '../native-control-host';
+import {
+    suspendNativeChoiceFallback,
+    useAuthoredChoiceLabel,
+} from '../native-control-host';
+import { getMountHost } from '../mount-host-registry';
 import { ComponentBase, type ComponentOptions } from './component-base';
 import { createAnnouncer, announce } from './component-utils';
 import type { ConceptView, Suggestion } from '@ezclassify/types';
 import type { ComponentEngineSource } from './component-base-readonly';
 import categoryChecklistCss from './category-checklist.css?inline';
-import { focusGridNeighbor } from './focus-grid';
+import {
+    focusableFieldActions,
+    focusGridNeighbor,
+    focusGridRows,
+    type FocusGridArrow,
+} from './focus-grid';
 import {
     ChoiceAvailability,
     choiceOrigins,
     type ChoiceOrigin,
 } from './choice-options';
 import { t } from '../i18n';
+import { createFieldAction, type ToggleAction } from './clear-button';
+import { chromeReach } from './field-chrome';
 
 const CATEGORY_CHECKLIST_CSS: string = categoryChecklistCss;
 
@@ -54,12 +65,14 @@ export class CategoryChecklist extends ComponentBase {
     private restoreFallback: (() => void) | null = null;
 
     protected override clearButtonMount(): null {
-        // The category header already owns its Clear all action.
+        // The bulk checkbox already clears selections.
         return null;
     }
     private preview!: HTMLDivElement;
     private headerEl!: HTMLDivElement;
     private countEl!: HTMLSpanElement;
+    private bulkToggle?: ToggleAction;
+    private actionsInline = false;
     private searchInput!: HTMLInputElement;
     private listEl!: HTMLDivElement;
     private announcer!: HTMLDivElement;
@@ -76,8 +89,7 @@ export class CategoryChecklist extends ComponentBase {
      * overflows.
      */
     private searchMode: 'always' | 'never' | 'overflow' = 'overflow';
-    /** Rechecks the list's overflow when its box changes size. */
-    private listResize: ResizeObserver | null = null;
+    private layoutResize: ResizeObserver | null = null;
     private readonly availability = new ChoiceAvailability();
 
     protected override onAssertionsChanged(): void {
@@ -157,28 +169,24 @@ export class CategoryChecklist extends ComponentBase {
 
         // Inject styles
         this.injectComponentStyles(CATEGORY_CHECKLIST_CSS);
-        this.restoreFallback = suspendNativeChoiceFallback(this.container);
+        this.restoreFallback = suspendNativeChoiceFallback(
+            this.container,
+            this.options.resolveFacetJudgment,
+            this.categoryId,
+        );
 
         // Preview bar
         this.preview = this.createPreviewBar();
 
-        // The control sits in the suite's field frame. Its first row: the
-        // category's name, then the count, Select all and Clear all, and the
-        // suite's status mark at the end. On a narrow field the name keeps its
-        // line and the rest wraps beneath it as one unit.
+        // The title and the header actions can wrap onto separate lines.
         const frame = document.createElement('div');
         frame.className = 'category-checklist-frame';
-        this.applySuiteFrame(frame);
         this.container.appendChild(frame);
+        this.applySuiteFrame(frame, getMountHost(this.container));
 
         this.headerEl = document.createElement('div');
         this.headerEl.className = 'category-checklist-header';
         this.headerEl.addEventListener('keydown', this.onHeaderKeydown, true);
-
-        const name = document.createElement('span');
-        name.className = 'category-checklist-name';
-        name.textContent = category.label;
-        this.headerEl.appendChild(name);
 
         const controls = document.createElement('div');
         controls.className = 'category-checklist-controls';
@@ -187,36 +195,28 @@ export class CategoryChecklist extends ComponentBase {
         this.countEl.className = 'category-checklist-count';
         this.countEl.setAttribute('aria-live', 'polite');
         this.countEl.setAttribute('aria-atomic', 'true');
-        controls.appendChild(this.countEl);
-
-        // Toggle buttons
-        const showToggle = opts.showToggleAll !== false;
-        if (showToggle) {
-            const toggleEl = document.createElement('div');
-            toggleEl.className = 'category-checklist-toggle';
-
-            const selectAll = document.createElement('button');
-            selectAll.type = 'button';
-            selectAll.textContent = 'Select all';
-            selectAll.setAttribute(
-                'aria-label',
-                `Select all ${category.label}`,
-            );
-            selectAll.addEventListener('click', () => this.selectAll());
-            toggleEl.appendChild(selectAll);
-
-            const clearAll = document.createElement('button');
-            clearAll.type = 'button';
-            clearAll.textContent = 'Clear all';
-            clearAll.setAttribute('aria-label', `Clear all ${category.label}`);
-            clearAll.addEventListener('click', () => this.clearAll());
-            toggleEl.appendChild(clearAll);
-
-            controls.appendChild(toggleEl);
-        }
         this.headerEl.appendChild(controls);
-        // Clear all is this control's clear, so the chrome carries the mark.
-        this.mountSuiteChrome(controls);
+        const chrome = this.mountSuiteChrome(controls);
+        if (opts.showToggleAll !== false) {
+            const toggle = createFieldAction({
+                mode: 'toggle',
+                label: `Select all ${category.label}`,
+                toggle: () => {
+                    if (
+                        !this._destroyed &&
+                        !this.enhancedInput?.matches(':disabled, [readonly]')
+                    ) {
+                        if (this.bulkState() === 'all') this.clearAll();
+                        else this.selectAll();
+                    }
+                    this.updateCount();
+                },
+            });
+            toggle.element.classList.add('category-checklist-toggle');
+            toggle.input.classList.add('category-checklist-master');
+            chrome.element.appendChild(toggle.element);
+            this.bulkToggle = toggle;
+        }
 
         // Search input
         this.searchMode =
@@ -241,17 +241,39 @@ export class CategoryChecklist extends ComponentBase {
         this.listEl.setAttribute('role', 'group');
         this.listEl.tabIndex = -1;
         this.listEl.setAttribute('aria-label', category.label);
+        const hasHostLabel = useAuthoredChoiceLabel(
+            this.listEl,
+            this.container,
+        );
+        this.actionsInline = hasHostLabel;
+        if (!hasHostLabel) {
+            const name = document.createElement('span');
+            name.className = 'category-checklist-name';
+            name.textContent = category.label;
+            this.headerEl.prepend(name);
+        } else frame.classList.add('category-checklist-frame--host-label');
         frame.appendChild(this.listEl);
         if (this.searchMode !== 'never') frame.appendChild(this.searchInput);
         frame.appendChild(this.headerEl);
+        frame.appendChild(this.countEl);
+        const measureActions = () => {
+            const size = `${chromeReach(this.listEl, chrome.element)}px`;
+            const property = '--ez-checklist-actions-size';
+            if (frame.style.getPropertyValue(property) !== size)
+                frame.style.setProperty(property, size);
+        };
+        if (hasHostLabel) measureActions();
         if (
-            this.searchMode === 'overflow' &&
+            (hasHostLabel || this.searchMode === 'overflow') &&
             typeof ResizeObserver === 'function'
         ) {
-            this.listResize = new ResizeObserver(() =>
-                this.updateSearchVisibility(),
-            );
-            this.listResize.observe(this.listEl);
+            this.layoutResize = new ResizeObserver(() => {
+                if (hasHostLabel) measureActions();
+                this.updateSearchVisibility();
+            });
+            if (hasHostLabel) this.layoutResize.observe(chrome.element);
+            if (hasHostLabel || this.searchMode === 'overflow')
+                this.layoutResize.observe(this.listEl);
         }
 
         // Announcer
@@ -285,44 +307,16 @@ export class CategoryChecklist extends ComponentBase {
             this.onHeaderKeydown,
             true,
         );
-        this.listResize?.disconnect();
-        this.listResize = null;
+        this.layoutResize?.disconnect();
+        this.layoutResize = null;
         this.destroyClearButton();
         this.removeRuleErrors();
         this.container.innerHTML = '';
     }
 
-    /** Header actions share physical horizontal navigation, before chrome. */
+    /** Header actions share physical horizontal navigation. */
     private readonly onHeaderKeydown = (event: KeyboardEvent): void => {
         if (
-            event.key === 'ArrowDown' &&
-            !event.altKey &&
-            !event.ctrlKey &&
-            !event.metaKey &&
-            !event.shiftKey &&
-            !event.isComposing &&
-            !event.defaultPrevented &&
-            (event.target ===
-                this.suiteChrome?.status.querySelector('.ez-status-mark') ||
-                event.target ===
-                    this.suiteChrome?.element.querySelector(
-                        '.ez-clear-button',
-                    ) ||
-                event.target ===
-                    this.headerEl.querySelector(
-                        '.category-checklist-toggle button:last-child',
-                    ))
-        ) {
-            event.preventDefault();
-            event.stopPropagation();
-            (
-                this.checkboxes().find((checkbox) => checkbox.tabIndex === 0) ??
-                this.listEl
-            ).focus({ preventScroll: true });
-            return;
-        }
-        if (
-            !['ArrowLeft', 'ArrowRight'].includes(event.key) ||
             event.defaultPrevented ||
             event.altKey ||
             event.ctrlKey ||
@@ -332,44 +326,84 @@ export class CategoryChecklist extends ComponentBase {
             event.keyCode === 229
         )
             return;
-        const target =
-            event.target instanceof Element
-                ? event.target.closest('button')
-                : null;
-        const buttons = [
-            ...this.headerEl.querySelectorAll<HTMLButtonElement>('button'),
-        ].filter((button) => {
-            if (
-                button.disabled ||
-                button.getAttribute('aria-disabled') === 'true'
-            )
-                return false;
-            for (
-                let node: HTMLElement | null = button;
-                node;
-                node = node.parentElement
-            ) {
-                const style = getComputedStyle(node);
-                if (
-                    node.hidden ||
-                    style.display === 'none' ||
-                    style.visibility === 'hidden' ||
-                    style.visibility === 'collapse'
-                )
-                    return false;
-                if (node === this.headerEl) break;
-            }
-            return true;
-        });
-        if (!buttons.includes(target as HTMLButtonElement)) return;
+        if (
+            event.key === 'Enter' &&
+            this.bulkToggle &&
+            event.target === this.bulkToggle.input
+        ) {
+            event.preventDefault();
+            this.bulkToggle.input.click();
+            return;
+        }
+        if (
+            event.key === 'ArrowDown' &&
+            !this.actionsInline &&
+            (event.target ===
+                this.suiteChrome?.status.querySelector('.ez-status-mark') ||
+                event.target === this.bulkToggle?.input)
+        ) {
+            event.preventDefault();
+            event.stopPropagation();
+            (
+                this.checkboxes().find((checkbox) => checkbox.tabIndex === 0) ??
+                this.listEl
+            ).focus({ preventScroll: true });
+            return;
+        }
+        if (!['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
+        const target = event.target as HTMLElement;
+        const buttons = this.headerActions();
+        if (!buttons.includes(target)) return;
         event.preventDefault();
         event.stopPropagation();
-        focusGridNeighbor(
-            buttons,
-            target as HTMLButtonElement,
+        const next = focusGridNeighbor(
+            this.actionsInline ? [...this.choiceItems(), ...buttons] : buttons,
+            target,
             event.key as 'ArrowLeft' | 'ArrowRight',
-        )?.focus();
+        );
+        this.focusChoiceOrAction(next);
     };
+
+    private headerActions(): HTMLElement[] {
+        return focusableFieldActions(
+            this.headerEl,
+            'button, .category-checklist-master',
+        );
+    }
+
+    private choiceItems(): HTMLElement[] {
+        return this.checkboxes().map((input) => input.parentElement!);
+    }
+
+    private focusChoiceOrAction(target: HTMLElement | null): void {
+        if (target?.matches('.category-checklist-item'))
+            target.querySelector('input')?.focus();
+        else target?.focus();
+    }
+
+    private lowestChoiceAboveToRight(
+        items: HTMLElement[],
+        current: HTMLElement,
+    ): HTMLElement | null {
+        const { left, top } = current.getBoundingClientRect();
+        let next: HTMLElement | null = null;
+        let columnLeft = Infinity;
+        let choiceTop = -Infinity;
+        for (const item of items) {
+            if (item.parentElement === current.parentElement) continue;
+            const rect = item.getBoundingClientRect();
+            if (rect.left <= left || rect.top >= top) continue;
+            if (
+                rect.left < columnLeft ||
+                (rect.left === columnLeft && rect.top > choiceTop)
+            ) {
+                next = item;
+                columnLeft = rect.left;
+                choiceTop = rect.top;
+            }
+        }
+        return next;
+    }
 
     protected render(): void {
         // Update preview
@@ -432,6 +466,26 @@ export class CategoryChecklist extends ComponentBase {
             ({ origin }) => origin === 'stated',
         ).length;
         this.countEl.textContent = `${selected} of ${choices.length}`;
+        if (this.bulkToggle) {
+            const state = this.bulkState(choices);
+            this.bulkToggle.update(
+                state,
+                (state === 'none' && choices.length === 0) ||
+                    !!this.enhancedInput?.matches(':disabled, [readonly]'),
+            );
+        }
+    }
+
+    private bulkState(
+        choices = this.availableChoices(),
+    ): 'none' | 'some' | 'all' {
+        const hasSelection = [
+            ...choiceOrigins(this.assertions, this.categoryId).values(),
+        ].includes('stated');
+        if (!hasSelection) return 'none';
+        return choices.every(({ origin }) => origin === 'stated')
+            ? 'all'
+            : 'some';
     }
 
     /**
@@ -498,7 +552,7 @@ export class CategoryChecklist extends ComponentBase {
             checkbox.tabIndex = checkbox === target ? 0 : -1;
     }
 
-    /** This checklist is a vertical list; horizontal arrows have no neighbor. */
+    /** Arrows follow the visual grid while focus keeps its native tab stop. */
     private onCheckboxKeydown(
         event: KeyboardEvent,
         checkbox: HTMLInputElement,
@@ -534,25 +588,45 @@ export class CategoryChecklist extends ComponentBase {
                 checkbox.click();
             return;
         }
-        const checkboxes = this.checkboxes();
-        const index = checkboxes.indexOf(checkbox);
-        if (event.key === 'ArrowUp' && index === 0) {
+        const items = this.choiceItems();
+        const item = checkbox.parentElement!;
+        if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+            const neighbors = this.actionsInline
+                ? [...items, ...this.headerActions()]
+                : items;
+            const next = focusGridNeighbor(neighbors, item, event.key);
+            this.focusChoiceOrAction(
+                next ??
+                    (event.key === 'ArrowRight'
+                        ? this.lowestChoiceAboveToRight(items, item)
+                        : null),
+            );
+            return;
+        }
+        const rows =
+            event.key === 'Home' || event.key === 'End'
+                ? focusGridRows(items)
+                : null;
+        const vertical = event.key === 'ArrowUp' || event.key === 'ArrowDown';
+        const hasBranches =
+            vertical && items.some((choice) => choice.dataset.depth !== '0');
+        const neighbors = hasBranches
+            ? items.filter(
+                  (choice) => choice.parentElement === item.parentElement,
+              )
+            : items;
+        const next = rows
+            ? event.key === 'Home'
+                ? rows[0]?.[0]
+                : rows.at(-1)?.at(-1)
+            : focusGridNeighbor(neighbors, item, event.key as FocusGridArrow);
+        if (!next && event.key === 'ArrowUp' && !this.actionsInline) {
             this.suiteChrome?.status
                 .querySelector<HTMLElement>('.ez-status-mark')
                 ?.focus({ preventScroll: true });
             return;
         }
-        const next =
-            event.key === 'Home'
-                ? 0
-                : event.key === 'End'
-                  ? checkboxes.length - 1
-                  : event.key === 'ArrowUp'
-                    ? Math.max(0, index - 1)
-                    : event.key === 'ArrowDown'
-                      ? Math.min(checkboxes.length - 1, index + 1)
-                      : index;
-        checkboxes[next]?.focus();
+        next?.querySelector('input')?.focus();
     }
 
     private fillList(): void {
@@ -580,7 +654,17 @@ export class CategoryChecklist extends ComponentBase {
             return;
         }
 
-        for (const { concept, depth = 0, origin } of filtered) {
+        const visible = new Set(filtered);
+        let column: HTMLDivElement | null = null;
+        for (const choice of available) {
+            const { concept, depth = 0, origin } = choice;
+            if (!depth) column = null;
+            if (!visible.has(choice)) continue;
+            if (!column) {
+                column = document.createElement('div');
+                column.className = 'category-checklist-column';
+                this.listEl.appendChild(column);
+            }
             // The whole row is the checkbox's label, so a press anywhere on
             // it toggles the box. It labels the box it holds, not one found
             // by id: two checklists of a category share their ids. The native input keeps the semantics and
@@ -641,7 +725,7 @@ export class CategoryChecklist extends ComponentBase {
 
             item.append(checkbox, box, label);
             this.updateChoiceState(checkbox, origin);
-            this.listEl.appendChild(item);
+            column.appendChild(item);
         }
     }
 

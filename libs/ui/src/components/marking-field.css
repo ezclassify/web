@@ -39,9 +39,13 @@
 /* An ended phone sheet parks the painted field box, keeping the text input
    unfocused so its software keyboard stays closed. */
 .marking-field-wrap:focus {
-    outline: 0.125rem solid var(--ez-color-primary, #fdb827);
+    outline: 0.125rem solid
+        var(--ez-color-primary, var(--_ez-default-color-primary, #fdb827));
     outline-offset: -0.125rem;
-    border-radius: var(--ez-border-radius, 0.25rem);
+    border-radius: var(
+        --ez-border-radius,
+        var(--_ez-default-border-radius, 0.25rem)
+    );
 }
 
 /* The editable surface is a <textarea>: a single-line input cannot wrap
@@ -67,9 +71,15 @@
 
 .marking-field-host:focus {
     outline: var(--ez-focus-ring-width, 2px) solid
-        var(--ez-color-border-focus, var(--ez-color-primary, #fdb827));
+        var(
+            --ez-color-border-focus,
+            var(--ez-color-primary, var(--_ez-default-color-primary, #fdb827))
+        );
     outline-offset: var(--ez-focus-ring-offset, -2px);
-    border-radius: var(--ez-border-radius, 0.25rem);
+    border-radius: var(
+        --ez-border-radius,
+        var(--_ez-default-border-radius, 0.25rem)
+    );
 }
 
 /* At rest: the display layer shows the painted, per-token colored marking.
@@ -161,7 +171,13 @@
         --ez-category-accent,
         var(
             --ez-theme-category-accent,
-            var(--ez-token-underline, var(--ez-color-primary, #fdb827))
+            var(
+                --ez-token-underline,
+                var(
+                    --ez-color-primary,
+                    var(--_ez-default-color-primary, #fdb827)
+                )
+            )
         )
     );
     text-decoration-thickness: 0.1875rem;

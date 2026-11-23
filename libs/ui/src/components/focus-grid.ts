@@ -2,6 +2,34 @@
 export type FocusGridArrow =
     'ArrowLeft' | 'ArrowRight' | 'ArrowUp' | 'ArrowDown';
 
+export function focusableFieldActions(
+    root: HTMLElement,
+    selector: string,
+): HTMLElement[] {
+    return [...root.querySelectorAll<HTMLElement>(selector)].filter(
+        (control) => {
+            if (control.matches(':disabled, [aria-disabled="true"]'))
+                return false;
+            for (
+                let node: HTMLElement | null = control;
+                node;
+                node = node.parentElement
+            ) {
+                const { display, visibility } = getComputedStyle(node);
+                if (
+                    node.hidden ||
+                    display === 'none' ||
+                    visibility === 'hidden' ||
+                    visibility === 'collapse'
+                )
+                    return false;
+                if (node === root) break;
+            }
+            return true;
+        },
+    );
+}
+
 /** Group vertically overlapping boxes into rows, ordered top then physical x. */
 export function focusGridRows<T extends HTMLElement>(
     items: readonly T[],

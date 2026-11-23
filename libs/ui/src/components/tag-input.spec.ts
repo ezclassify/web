@@ -1377,11 +1377,13 @@ describe('TagInput CSS: coarse-pointer chip spacing targets the actual wrap clas
             '.tag-input-wrap',
             true,
         );
-        // Wrapped chip rows on a phone need the larger gap or the enlarged
-        // remove-button hit overlays (component-utils.css,
-        // `.proto-tag-remove::after`) cross rows and a tap can remove the
-        // wrong chip.
-        expect(coarse.rowGap).toBe('0.5rem');
+        expect(coarse.rowGap).toBe('0.25rem');
+        expect(tagInputCss).toMatch(
+            /\.tag-input-wrap \.proto-tag-remove\s*\{[^}]*width: 1\.5rem;[^}]*height: 1\.5rem/,
+        );
+        expect(tagInputCss).toMatch(
+            /\.tag-input-wrap \.proto-tag-remove::after\s*\{[^}]*content: none/,
+        );
     });
 
     it('keeps picker short forms readable and lets a row wrap instead of clipping', () => {

@@ -41,6 +41,35 @@ export function applyFieldFrame(frame: HTMLElement, root?: HTMLElement): void {
     frame.classList.add(FIELD_FRAME_CLASS);
 }
 
+// White below the WCAG luminance crossover and black above it.
+function contrastingAccent(color: string): string {
+    const channel = 'max(0, sign(0.179 - y))';
+    return `color(from ${color} xyz-d65 calc(0.95047 * ${channel}) ${channel} calc(1.08883 * ${channel}))`;
+}
+
+/** Use the host's ordinary accent-color as the field's palette fallback. */
+export function mirrorHostAccent(
+    frame: HTMLElement,
+    styles: CSSStyleDeclaration,
+): void {
+    const accent = styles.accentColor;
+    const native = accent && accent !== 'auto' ? accent : '';
+    const primary = '--_ez-default-color-primary';
+    const contrast = globalThis.CSS?.supports?.(
+        'color',
+        contrastingAccent('red'),
+    )
+        ? contrastingAccent(`var(--ez-color-primary, var(${primary}))`)
+        : '';
+    for (const [property, value] of [
+        [primary, native],
+        [`${primary}-contrast`, native ? contrast : ''],
+    ]) {
+        if (frame.style.getPropertyValue(property) !== value)
+            frame.style.setProperty(property, value);
+    }
+}
+
 /** The custom property each field's text layers read for their reserve. */
 export const FIELD_CHROME_INLINE_SIZE = '--ez-field-chrome-inline-size';
 
@@ -74,6 +103,11 @@ export function mountFieldChrome(
         root?: HTMLElement;
         align?: 'center' | 'start';
         placement?: 'overlay' | 'inline';
+        /**
+         * The visible field when it has its own font outside the chrome's
+         * inheritance.
+         */
+        fontSource?: HTMLElement;
         /** A select before the trailing chrome in the field's arrow order. */
         leadingSelect?: HTMLSelectElement;
         /**
@@ -96,6 +130,33 @@ export function mountFieldChrome(
     element.appendChild(status);
     wrap.appendChild(element);
 
+    const fontSource = opts.fontSource;
+    const syncFont = () => {
+        if (!fontSource) return;
+        const style = getComputedStyle(fontSource);
+        for (const property of [
+            'fontFamily',
+            'fontSize',
+            'fontStyle',
+            'fontWeight',
+            'fontStretch',
+            'lineHeight',
+        ] as const) {
+            if (element.style[property] !== style[property])
+                element.style[property] = style[property];
+        }
+        if (
+            opts.leadingSelect &&
+            wrap.style.getPropertyValue('--ez-chevron-source-size') !==
+                style.fontSize
+        )
+            wrap.style.setProperty('--ez-chevron-source-size', style.fontSize);
+    };
+    syncFont();
+    const fontObserver = fontSource
+        ? observeFieldTheme(fontSource, syncFont, undefined, true)
+        : null;
+
     // A select and its trailing buttons share one physical arrow order.
     // Other fields manage their own text or picker keys.
     const leadingSelect = opts.leadingSelect;
@@ -112,8 +173,8 @@ export function mountFieldChrome(
             return;
         const controls = [
             ...(leadingSelect ? [leadingSelect] : []),
-            ...element.querySelectorAll<HTMLButtonElement>(
-                'button.ez-status-mark, button.ez-clear-button',
+            ...element.querySelectorAll<HTMLButtonElement | HTMLInputElement>(
+                'button.ez-marked-field-add, button.ez-status-mark, button.ez-clear-button, input.ez-field-action__checkbox',
             ),
         ].filter((control) => {
             if (
@@ -140,7 +201,9 @@ export function mountFieldChrome(
         });
         const target =
             event.target instanceof Element
-                ? event.target.closest('button, select')
+                ? event.target.closest(
+                      'button, select, input.ez-field-action__checkbox',
+                  )
                 : null;
         if (!controls.some((control) => control === target)) return;
         const rtl = getComputedStyle(wrap).direction === 'rtl';
@@ -172,6 +235,7 @@ export function mountFieldChrome(
             status,
             measure() {},
             destroy() {
+                fontObserver?.disconnect();
                 keyboardRoot.removeEventListener('keydown', onKeydown);
                 element.remove();
             },
@@ -181,6 +245,7 @@ export function mountFieldChrome(
     let header: HTMLElement | null = null;
     const measure = () => {
         if (!element.isConnected) return;
+        syncFont();
         const reserve = chromeReach(wrap, element);
         wrap.style.setProperty(FIELD_CHROME_INLINE_SIZE, `${reserve}px`);
         const nextHeader = opts.header?.() ?? null;
@@ -222,6 +287,9 @@ export function mountFieldChrome(
         status,
         measure,
         destroy() {
+            fontObserver?.disconnect();
+            if (opts.leadingSelect)
+                wrap.style.removeProperty('--ez-chevron-source-size');
             observer?.disconnect();
             if (frame !== undefined) cancelAnimationFrame(frame);
             keyboardRoot.removeEventListener('keydown', onKeydown);
@@ -236,7 +304,7 @@ export function mountFieldChrome(
  * wrap's trailing border to the chrome's leading edge. Zero for a row with
  * nothing showing.
  */
-function chromeReach(wrap: HTMLElement, chrome: HTMLElement): number {
+export function chromeReach(wrap: HTMLElement, chrome: HTMLElement): number {
     const row = chrome.getBoundingClientRect();
     if (row.width === 0) return 0;
     const box = wrap.getBoundingClientRect();
@@ -274,7 +342,8 @@ export function mountNativeFieldDefaults(host: HTMLElement): () => void {
  * @param host - The element the control was mounted for
  * @param opts - The control's container (watched for a `data-color-scheme`
  *   palette), whether the host asked for the library's styling, and whether an
- *   explicit palette (a theme option) should keep the token colors
+ *   explicit palette (a theme option) should keep the token colors. Composite
+ *   controls keep their own layout and mirror only the appearance.
  * @returns A function that stops following the host
  */
 export function mirrorHostFrame(
@@ -284,34 +353,80 @@ export function mirrorHostFrame(
         container: HTMLElement;
         styleInputs?: boolean;
         explicitPalette?: () => boolean;
+        paintOnly?: boolean;
     },
 ): () => void {
     if (
-        !(host instanceof HTMLInputElement) ||
-        host.type === 'hidden' ||
+        !(
+            host instanceof HTMLInputElement ||
+            host instanceof HTMLTextAreaElement ||
+            host instanceof HTMLFieldSetElement ||
+            host instanceof HTMLSelectElement
+        ) ||
+        (host instanceof HTMLInputElement && host.type === 'hidden') ||
+        (!opts.paintOnly &&
+            !(
+                host instanceof HTMLInputElement ||
+                host instanceof HTMLSelectElement
+            )) ||
         opts.styleInputs
     )
         return () => {};
-    const releaseDefaults = mountNativeFieldDefaults(host);
+    const releaseDefaults =
+        !opts.paintOnly && host instanceof HTMLInputElement
+            ? mountNativeFieldDefaults(host)
+            : undefined;
     const sync = () => {
         const styles = window.getComputedStyle(host);
+        mirrorHostAccent(frame, styles);
+        // A native select is already the visible surface inside the frame.
+        if (host instanceof HTMLSelectElement) return;
         // The frame's own stylesheet floor, read before the host's values are
         // written over it: the suite's single-line height.
-        frame.style.minHeight = '';
-        const floor = window.getComputedStyle(frame).minHeight;
+        if (!opts.paintOnly) frame.style.minHeight = '';
+        const floor = opts.paintOnly
+            ? ''
+            : window.getComputedStyle(frame).minHeight;
         const explicitPalette =
             !!opts.explicitPalette?.() ||
             opts.container.hasAttribute('data-color-scheme');
+        for (const [property, token] of [
+            ['backgroundColor', 'color-background'],
+            ['color', 'color-text'],
+            ['borderColor', 'color-border'],
+            ['borderWidth', 'border-width'],
+            ['borderRadius', 'border-radius'],
+        ] as const) {
+            const value =
+                explicitPalette && token.startsWith('color-')
+                    ? ''
+                    : styles[property];
+            if (opts.paintOnly)
+                frame.style.setProperty(`--_ez-native-${token}`, value);
+            else frame.style[property] = value;
+        }
+        for (const [property, cssName] of [
+            ['borderStyle', 'border-style'],
+            ['font', 'font'],
+            ['lineHeight', 'line-height'],
+        ] as const) {
+            if (opts.paintOnly) {
+                // A borderless host already supplies zero width. Keep the
+                // default style so a later width override can draw an edge.
+                const borderless =
+                    property === 'borderStyle' &&
+                    /^(none|hidden)$/.test(styles.borderStyle);
+                frame.style.setProperty(
+                    `--_ez-native-${cssName}`,
+                    borderless ? '' : styles[property],
+                );
+                continue;
+            }
+            frame.style[property] = styles[property];
+        }
+        if (opts.paintOnly) return;
         for (const property of [
             'boxSizing',
-            'backgroundColor',
-            'color',
-            'font',
-            'lineHeight',
-            'borderWidth',
-            'borderStyle',
-            'borderColor',
-            'borderRadius',
             'marginTop',
             'marginBottom',
             'minHeight',
@@ -319,11 +434,7 @@ export function mirrorHostFrame(
             'paddingBottom',
             'paddingLeft',
         ] as const) {
-            frame.style[property] =
-                explicitPalette &&
-                ['backgroundColor', 'color', 'borderColor'].includes(property)
-                    ? ''
-                    : styles[property];
+            frame.style[property] = styles[property];
         }
         // The floor is the frame's outer height; a content-box frame measures
         // min-height inside the host padding and border it just took on.
@@ -346,7 +457,7 @@ export function mirrorHostFrame(
     const observer = observeFieldTheme(host, sync, opts.container, true);
     return () => {
         observer?.disconnect();
-        releaseDefaults();
+        releaseDefaults?.();
     };
 }
 

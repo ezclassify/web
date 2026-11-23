@@ -26,11 +26,21 @@ import type {
     UnreadMark,
     ValidationError,
 } from '@ezclassify/types';
-import type { ComponentEngineSource } from './component-base-readonly';
+import {
+    returnToField,
+    type ComponentEngineSource,
+} from './component-base-readonly';
 import type { ComponentOptions } from './component-base-readonly';
 import { HiddenAssertionField } from './hidden-assertion-field';
 import { accessibleLabel } from './composer/composer-view';
 import { bindNativeTextEditor } from './native-text-editor';
+import {
+    editTouchesMark,
+    markingEditRange,
+    removeMarkingText,
+    usesPhoneMarkingActions,
+    type MarkingSpan,
+} from './marking-touch-actions';
 import { assertionFactKey, withoutTakenFromWhole } from '../assertion-identity';
 import { renderViewRefused } from '../render-refusal';
 import { t } from '../i18n';
@@ -236,7 +246,6 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
 
     protected override options: MarkedTextAreaOptions = {};
     /** A text area's chrome pins to its first line, top right. */
-    protected override readonly chromeAlign = 'start';
 
     private nativeTextarea!: HTMLTextAreaElement;
     private nativeEditor: ReturnType<typeof bindNativeTextEditor> | null = null;
@@ -657,6 +666,8 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
 
         // Keyboard hint + touch "Add marking" footer, and the inline chrome.
         this.appendFooter();
+        const add = this.chrome.element.querySelector('.ez-marked-field-add');
+        if (add) this.wrap.insertBefore(add, this.chrome.element);
 
         this.scanNotice = document.createElement('div');
         this.scanNotice.className = 'marked-textarea-scan-notice';
@@ -720,6 +731,15 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         this.boundSelectionChange = () => this.onSelectionChange();
         this.listenToTextarea('input', this.boundInput);
         this.listenToTextarea('keydown', this.boundKeydown);
+        this.listenToTextarea('beforeinput', (event) =>
+            this.onPhoneMarkEdit(event, event.inputType),
+        );
+        this.listenToTextarea('cut', (event) =>
+            this.onPhoneMarkEdit(event, 'deleteByCut'),
+        );
+        this.listenToTextarea('paste', (event) =>
+            this.onPhoneMarkEdit(event, 'insertFromPaste'),
+        );
         this.listenToTextarea('focus', () => {
             this.hasFocus = true;
             this.renderDisplay();
@@ -748,8 +768,9 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         });
         this.listenToTextarea('blur', () => {
             this.touchingText = false;
-            if (this.textarea.selectionStart === this.textarea.selectionEnd)
+            if (this.textarea.selectionStart === this.textarea.selectionEnd) {
                 this._lastCaret = this.textarea.selectionStart;
+            }
             this.hasFocus = false;
             this.display.style.borderColor = capturedStyles.borderColor;
             if (!this.picker) this.renderDisplay();
@@ -871,13 +892,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         return capturedStyles;
     }
 
-    /**
-     * Touch "Add marking" → drive the existing keydown path (focus + caret to
-     * end
-     *
-     * - Synthetic Ctrl+Enter) so the behavior stays identical to the keyboard
-     *   shortcut by construction.
-     */
+    /** The desktop action invokes its documented text-editor shortcut. */
     protected triggerAddMarking(): void {
         if (this.picker) return;
         this.textarea.focus();
@@ -1179,6 +1194,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                     };
                     const proposals =
                         read?.proposedFixes ??
+                        state.proposedFixes ??
                         (previous &&
                         previous.marking === segment.marking &&
                         facts(previous.assertions) ===
@@ -1320,7 +1336,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
     private onTextareaInput(): void {
         // Ignore the component's own setHostValue dispatch; the originating
         // code path already handles rendering and syncing.
-        if (this._selfDispatch) return;
+        if (this._selfDispatch || this.discardStalePhoneMarking()) return;
         // Keep the editor's facts only while this exact mark remains. Body
         // text may change during the scan that settles an earlier mark edit.
         this.retainPendingMarks(this.textarea.value);
@@ -1340,7 +1356,41 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         }, MarkedTextArea.SYNC_DEBOUNCE_MS);
     }
 
-    private async syncFromTextarea(initializing = false): Promise<void> {
+    private scanInFlight?: {
+        text: string;
+        seq: number;
+        settled: Promise<void>;
+    };
+
+    private syncFromTextarea(
+        initializing = false,
+        joinPendingScan = false,
+    ): Promise<void> {
+        const text = this.textarea.value;
+        if (
+            joinPendingScan &&
+            this.scanInFlight?.text === text &&
+            this.scanInFlight.seq === this.scanSeq &&
+            this.lastScannedText === text &&
+            !this.scanFailed
+        )
+            return this.scanInFlight.settled;
+        const previousScan = this.scanSeq;
+        const settled = this.scanTextarea(initializing, joinPendingScan);
+        if (this.scanSeq !== previousScan + 1) return settled;
+        this.scanInFlight = { text, seq: this.scanSeq, settled };
+        const clear = () => {
+            if (this.scanInFlight?.settled === settled)
+                this.scanInFlight = undefined;
+        };
+        void settled.then(clear, clear);
+        return settled;
+    }
+
+    private async scanTextarea(
+        initializing: boolean,
+        retryUnsegmented: boolean,
+    ): Promise<void> {
         // While the inline picker is open, the empty "()" template won't be
         // recognized by the engine scan, so the scan would clear the segment list
         // and call renderDisplay(), which tears down and re-mounts the pickerMount
@@ -1348,7 +1398,12 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         // picker owns its own state; the final sync runs when the picker closes.
         if (this.tornDown || this.picker) return;
         const text = this.textarea.value;
-        if (text === this.lastScannedText && !this.scanFailed) return;
+        if (
+            text === this.lastScannedText &&
+            !this.scanFailed &&
+            (!retryUnsegmented || text === this.lastSegmentedText)
+        )
+            return;
         const userInitiated = this.userEditPending;
         this.userEditPending = false;
         const previousScannedText = this.lastScannedText;
@@ -1458,7 +1513,6 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                 changedIndices.push(i);
             }
         }
-        this.lastMarkingStrings = embedded.map((r) => r.marking);
         // The marks this user edit wrote. Only they may take the engine's safe
         // repairs: a fix rewrites the portion that was edited and no other, so
         // typing in one paragraph never rewrites the mark of another. The
@@ -1535,6 +1589,8 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
             }
         }
 
+        // Only an accepted scan can supply the baseline for unchanged marks.
+        this.lastMarkingStrings = embedded.map((r) => r.marking);
         let previousSegmentIndex = 0;
         const previousRecognized = prevMarkings.map((marking) => {
             // Recognized spans can lack an entry ID after a failed empty read.
@@ -2274,6 +2330,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                 segmentsFresh &&
                 !this.pressing &&
                 !this.touchingText &&
+                (this.picker || !usesPhoneMarkingActions(this.textarea)) &&
                 (this.picker ||
                     (this.applyingEntry === null &&
                         this.renderingEntrySeq === null))
@@ -2312,6 +2369,8 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         const selStart = this.hasFocus ? this.textarea.selectionStart : -1;
         const selEnd = this.hasFocus ? this.textarea.selectionEnd : -1;
         const hasSelection = selStart !== selEnd && selStart >= 0;
+        const phone = usesPhoneMarkingActions(this.textarea);
+        this.updatePhoneAddAction();
 
         // Repainting the marking chips can dismiss their old hover, but the
         // tools dialog is anchored to the persistent button outside the display.
@@ -2398,14 +2457,10 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                 (event) => {
                     event.preventDefault();
                     event.stopPropagation();
-                    if (this.textarea.value !== this.lastSegmentedText) return;
-                    const index = this.segments.indexOf(seg);
-                    if (index < 0) return;
-                    this.textarea.setSelectionRange(seg.start, seg.start);
-                    this.activeSegmentIndex = index;
-                    void this.openPicker(seg.start, seg.end);
+                    this.openPaintedSegment(text, seg);
                 },
                 true,
+                () => this.removeMarking(text, seg),
             );
 
             const caretInChip =
@@ -2499,7 +2554,12 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                 !hasSelection &&
                 selStart >= seg.start &&
                 selStart <= seg.end;
-            if (this.shouldShowTooltip() && attention && caretNearChip) {
+            if (
+                !phone &&
+                this.shouldShowTooltip() &&
+                attention &&
+                caretNearChip
+            ) {
                 showTooltip(chip, attention.tooltip, this.container, {
                     clearOf: this.wrap,
                 });
@@ -2749,6 +2809,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         end: number,
         openList = true,
         caret?: number,
+        provisional?: { original: string; proposed: string },
     ): Promise<void> {
         if (this.tornDown || !this.wrap.isConnected) return;
         this.destroyPicker();
@@ -2777,6 +2838,11 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         const seg = this.segments.find(
             (s) => s.start === start && s.end === end,
         );
+        if (
+            (provisional || (!draft && seg)) &&
+            usesPhoneMarkingActions(this.textarea)
+        )
+            this.holdPhoneMarkingSource(v, this.nativeTextarea, provisional);
         const existingAssertions = seg?.assertions;
         // A mark the scan read opens on the text the scan found inside its
         // wrapper. Only text the scan did not read is unwrapped here.
@@ -2821,6 +2887,8 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                     this.textarea.setSelectionRange(pos, pos);
                 },
                 sheetTools: () => this.toolsButton,
+                protectExistingMarking:
+                    !draft && !!seg && usesPhoneMarkingActions(this.textarea),
                 // Which paragraph's mark this is, ahead of the field's own
                 // label, so the sheet's title says it even when it has to
                 // truncate.
@@ -2946,7 +3014,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                 : full;
         const next = v.slice(0, start) + insert + v.slice(end);
         // Picker edit: a user-driven value change, so notify the host.
-        this.setHostValue(next);
+        this.writePhoneMarkingValue(next);
         this.lastScannedText = '';
 
         // Update activeRange to match the new marking length so subsequent
@@ -2985,6 +3053,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
     }
 
     protected async closePicker(skipRender = false): Promise<void> {
+        if (this.discardStalePhoneMarking()) return;
         // Don't close while an acceptance might be in progress.
         // Only allow close from:
         // - skipRender=true (acceptance flow via onPickerChange)
@@ -3024,7 +3093,9 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                     trimmedFull && (nextChar === ' ' || nextChar === '\n')
                         ? trimmedFull
                         : full;
-                this.setHostValue(v.slice(0, start) + insert + v.slice(end));
+                this.writePhoneMarkingValue(
+                    v.slice(0, start) + insert + v.slice(end),
+                );
                 this.lastScannedText = '';
                 // Prune segments whose end position now falls outside the patched
                 // textarea. Happens when the picker closes without a selection and
@@ -3057,7 +3128,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                     this.embeddedStyle?.pattern,
                 );
                 if (repaired.patched) {
-                    this.setHostValue(repaired.value);
+                    this.writePhoneMarkingValue(repaired.value);
                     changes = [...changes, ...loadedSegment.pendingFixes!];
                     if (reading)
                         reading.marking = this.wrapRendered(
@@ -3247,6 +3318,183 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         void this.settleClosedEditor().then(() => this.revealCaret());
     }
 
+    private canChangeMarking(source: string): boolean {
+        return (
+            !this.tornDown &&
+            this.textarea.value === source &&
+            this.nativeTextarea.value === source &&
+            !this.nativeTextarea.matches(':disabled, [readonly]')
+        );
+    }
+
+    private canAddOnPhone(text: string, caret: number): boolean {
+        if (
+            !usesPhoneMarkingActions(this.textarea) ||
+            this.picker ||
+            !this.scanComplete ||
+            text !== this.lastSegmentedText ||
+            !this.canChangeMarking(text) ||
+            caret !== this.textarea.selectionEnd
+        )
+            return false;
+        const start = this.lineStartAt(caret);
+        const newline = text.indexOf('\n', caret);
+        const end = newline < 0 ? text.length : newline;
+        return !this.segments.some(
+            (mark) => mark.start < end && mark.end > start,
+        );
+    }
+
+    private updatePhoneAddAction(): void {
+        const text = this.textarea.value;
+        const caret = this.textarea.selectionStart;
+        this.setPhoneAddAction(
+            this.canAddOnPhone(text, caret)
+                ? () => {
+                      if (
+                          this.canAddOnPhone(text, caret) &&
+                          this.textarea.selectionStart === caret
+                      )
+                          this.addMarkingAt(caret);
+                  }
+                : undefined,
+        );
+    }
+
+    private addMarkingAt(caret: number): void {
+        this.textarea.setSelectionRange(caret, caret);
+        this.capturePickerCancelState();
+        this.insertMarkingDraft(caret, '');
+    }
+
+    private openPaintedSegment(text: string, segment: MarkedSegment): void {
+        if (text !== this.lastSegmentedText || !this.canChangeMarking(text))
+            return;
+        const index = this.segments.indexOf(segment);
+        if (index < 0) return;
+        this.textarea.setSelectionRange(segment.start, segment.start);
+        this.activeSegmentIndex = index;
+        void this.openPicker(segment.start, segment.end);
+    }
+
+    private removeMarking(source: string, mark: MarkingSpan): void {
+        if (
+            source !== this.lastSegmentedText ||
+            !this.canChangeMarking(source) ||
+            !this.segments.some(
+                ({ start, end }) => start === mark.start && end === mark.end,
+            )
+        )
+            return;
+        this.finishClose();
+        this._editorAssertions = null;
+        this.activeRange = null;
+        this.activeSegmentIndex = -1;
+        this.userEditPending = true;
+        this.setHostValue(removeMarkingText(source, mark));
+        this.leaveCaretAt(mark.start);
+        void this.settleClosedEditor();
+        returnToField(this.textarea, this.wrap, 'touch');
+    }
+
+    private onPhoneMarkEdit(event: Event, inputType: string): boolean {
+        const text = this.textarea.value;
+        if (
+            !usesPhoneMarkingActions(this.textarea) ||
+            !this.canChangeMarking(text)
+        )
+            return false;
+        const edit = markingEditRange(this.textarea, inputType);
+        if (!edit) return false;
+        const touches = (mark: MarkingSpan) => {
+            const startsParagraph =
+                mark.start === 0 || text[mark.start - 1] === '\n';
+            // Deleting the break before a marked paragraph could join it to
+            // the previous one and make its marking cease to lead a paragraph.
+            const joinsParagraph =
+                startsParagraph &&
+                edit.start < mark.start &&
+                edit.end >= mark.start;
+            const insertsBefore =
+                startsParagraph &&
+                edit.start === mark.start &&
+                edit.end === mark.start &&
+                inputType.startsWith('insert') &&
+                inputType !== 'insertLineBreak' &&
+                inputType !== 'insertParagraph';
+            return (
+                editTouchesMark(edit, mark) || joinsParagraph || insertsBefore
+            );
+        };
+        const target =
+            text === this.lastSegmentedText
+                ? this.segments.find(touches)
+                : this.findPendingPhoneMark(text, edit, touches);
+        if (!target) return false;
+        return this.openFromPhoneEdit(event, async () => {
+            if (text !== this.lastSegmentedText)
+                await this.syncFromTextarea(false, true);
+            if (!this.canChangeMarking(text) || text !== this.lastSegmentedText)
+                return;
+            const index = this.segments.findIndex(
+                (segment) =>
+                    segment.start === target.start &&
+                    segment.end === target.end,
+            );
+            if (index < 0) return;
+            this.activeSegmentIndex = index;
+            await this.openPicker(target.start, target.end);
+        });
+    }
+
+    /**
+     * The native text can be ahead of the debounced scan, for example just
+     * after Backspace removed the separating space. Find the wrapped range
+     * using the scheme's pattern, then let the scan resolve it before editing.
+     */
+    private findPendingPhoneMark(
+        text: string,
+        edit: MarkingSpan,
+        touches: (mark: MarkingSpan) => boolean,
+    ): MarkingSpan | undefined {
+        const { prefix, oldEnd, delta } = textEdit(
+            this.lastSegmentedText,
+            text,
+        );
+        for (const mark of this.segments) {
+            const shift =
+                mark.end <= prefix
+                    ? 0
+                    : mark.start >= oldEnd
+                      ? delta
+                      : undefined;
+            if (shift === undefined) continue;
+            const span = { start: mark.start + shift, end: mark.end + shift };
+            if (
+                touches(span) &&
+                text.slice(span.start, span.end) === mark.marking
+            )
+                return span;
+        }
+        const pattern = this.embeddedStyle?.pattern;
+        if (!pattern) return undefined;
+        const lineStart = this.lineStartAt(edit.start);
+        const lineEnd = text.indexOf('\n', edit.end);
+        try {
+            for (const match of text
+                .slice(lineStart, lineEnd < 0 ? undefined : lineEnd)
+                .matchAll(new RegExp(pattern, 'gm'))) {
+                if (!match[0]) continue;
+                const start = lineStart + match.index;
+                const span = { start, end: start + match[0].length };
+                if (touches(span)) return span;
+            }
+        } catch {
+            // A scheme with no usable embedded pattern has no fallback spans.
+        }
+        return undefined;
+    }
+
     private onKeydown(e: KeyboardEvent): void {
         if (this.picker && e.key === 'Escape') {
             e.preventDefault();
@@ -3346,55 +3594,71 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                     void this.openPicker(lastOpen, markingEnd);
                 }
             } else {
-                const insert = this.template.replace('{marking}', draft);
-                this._pickerDraft = draft || undefined;
-                // A new part mark leads the paragraph it marks, so insert it
-                // at the start of the caret's line rather than mid-line. When the line already begins with a
-                // marking, start a new marked line after it instead of
-                // splitting the current line mid-word.
-                const { insertAt, prefix } = this.newMarkedLineInsertion(caret);
-                const inserted = prefix + insert;
-                this.setHostValue(
-                    v.slice(0, insertAt) + inserted + v.slice(insertAt),
-                );
-                this.lastScannedText = '';
-                const markStart = insertAt + prefix.length;
-                const markingEnd = markStart + insert.trimEnd().length;
-                // Shift segments at/after the insertion point so their offsets
-                // keep matching the patched text.
-                for (let i = 0; i < this.segments.length; i++) {
-                    if (this.segments[i].start >= insertAt) {
-                        this.segments[i] = {
-                            ...this.segments[i],
-                            start: this.segments[i].start + inserted.length,
-                            end: this.segments[i].end + inserted.length,
-                        };
-                    }
-                }
-                // Create a temporary segment for the new empty marking so the
-                // inline editor can mount. Don't sync first, the empty ()
-                // would be removed by repair before the editor opens.
-                this.segments.push({
-                    start: markStart,
-                    end: markingEnd,
-                    marking: insert.trimEnd(),
-                    assertions: [],
-                    rendered: '',
-                    text: '',
-                    valid: true,
-                    errors: [],
-                    validationErrors: [],
-                    repaired: false,
-                });
-                // Keep segments ordered by start: renderDisplay walks them as
-                // an ascending sequence.
-                this.segments.sort((a, b) => a.start - b.start);
-                this.activeSegmentIndex = this.segments.findIndex(
-                    (s) => s.start === markStart && s.end === markingEnd,
-                );
-                void this.openPicker(markStart, markingEnd);
+                this.insertMarkingDraft(caret, draft);
             }
         }
+    }
+
+    private insertMarkingDraft(caret: number, draft: string): void {
+        const v = this.textarea.value;
+        const insert = this.template.replace('{marking}', draft);
+        // A new part mark leads the paragraph it marks, so insert it
+        // at the start of the caret's line rather than mid-line. When the line already begins with a
+        // marking, start a new marked line after it instead of
+        // splitting the current line mid-word.
+        const { insertAt, prefix } = this.newMarkedLineInsertion(caret);
+        const inserted = prefix + insert;
+        const proposed = v.slice(0, insertAt) + inserted + v.slice(insertAt);
+        const provisional = usesPhoneMarkingActions(this.textarea)
+            ? { original: v, proposed }
+            : undefined;
+        if (provisional)
+            this.holdPhoneMarkingSource(v, this.nativeTextarea, provisional);
+        this.writePhoneMarkingValue(proposed);
+        if (this.discardStalePhoneMarking()) return;
+        this._pickerDraft = draft || undefined;
+        this.lastScannedText = '';
+        const markStart = insertAt + prefix.length;
+        const markingEnd = markStart + insert.trimEnd().length;
+        // Shift segments at/after the insertion point so their offsets
+        // keep matching the patched text.
+        for (let i = 0; i < this.segments.length; i++) {
+            if (this.segments[i].start >= insertAt) {
+                this.segments[i] = {
+                    ...this.segments[i],
+                    start: this.segments[i].start + inserted.length,
+                    end: this.segments[i].end + inserted.length,
+                };
+            }
+        }
+        // Create a temporary segment for the new empty marking so the
+        // inline editor can mount. Don't sync first, the empty ()
+        // would be removed by repair before the editor opens.
+        this.segments.push({
+            start: markStart,
+            end: markingEnd,
+            marking: insert.trimEnd(),
+            assertions: [],
+            rendered: '',
+            text: '',
+            valid: true,
+            errors: [],
+            validationErrors: [],
+            repaired: false,
+        });
+        // Keep segments ordered by start: renderDisplay walks them as
+        // an ascending sequence.
+        this.segments.sort((a, b) => a.start - b.start);
+        this.activeSegmentIndex = this.segments.findIndex(
+            (s) => s.start === markStart && s.end === markingEnd,
+        );
+        void this.openPicker(
+            markStart,
+            markingEnd,
+            true,
+            undefined,
+            provisional,
+        );
     }
 
     /**
@@ -3411,6 +3675,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
     protected restoreCaretAfterEscape(target: number | null): void {
         const caretAfter = target ?? this.textarea.selectionStart;
         this.textarea.setSelectionRange(caretAfter, caretAfter);
+        this.updatePhoneAddAction();
     }
 
     /** The textarea also restores the caret on the capture-phase Escape path. */
@@ -3437,6 +3702,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
      */
     private leaveCaretAt(pos: number): void {
         this.textarea.setSelectionRange(pos, pos);
+        this.updatePhoneAddAction();
         const active = this.textarea.ownerDocument.activeElement;
         // The permanent field box or a newer outside control can already own
         // focus when an asynchronous sheet commit finishes.
