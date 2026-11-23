@@ -1393,6 +1393,11 @@ describe('MarkedTextArea favorites', () => {
         );
         await wait(80);
 
+        expect(
+            document.body.querySelector('.ez-favorites-panel__target')
+                ?.textContent,
+        ).toBe('Insert a marking after the current paragraph');
+
         const row = document.body.querySelector(
             '.ez-favorites-panel__embedded .proto-dropdown-item',
         ) as HTMLElement;

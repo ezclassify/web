@@ -717,8 +717,12 @@ function errorListsOf(field: HTMLElement): HTMLElement[] {
  */
 function popoverPlacement(mark: HTMLElement): TooltipPlacement {
     const field = fieldOf(mark);
+    const feedback = errorListsOf(field);
     return {
-        clearOf: [field, ...errorListsOf(field)],
+        clearOf: [field, ...feedback],
+        preferNearTarget:
+            feedback.length > 0 ||
+            field.classList.contains('marked-textarea-wrap'),
         followViewport: mark.closest('.ez-composer__sheet-tools') !== null,
     };
 }

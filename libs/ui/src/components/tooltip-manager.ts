@@ -303,6 +303,11 @@ export interface TooltipPlacement {
      * below the target, or above it.
      */
     readonly clearOf?: HTMLElement | readonly HTMLElement[] | null;
+    /**
+     * Keep tools near the trigger when a tall field or its feedback extends
+     * below it.
+     */
+    readonly preferNearTarget?: boolean;
     /** A dialog in a mobile sheet follows the viewport as its keyboard moves. */
     readonly followViewport?: boolean;
 }
@@ -468,12 +473,16 @@ function placeTools(
     area: Box,
     minimumHeight: number,
     rtl: boolean,
+    preferAbove: boolean,
 ): ToolsPlacement | null {
     if (width > area.right - area.left) return null;
     const above = Math.max(0, clear.top - GAP - area.top);
     const below = Math.max(0, area.bottom - clear.bottom - GAP);
     if (Math.max(above, below) < minimumHeight) return null;
-    const side = below >= above ? 'below' : 'above';
+    const side =
+        (preferAbove && above >= minimumHeight) || above > below
+            ? 'above'
+            : 'below';
     return {
         left: clamp(
             rtl ? anchor.left : anchor.right - width,
@@ -494,11 +503,28 @@ function placeToolsInViewport(
     width: number,
     minimumHeight: number,
     rtl: boolean,
+    preferAbove: boolean,
 ): ToolsPlacement {
     const area = viewportBox();
     return (
-        placeTools(anchor, clear, width, area, minimumHeight, rtl) ??
-        placeTools(anchor, target, width, area, minimumHeight, rtl) ?? {
+        placeTools(
+            anchor,
+            clear,
+            width,
+            area,
+            minimumHeight,
+            rtl,
+            preferAbove,
+        ) ??
+        placeTools(
+            anchor,
+            target,
+            width,
+            area,
+            minimumHeight,
+            rtl,
+            preferAbove,
+        ) ?? {
             left: clamp(
                 rtl ? anchor.left : anchor.right - width,
                 area.left,
@@ -777,12 +803,17 @@ export function repositionTooltip(
     if (tools) {
         const anchor = clear?.anchor.getBoundingClientRect() ?? rect;
         const area = clear ? visibleBox(clear.anchor) : viewportBox();
+        const preferAbove =
+            !!placement?.preferNearTarget &&
+            !!clear &&
+            rect.top + rect.bottom < clear.box.top + clear.box.bottom;
         const geometry = JSON.stringify([
             ...[anchor, clear?.box ?? rect, rect, area, viewportBox()].flatMap(
                 (box) => [box.left, box.top, box.right, box.bottom],
             ),
             tipRect.width,
             rtl,
+            preferAbove,
         ]);
         if (entry.toolsGeometry !== geometry) {
             entry.toolsPlacement = undefined;
@@ -798,6 +829,7 @@ export function repositionTooltip(
                       area,
                       minimumHeight,
                       rtl,
+                      preferAbove,
                   )
                 : null) ??
             placeToolsInViewport(
@@ -807,6 +839,7 @@ export function repositionTooltip(
                 tipRect.width,
                 minimumHeight,
                 rtl,
+                preferAbove,
             );
         entry.toolsPlacement = toolsPlacement;
         tip.style.setProperty(

@@ -47,6 +47,8 @@ export const defaultLocale = {
     'favorites.saved': 'Saved Favorites',
     'favorites.editingMarking': 'Editing marking {n} of {total}',
     'favorites.insertParagraph': 'Insert a marking at the current paragraph',
+    'favorites.insertAfterParagraph':
+        'Insert a marking after the current paragraph',
     'favorites.saveCurrent': 'Save Current Marking',
     'favorites.unsaveCurrent': 'Unsave Current Marking',
     'favorites.applyFailed': 'Could not apply this favorite. Try again.',

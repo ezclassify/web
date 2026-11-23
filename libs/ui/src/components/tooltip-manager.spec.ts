@@ -349,6 +349,19 @@ describe('tooltip-manager', () => {
             );
         });
 
+        it('keeps tools by a field trigger when inline feedback extends below it', () => {
+            const tools = phoneTools(() => 121);
+            const { field: f, target } = field(box(24, 260, 366, 300));
+            const feedback = document.createElement('div');
+            root.append(feedback);
+            at(feedback, box(24, 304, 366, 376));
+            showTooltip(target, tools, root, {
+                clearOf: [f, feedback],
+                preferNearTarget: true,
+            });
+            expect(shown().top).toBe('133px');
+        });
+
         it('caps a long tools body to the available clearance above the field', () => {
             const tools = phoneTools(() => 700);
             const { field: f, target } = field(

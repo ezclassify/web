@@ -603,7 +603,12 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                                       '{total}',
                                       String(this.segments.length),
                                   )
-                            : t('favorites.insertParagraph'),
+                            : t(
+                                  this.newMarkedLineInsertion(this._lastCaret)
+                                      .prefix
+                                      ? 'favorites.insertAfterParagraph'
+                                      : 'favorites.insertParagraph',
+                              ),
                     getCurrent: () => this.currentFavoritesMarking(),
                     onApply: (marking, signal) => {
                         const target = markingTarget(this);
