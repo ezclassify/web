@@ -183,7 +183,8 @@
     grid-row: 1;
 }
 @media (pointer: coarse) {
-    .ez-favorites-panel__settings-action {
+    .ez-favorites-panel__settings-action,
+    .ez-favorites-panel__storage-actions .ez-favorites-panel__settings-action {
         min-height: max(2.75rem, 2.75em);
     }
 }
