@@ -767,8 +767,10 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         });
         this.listenToTextarea('blur', () => {
             this.touchingText = false;
-            if (this.textarea.selectionStart === this.textarea.selectionEnd)
+            if (this.textarea.selectionStart === this.textarea.selectionEnd) {
                 this._lastCaret = this.textarea.selectionStart;
+                this.rememberFooterCaret();
+            }
             this.hasFocus = false;
             this.display.style.borderColor = capturedStyles.borderColor;
             if (!this.picker) this.renderDisplay();
@@ -890,18 +892,21 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         return capturedStyles;
     }
 
-    /**
-     * Touch "Add marking" → drive the existing keydown path (focus + caret to
-     * end
-     *
-     * - Synthetic Ctrl+Enter) so the behavior stays identical to the keyboard
-     *   shortcut by construction.
-     */
+    /** Work on the caret's paragraph on phones. Desktop keeps its shortcut. */
     protected triggerAddMarking(): void {
-        if (this.picker) return;
+        const text = this.textarea.value;
+        if (this.picker || !this.canChangeMarking(text)) return;
+        const phone = usesPhoneMarkingActions(this.textarea);
+        if (phone && text !== this.lastSegmentedText) return;
+        const caret = phone ? this.textarea.selectionStart : text.length;
+        const marking = phone ? this.footerParagraphMark(caret) : undefined;
+        if (marking) {
+            this.openPaintedSegment(text, marking);
+            return;
+        }
+        if (phone && !this.scanComplete) return;
         this.textarea.focus();
-        const end = this.textarea.value.length;
-        this.textarea.setSelectionRange(end, end);
+        this.textarea.setSelectionRange(caret, caret);
         this.textarea.dispatchEvent(
             new KeyboardEvent('keydown', {
                 key: 'Enter',
@@ -2371,6 +2376,8 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         const selStart = this.hasFocus ? this.textarea.selectionStart : -1;
         const selEnd = this.hasFocus ? this.textarea.selectionEnd : -1;
         const hasSelection = selStart !== selEnd && selStart >= 0;
+        const phone = usesPhoneMarkingActions(this.textarea);
+        this.updateParagraphActions(text, phone);
 
         // Repainting the marking chips can dismiss their old hover, but the
         // tools dialog is anchored to the persistent button outside the display.
@@ -2457,16 +2464,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                 (event) => {
                     event.preventDefault();
                     event.stopPropagation();
-                    if (
-                        text !== this.lastSegmentedText ||
-                        !this.canChangeMarking(text)
-                    )
-                        return;
-                    const index = this.segments.indexOf(seg);
-                    if (index < 0) return;
-                    this.textarea.setSelectionRange(seg.start, seg.start);
-                    this.activeSegmentIndex = index;
-                    void this.openPicker(seg.start, seg.end);
+                    this.openPaintedSegment(text, seg);
                 },
                 true,
                 () => this.removeMarking(text, seg),
@@ -2563,7 +2561,12 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                 !hasSelection &&
                 selStart >= seg.start &&
                 selStart <= seg.end;
-            if (this.shouldShowTooltip() && attention && caretNearChip) {
+            if (
+                !phone &&
+                this.shouldShowTooltip() &&
+                attention &&
+                caretNearChip
+            ) {
                 showTooltip(chip, attention.tooltip, this.container, {
                     clearOf: this.wrap,
                 });
@@ -2887,19 +2890,8 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                     this.textarea.setSelectionRange(pos, pos);
                 },
                 sheetTools: () => this.toolsButton,
-                removeMarking:
-                    !draft && seg && usesPhoneMarkingActions(this.textarea)
-                        ? () => {
-                              if (
-                                  !this.discardStalePhoneMarking() &&
-                                  this.activeRange
-                              )
-                                  this.removeMarking(
-                                      this.textarea.value,
-                                      this.activeRange,
-                                  );
-                          }
-                        : undefined,
+                protectExistingMarking:
+                    !draft && !!seg && usesPhoneMarkingActions(this.textarea),
                 // Which paragraph's mark this is, ahead of the field's own
                 // label, so the sheet's title says it even when it has to
                 // truncate.
@@ -3338,8 +3330,76 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         );
     }
 
+    private footerCaret?: { text: string; offset: number };
+
+    private rememberFooterCaret(): void {
+        this.footerCaret = {
+            text: this.textarea.value,
+            offset: this.textarea.selectionStart,
+        };
+    }
+
+    private footerParagraphMark(caret: number): MarkedSegment | undefined {
+        const start = this.lineStartAt(caret);
+        const next = this.textarea.value.indexOf('\n', caret);
+        const end = next < 0 ? this.textarea.value.length : next;
+        return (
+            this.segments.find(
+                (mark) => mark.start <= caret && caret <= mark.end,
+            ) ??
+            this.segments.find(
+                (mark) => mark.start >= start && mark.start < end,
+            )
+        );
+    }
+
+    private updateParagraphActions(text: string, phone: boolean): void {
+        if (!phone) {
+            this.setFooterMarkingAction(false, false);
+            this.setPhoneRemoveAction();
+            return;
+        }
+        const fresh = text === this.lastSegmentedText;
+        const caret = this.textarea.selectionStart;
+        const mark = fresh ? this.footerParagraphMark(caret) : undefined;
+        const canAct =
+            fresh &&
+            (!!mark || this.scanComplete) &&
+            !this.picker &&
+            this.canChangeMarking(text);
+        this.setFooterMarkingAction(fresh ? !!mark : undefined, !canAct);
+        const selected =
+            caret === this.textarea.selectionEnd &&
+            (this.hasFocus ||
+                (this.footerCaret?.text === text &&
+                    this.footerCaret.offset === caret));
+        const span = mark ? { start: mark.start, end: mark.end } : undefined;
+        this.setPhoneRemoveAction(
+            canAct && selected && span
+                ? () => this.removeMarking(text, span)
+                : undefined,
+        );
+    }
+
+    private openPaintedSegment(text: string, segment: MarkedSegment): void {
+        if (text !== this.lastSegmentedText || !this.canChangeMarking(text))
+            return;
+        const index = this.segments.indexOf(segment);
+        if (index < 0) return;
+        this.textarea.setSelectionRange(segment.start, segment.start);
+        this.rememberFooterCaret();
+        this.activeSegmentIndex = index;
+        void this.openPicker(segment.start, segment.end);
+    }
+
     private removeMarking(source: string, mark: MarkingSpan): void {
-        if (source !== this.lastSegmentedText || !this.canChangeMarking(source))
+        if (
+            source !== this.lastSegmentedText ||
+            !this.canChangeMarking(source) ||
+            !this.segments.some(
+                ({ start, end }) => start === mark.start && end === mark.end,
+            )
+        )
             return;
         this.finishClose();
         this._editorAssertions = null;
@@ -3614,6 +3674,12 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
     protected restoreCaretAfterEscape(target: number | null): void {
         const caretAfter = target ?? this.textarea.selectionStart;
         this.textarea.setSelectionRange(caretAfter, caretAfter);
+        if (this.footerCaret?.text === this.textarea.value)
+            this.rememberFooterCaret();
+        this.updateParagraphActions(
+            this.textarea.value,
+            usesPhoneMarkingActions(this.textarea),
+        );
     }
 
     /** The textarea also restores the caret on the capture-phase Escape path. */
@@ -3640,6 +3706,8 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
      */
     private leaveCaretAt(pos: number): void {
         this.textarea.setSelectionRange(pos, pos);
+        if (this.footerCaret?.text === this.textarea.value)
+            this.rememberFooterCaret();
         const active = this.textarea.ownerDocument.activeElement;
         // The permanent field box or a newer outside control can already own
         // focus when an asynchronous sheet commit finishes.

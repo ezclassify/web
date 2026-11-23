@@ -112,6 +112,6 @@
 .ez-marked-field-footer:has(
         > .ez-validation-errors[data-has-errors]:not([hidden])
     )
-    > button {
+    > .ez-marked-field-actions {
     margin-inline-start: auto;
 }

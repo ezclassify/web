@@ -1511,13 +1511,97 @@ it('protects the closing delimiter on a phone and removes only the selected mark
             )
             .toBe('U');
         expect(native.value).toBe(source);
+        expect(sheet()!.querySelector('.ez-composer__sheet-remove')).toBeNull();
         sheet()!
-            .querySelector<HTMLButtonElement>('.ez-composer__sheet-remove')!
+            .querySelector<HTMLButtonElement>('.ez-composer__sheet-cancel')!
             .click();
+        await expect.poll(sheet).toBeNull();
+        const remove = root.querySelector<HTMLButtonElement>(
+            '.ez-marked-field-actions .ez-marked-field-remove',
+        )!;
+        expect(remove.hidden).toBe(false);
+        remove.click();
         await expect.poll(() => native.value).toBe('Body text here.');
         await expect
             .poll(() => root.querySelector('.marked-textarea-chip'))
             .toBeNull();
+    } finally {
+        field.destroy();
+        vi.unstubAllGlobals();
+    }
+});
+
+it('tracks the phone footer through an unmarked line and a newly selected marking', async () => {
+    vi.stubGlobal('innerWidth', 390);
+    vi.stubGlobal('matchMedia', () => ({ matches: true }));
+    const source = '(U) First.\n\n(S) Second.';
+    const native = document.createElement('textarea');
+    native.value = source;
+    const container = document.createElement('div');
+    root.append(native, container);
+    const field = new MarkedTextArea();
+    try {
+        const context = await createTestContext();
+        const scan = context.scheme.scan.bind(context.scheme);
+        vi.spyOn(context.scheme, 'scan').mockImplementation(
+            async (text, options) => {
+                if (text === '(U) First.\n\nSecond.') {
+                    const result = (await scan(source, options)) as ScanOutcome;
+                    return { ...result, results: result.results.slice(0, 1) };
+                }
+                return scan(text, options);
+            },
+        );
+        await field.init(container, context);
+        const editor = textareaEditor(native);
+        const footer = root.querySelector<HTMLElement>(
+            '.ez-marked-field-actions',
+        )!;
+        const action = footer.querySelector<HTMLButtonElement>(
+            '.marked-textarea-touch-add',
+        )!;
+        const remove = footer.querySelector<HTMLButtonElement>(
+            '.ez-marked-field-remove',
+        )!;
+        const placeCaret = (offset: number) => {
+            editor.setSelectionRange(offset, offset);
+            document.dispatchEvent(new Event('selectionchange'));
+        };
+        editor.focus();
+        placeCaret(source.indexOf('\n') + 1);
+        expect(action.getAttribute('aria-label')).toBe('Add marking');
+        expect(remove.hidden).toBe(true);
+        placeCaret(source.indexOf('First'));
+        expect(action.getAttribute('aria-label')).toBe('Edit marking');
+        expect(remove.hidden).toBe(false);
+        editor.blur();
+
+        const second = root.querySelectorAll<HTMLElement>(
+            '.marked-textarea-chip',
+        )[1];
+        second.dispatchEvent(
+            new MouseEvent('click', { bubbles: true, detail: 1 }),
+        );
+        const sheet = () =>
+            document.querySelector<HTMLElement>(
+                '.ez-composer[data-surface="sheet"]:not([hidden])',
+            );
+        await expect
+            .poll(
+                () =>
+                    sheet()?.querySelector<HTMLInputElement>(
+                        '.ez-composer__sheet-input',
+                    )?.value,
+            )
+            .toBe('S');
+        sheet()!
+            .querySelector<HTMLButtonElement>('.ez-composer__sheet-cancel')!
+            .click();
+        await expect.poll(sheet).toBeNull();
+        expect(action.getAttribute('aria-label')).toBe('Edit marking');
+        expect(remove.hidden).toBe(false);
+        remove.click();
+        await expect.poll(() => native.value).toBe('(U) First.\n\nSecond.');
     } finally {
         field.destroy();
         vi.unstubAllGlobals();

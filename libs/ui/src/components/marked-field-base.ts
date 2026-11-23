@@ -83,9 +83,11 @@ import {
 import { FieldComponentBase } from './field-component-base';
 import type { FavoritesPanelHost } from './favorites-panel';
 import { markingTarget } from './marking-target';
+import { hideTooltip } from './tooltip-manager';
 import {
     bindMarkingLongPress,
     showMarkingActions,
+    usesPhoneMarkingActions,
 } from './marking-touch-actions';
 import markingTouchCss from './marking-touch-actions.css?inline';
 
@@ -578,6 +580,8 @@ export abstract class MarkedFieldBase<
     protected appendFooter(): void {
         const footer = document.createElement('div');
         footer.className = `ez-marked-field-footer ${this.classNames.footer}`;
+        const actions = document.createElement('div');
+        actions.className = 'ez-marked-field-actions';
 
         // One direct action and Tab stop: its desktop keycap documents the
         // shortcut; coarse pointers keep the same plain action button.
@@ -590,7 +594,9 @@ export abstract class MarkedFieldBase<
         keycap.className = 'ez-marked-field-shortcut';
         keycap.setAttribute('aria-hidden', 'true');
         keycap.textContent = shortcut;
-        touchAdd.append(keycap, document.createTextNode(` ${label}`));
+        const actionLabel = document.createTextNode(` ${label}`);
+        touchAdd.append(keycap, actionLabel);
+        this.footerAction = { button: touchAdd, label: actionLabel };
         touchAdd.setAttribute('aria-label', label);
         touchAdd.title = `${label} (${shortcut})`;
         touchAdd.setAttribute(
@@ -601,7 +607,26 @@ export abstract class MarkedFieldBase<
             e.preventDefault();
             this.triggerAddMarking();
         });
-        footer.appendChild(touchAdd);
+        const remove = document.createElement('button');
+        remove.type = 'button';
+        remove.className = 'ez-marked-field-remove';
+        remove.textContent = t('mark.removeMarking');
+        remove.hidden = true;
+        let pressed: (() => void) | undefined;
+        remove.addEventListener('pointerdown', () => {
+            pressed = this.removeFromFooter;
+        });
+        remove.addEventListener('pointercancel', () => {
+            pressed = undefined;
+        });
+        remove.addEventListener('click', (event) => {
+            const action = event.detail ? pressed : this.removeFromFooter;
+            pressed = undefined;
+            if (usesPhoneMarkingActions(remove)) action?.();
+        });
+        this.footerRemove = remove;
+        actions.append(touchAdd, remove);
+        footer.append(actions);
 
         this.wrap.appendChild(footer);
 
@@ -862,7 +887,7 @@ export abstract class MarkedFieldBase<
             | 'openList'
             | 'resolveParts'
             | 'sheetTools'
-            | 'removeMarking'
+            | 'protectExistingMarking'
             | 'textToolsEdges'
         >,
         finishBlur: () => void,
@@ -1234,6 +1259,7 @@ export abstract class MarkedFieldBase<
             chip.classList.add('ez-marked-field-tap-target');
             const consumeLongPress = remove
                 ? bindMarkingLongPress(chip, () => {
+                      hideTooltip(this.container);
                       this.closeTouchActions?.();
                       this.closeTouchActions = showMarkingActions(
                           this.wrap,
@@ -1273,7 +1299,10 @@ export abstract class MarkedFieldBase<
             chip,
             () => attention.tooltip,
             this.container,
-            () => chip.isConnected && this.shouldShowTooltip(),
+            () =>
+                chip.isConnected &&
+                this.shouldShowTooltip() &&
+                (!remove || !usesPhoneMarkingActions(chip)),
             undefined,
             undefined,
             () => ({ clearOf: this.wrap }),
@@ -1282,6 +1311,32 @@ export abstract class MarkedFieldBase<
     }
 
     private closeTouchActions?: () => void;
+    private footerAction?: { button: HTMLButtonElement; label: Text };
+    private footerRemove?: HTMLButtonElement;
+    private removeFromFooter?: () => void;
+
+    protected setPhoneRemoveAction(remove?: () => void): void {
+        this.removeFromFooter = remove;
+        if (this.footerRemove) this.footerRemove.hidden = !remove;
+    }
+
+    protected setFooterMarkingAction(
+        editing: boolean | undefined,
+        disabled: boolean,
+    ): void {
+        if (!this.footerAction) return;
+        const { button, label } = this.footerAction;
+        button.disabled = disabled;
+        if (editing === undefined) return;
+        const text = t(editing ? 'mark.editMarking' : this.markingActionKey);
+        if (button.getAttribute('aria-label') !== text) {
+            label.data = ` ${text}`;
+            button.setAttribute('aria-label', text);
+            button.title = editing
+                ? text
+                : `${text} (${isMacPlatform() ? '⌘+Enter' : 'Ctrl+Enter'})`;
+        }
+    }
     private phoneEditOpening = false;
 
     /** A held Backspace can repeat before the async editor has mounted. */

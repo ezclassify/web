@@ -45,12 +45,6 @@
     border-bottom: 1px solid var(--ez-color-border, #d1d5db);
 }
 
-.ez-composer__sheet-button.ez-composer__sheet-remove {
-    align-self: flex-end;
-    color: var(--ez-color-error, #b91c1c);
-    text-decoration: underline;
-}
-
 /* Cancel, the field's name, Done: the way out of the sheet, in the order a
    phone user expects. The outer columns share the leftover width equally so
    the name stays centered however long either button's text runs. */

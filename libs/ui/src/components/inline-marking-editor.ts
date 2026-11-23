@@ -108,8 +108,8 @@ export interface InlineMarkingEditorOptions {
     isFieldChrome?: (node: Node) => boolean;
     /** Keep the host's control reachable in the phone sheet. */
     sheetTools?: () => HTMLElement | null;
-    /** Remove an existing marking without accepting the editor's draft. */
-    removeMarking?: () => void;
+    /** Refuse an empty commit for an existing marking edited on a phone. */
+    protectExistingMarking?: boolean;
     /** Whether this mark ends the host's complete editable text. */
     textToolsEdges?: () => boolean;
     /** The host field's accessible name, for the combobox and listbox. */
@@ -255,7 +255,7 @@ export class InlineMarkingEditor {
             port: this.port(),
             shape: 'whole',
             announce: (text) => this.view?.announce(text),
-            emptyCommitProblem: options.removeMarking
+            emptyCommitProblem: options.protectExistingMarking
                 ? t('mark.removeExplicitly')
                 : undefined,
         });
@@ -282,7 +282,6 @@ export class InlineMarkingEditor {
                 this.options.onExit?.('commit', fromSheet),
             isFieldChrome: options.isFieldChrome,
             sheetTools: options.sheetTools,
-            removeMarking: options.removeMarking,
             textToolsEdges: options.textToolsEdges,
             onEscapeIdle: (fromSheet) => {
                 this.options.onCancel?.(fromSheet);
@@ -672,7 +671,8 @@ export class InlineMarkingEditor {
         const rendered = renderViewRefused(result)
             ? reading.rendered
             : result.rendered;
-        if (this.options.removeMarking && !rendered.trim()) return false;
+        if (this.options.protectExistingMarking && !rendered.trim())
+            return false;
         this.assertions = result.assertions;
         this.rendered = rendered;
         // A second commit in the same session replaces the first, and what

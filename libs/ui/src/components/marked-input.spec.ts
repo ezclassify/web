@@ -1325,7 +1325,7 @@ describe('MarkedInput', () => {
         },
     );
 
-    it('offers explicit phone removal after a long press and keeps the marking when an empty draft is submitted', async () => {
+    it('offers explicit phone removal outside the picker and keeps the marking when an empty draft is submitted', async () => {
         vi.stubGlobal('innerWidth', 390);
         vi.stubGlobal('matchMedia', () => ({ matches: true }));
         try {
@@ -1378,10 +1378,20 @@ describe('MarkedInput', () => {
                 .poll(() => done.getAttribute('aria-disabled'))
                 .toBe('true');
             expect(native.value).toBe('(U) Text');
-
+            expect(
+                [...sheet()!.querySelectorAll('button')].some(
+                    (button) => button.textContent === 'Remove marking',
+                ),
+            ).toBe(false);
             sheet()!
-                .querySelector<HTMLButtonElement>('.ez-composer__sheet-remove')!
+                .querySelector<HTMLButtonElement>('.ez-composer__sheet-cancel')!
                 .click();
+            await expect.poll(sheet).toBeNull();
+            const remove = root.querySelector<HTMLButtonElement>(
+                '.ez-marked-field-actions .ez-marked-field-remove',
+            )!;
+            expect(remove.hidden).toBe(false);
+            remove.click();
             expect(native.value).toBe('Text');
             expect(sheet()).toBeNull();
         } finally {

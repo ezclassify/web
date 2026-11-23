@@ -1191,6 +1191,11 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
         };
 
         const mark = this.getMarkString();
+        this.setPhoneRemoveAction(
+            mark && !this.picker && this.canChangeMarking(v)
+                ? () => this.removeMarking(v, mark.length)
+                : undefined,
+        );
         // The open editor's marking takes presses above the native host (see
         // marked-input.css), so the display rises while it is mounted.
         this.wrap.classList.toggle(
@@ -1404,16 +1409,8 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
                     void this.syncFromInput();
                 },
                 sheetTools: () => this.toolsButton,
-                removeMarking:
-                    mark && usesPhoneMarkingActions(this.input)
-                        ? () => {
-                              if (!this.discardStalePhoneMarking())
-                                  this.removeMarking(
-                                      this.input.value,
-                                      this.getMarkString().length,
-                                  );
-                          }
-                        : undefined,
+                protectExistingMarking:
+                    !!mark && usesPhoneMarkingActions(this.input),
                 textToolsEdges: () => this.getFreeText().length === 0,
                 label: () =>
                     accessibleLabel(this.input, t('aria.markingInput')),
