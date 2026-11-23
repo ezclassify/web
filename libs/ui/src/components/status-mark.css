@@ -241,8 +241,8 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: calc(2.75em / 1.5);
-    min-height: calc(2.75em / 1.5);
+    min-width: max(2.75rem, calc(2.75em / 1.5));
+    min-height: max(2.75rem, calc(2.75em / 1.5));
     border: 0;
     border-radius: 0.25em;
     padding: 0;
@@ -260,10 +260,6 @@
 @media (pointer: coarse) {
     .ez-marking-tools__tab {
         min-height: max(2.75rem, 2.75em);
-    }
-    .ez-marking-tools__close {
-        min-width: max(2.75rem, calc(2.75em / 1.5));
-        min-height: max(2.75rem, calc(2.75em / 1.5));
     }
 }
 /* One brand-logo mark per enhanced field: 3 bars + a sparkle, always drawn in
