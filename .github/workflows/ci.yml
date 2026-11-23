@@ -79,7 +79,7 @@ jobs:
         id: sdk
         env:
           NODE_AUTH_TOKEN: ${{ github.token }}
-        uses: ezclassify/.github/actions/check-pr-dependencies@f271388f9def45e8c8a5d4e9a888581aac4e5694
+        uses: ezclassify/.github/actions/check-pr-dependencies@d71909714a08e9a2c60e0d987ecffa03419f73e8
         with:
           producer: ezclassify/sdk-js
           packages: '@ezclassify/rest-client'
