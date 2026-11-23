@@ -74,21 +74,22 @@
             var(--ez-tag-input-font-size, 1em),
             16px
         );
-    }
-    /* The search input is a 44px target on a finger. */
-    .tag-input-filter {
         min-height: 2.75rem;
+        align-items: center;
+        row-gap: 0.25rem;
     }
-    /* Wrapped chip rows need more vertical room on touch than the default
-       above: the coarse-pointer remove-button hit target below
-       (`.proto-tag-remove::after`, component-utils.css) grows past the
-       chip's own edges, and a tighter row-gap would let it cross into the
-       next row. Lives in this file (not component-utils.css) so it loads
-       after the default `row-gap: 0.375rem` above and wins on source order
-       instead of depending on which file the cascade happens to concatenate
-       first. */
-    .tag-input-wrap {
-        row-gap: 0.5rem;
+    /* The whole field focuses search. Let the input fit beside a chip. */
+    .tag-input-filter {
+        min-height: 1.5rem;
+    }
+    /* Put the whole remove target inside its chip. Wrapped rows can sit
+       closer without the tap area reaching a different marking. */
+    .tag-input-wrap .proto-tag-remove {
+        width: 1.5rem;
+        height: 1.5rem;
+    }
+    .tag-input-wrap .proto-tag-remove::after {
+        content: none;
     }
 }
 @media (forced-colors: active) {

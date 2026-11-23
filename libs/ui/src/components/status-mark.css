@@ -307,6 +307,7 @@
     height: 1cap;
     flex: 0 0 auto;
     overflow: visible;
+    pointer-events: none;
 }
 .ez-status-mark.ez-status-mark--tools {
     cursor: pointer;
@@ -423,11 +424,12 @@
     }
 }
 
-/* The bracket height follows the field's capital letters. The button pads
-   the small glyph like its neighboring clear button; a finger gets a 44px
-   target centered around it. field-chrome.css reserves the target's overhang
-   before the neighboring clear button. */
+/* The number follows the field's text size on touch screens. Standalone
+   status marks also get a 44px hit area through their centered pseudo-element. */
 @media (pointer: coarse) {
+    .ez-status-mark__count {
+        font-size: 1em;
+    }
     .ez-status-mark::after {
         content: '';
         position: absolute;

@@ -63,11 +63,29 @@
     ) !important;
 }
 
-/* The small branding glyph keeps a 44px touch target. Reserve its trailing
-   half-overhang before clear, which also grows to 44px on a coarse pointer. */
+/* Adjacent touch buttons keep separate hit areas without crowding the text. */
 @media (pointer: coarse) {
     .ez-field-chrome {
-        gap: 0.75rem;
+        gap: 0;
+    }
+    .ez-field-chrome .ez-status-mark--chrome,
+    .ez-field-chrome .ez-clear-button {
+        min-inline-size: 2rem;
+        block-size: 2rem;
+    }
+    .ez-field-chrome .ez-status-mark--chrome {
+        padding-inline: 0.125rem;
+    }
+    .ez-field-chrome .ez-status-mark--chrome::after {
+        content: none;
+    }
+    .ez-field-chrome .ez-clear-button {
+        inline-size: 2rem;
+    }
+    .ez-field-chrome .ez-status-mark--chrome svg,
+    .ez-field-chrome .ez-clear-button__icon {
+        inline-size: 1.5rem;
+        block-size: 1.5rem;
     }
 }
 

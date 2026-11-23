@@ -327,12 +327,46 @@
     outline: none;
 }
 @media (pointer: coarse) {
+    .select-dropdown-native,
+    .select-dropdown {
+        min-block-size: 2rem;
+    }
     .select-dropdown-native {
-        min-height: 2.75rem;
+        padding-inline-end: calc(
+            var(--ez-field-chrome-inline-size, 0px) + 2rem
+        ) !important;
+    }
+    .select-dropdown-field:not(.select-dropdown-field--native) {
+        padding-inline-end: var(--ez-field-chrome-inline-size, 0px) !important;
     }
     .select-dropdown {
-        min-height: 2.75rem;
+        appearance: none;
+        padding-inline-end: 2rem;
         font-size: max(1em, 16px);
+    }
+    /* The chevron is drawn over the native select. Tapping that area opens
+       the same select as tapping its text. */
+    .select-dropdown-field::after {
+        content: '';
+        position: absolute;
+        inset-inline-end: calc(
+            var(--ez-field-chrome-inline-size, 0px) + 0.25rem
+        );
+        top: 50%;
+        inline-size: 1.5rem;
+        block-size: 1.5rem;
+        border: 0;
+        background: currentColor;
+        clip-path: polygon(
+            22% 36%,
+            50% 64%,
+            78% 36%,
+            84% 42%,
+            50% 76%,
+            16% 42%
+        );
+        transform: translateY(-50%);
+        pointer-events: none;
     }
 }
 .select-dropdown-supplement:empty {
@@ -351,6 +385,12 @@
         background: ButtonFace;
         color: ButtonText;
         forced-color-adjust: auto;
+    }
+    @media (pointer: coarse) {
+        .select-dropdown-field::after {
+            forced-color-adjust: none;
+            background: ButtonText;
+        }
     }
 }
 

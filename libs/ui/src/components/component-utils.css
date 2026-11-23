@@ -391,9 +391,7 @@
         position: absolute;
         inset: -0.4rem -0.5rem;
     }
-    /* The matching row-gap bump so wrapped rows never let this enlarged
-       overlay cross into the next row lives in tag-input.css, alongside
-       the default row-gap it overrides; see the note there. */
+    /* TagInput sizes the button itself to keep wrapped rows compact. */
 }
 
 /* ── Reduced motion ──────────────────────────────────── */
