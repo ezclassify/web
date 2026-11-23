@@ -406,17 +406,15 @@ export class SingleSelect extends ComponentBase {
         field.appendChild(select);
         this.container.appendChild(field);
         this.mountSuiteChrome(field, 'overlay', undefined, select);
-        if (!native) {
-            this.stopHostFrame = mirrorHostFrame(
-                field,
-                host ?? this.enhancedInput,
-                {
-                    container: this.container,
-                    styleInputs: this.options.styleInputs,
-                    explicitPalette: () => !!this.options.theme,
-                },
-            );
-        }
+        this.stopHostFrame = mirrorHostFrame(
+            field,
+            host ?? this.enhancedInput,
+            {
+                container: this.container,
+                styleInputs: this.options.styleInputs,
+                explicitPalette: () => !!this.options.theme,
+            },
+        );
         this.dropdownSupplement = document.createElement('div');
         this.dropdownSupplement.className = 'select-dropdown-supplement';
         this.container.appendChild(this.dropdownSupplement);

@@ -76,11 +76,48 @@ function revealTab(tab: HTMLElement): void {
     if (!strip || strip.scrollWidth <= strip.clientWidth) return;
     const bounds = strip.getBoundingClientRect();
     const position = tab.getBoundingClientRect();
+    const padding =
+        Number.parseFloat(getComputedStyle(strip).scrollPaddingLeft) || 0;
+    const inset = Math.min(
+        padding,
+        Math.max(0, (bounds.width - position.width) / 2),
+    );
     const offset =
-        position.left < bounds.left
-            ? position.left - bounds.left
-            : Math.max(0, position.right - bounds.right);
+        position.left < bounds.left + inset
+            ? position.left - bounds.left - inset
+            : Math.max(0, position.right - bounds.right + inset);
     strip.scrollLeft += offset;
+}
+
+/** Mark the edges with additional tabs while the popover is open. */
+export function observeMarkingToolsTabs(tools: HTMLElement): () => void {
+    const strip = tools.querySelector<HTMLElement>('[role="tablist"]');
+    if (!strip) return () => {};
+    const tabs = [...strip.children];
+    const update = () => {
+        const bounds = strip.getBoundingClientRect();
+        const positions = tabs.map((tab) => tab.getBoundingClientRect());
+        strip.toggleAttribute(
+            'data-overflow-left',
+            positions.some((tab) => tab.left < bounds.left - 1),
+        );
+        strip.toggleAttribute(
+            'data-overflow-right',
+            positions.some((tab) => tab.right > bounds.right + 1),
+        );
+    };
+    const observer =
+        typeof ResizeObserver === 'undefined'
+            ? undefined
+            : new ResizeObserver(update);
+    observer?.observe(strip);
+    for (const tab of tabs) observer?.observe(tab);
+    strip.addEventListener('scroll', update, { passive: true });
+    update();
+    return () => {
+        observer?.disconnect();
+        strip.removeEventListener('scroll', update);
+    };
 }
 
 /** Markings offered by a field that contains several independent entries. */
@@ -280,6 +317,9 @@ export function buildMarkingTools(content: MarkingToolsContent): HTMLElement {
     tablist.className = 'ez-marking-tools__tabs';
     tablist.setAttribute('role', 'tablist');
     tablist.setAttribute('aria-label', t('tools.sections'));
+    tablist.addEventListener('focusin', (event) => {
+        if (event.target instanceof HTMLElement) revealTab(event.target);
+    });
     header.appendChild(tablist);
     const close = document.createElement('button');
     close.type = 'button';

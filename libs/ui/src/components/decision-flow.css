@@ -86,10 +86,7 @@
 .ez-decision-flow__step-dot[data-state='answered']::before {
     --_ez-progress-accent: var(
         --ez-color-primary,
-        var(
-            --_ez-native-color-primary,
-            var(--_ez-default-color-primary, #fdb827)
-        )
+        var(--_ez-default-color-primary, #fdb827)
     );
     border-color: var(--_ez-progress-accent);
     background: var(--_ez-progress-accent);

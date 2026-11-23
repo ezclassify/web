@@ -194,9 +194,27 @@
 .ez-marking-tools__tabs {
     display: flex;
     flex: 1;
-    flex-wrap: wrap;
     column-gap: 1em;
     min-width: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    scroll-padding-inline: 0.75em;
+}
+.ez-marking-tools__tabs[data-overflow-left] {
+    --_ez-tabs-mask-left: transparent;
+}
+.ez-marking-tools__tabs[data-overflow-right] {
+    --_ez-tabs-mask-right: transparent;
+}
+.ez-marking-tools__tabs:is([data-overflow-left], [data-overflow-right]) {
+    mask-image: linear-gradient(
+        to right,
+        var(--_ez-tabs-mask-left, black),
+        black 0.75em,
+        black calc(100% - 0.75em),
+        var(--_ez-tabs-mask-right, black)
+    );
 }
 .ez-marking-tools__tab,
 .ez-marking-tools__close {
@@ -212,13 +230,14 @@
 }
 .ez-marking-tools__tab {
     display: inline-flex;
+    flex: none;
     align-items: center;
+    white-space: nowrap;
     gap: 0.375em;
     min-height: 2.75em;
     border: 0;
     border-bottom: 2px solid transparent;
     padding: 0.375em 0;
-    margin-bottom: -1px;
 }
 .ez-marking-tools__tab[aria-selected='true'] {
     border-bottom-color: var(
@@ -286,17 +305,6 @@
 @media (pointer: coarse) {
     .ez-marking-tools__tab {
         min-height: max(2.75rem, 2.75em);
-    }
-}
-@media (pointer: coarse) and (width < 768px) {
-    .ez-marking-tools__tabs {
-        flex-wrap: nowrap;
-        overflow-x: auto;
-        scrollbar-width: none;
-    }
-    .ez-marking-tools__tab {
-        flex: none;
-        white-space: nowrap;
     }
 }
 /* One brand-logo mark per enhanced field: 3 bars + a sparkle, always drawn in

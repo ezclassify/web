@@ -260,7 +260,10 @@
     );
     color: var(
         --ez-context-ref-handle-text,
-        var(--ez-color-primary-contrast, #1c1c1c)
+        var(
+            --ez-color-primary-contrast,
+            var(--_ez-default-color-primary-contrast, #1c1c1c)
+        )
     );
     font: inherit;
     font-size: calc(1em * 0.875);

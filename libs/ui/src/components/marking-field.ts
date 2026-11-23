@@ -31,6 +31,7 @@ import { COMPONENT_CSS } from './component-utils';
 import { heightAtLeastFloor } from './dom-helpers';
 import { setStatusMarkFixes, statusMarkOwnsNode } from './status-mark';
 import {
+    mirrorHostAccent,
     mountFieldChrome,
     observeFieldTheme,
     type FieldChrome,
@@ -823,6 +824,7 @@ export class MarkingField extends ComposerFieldBase {
         const csLive = window.getComputedStyle(
             this.editor ? this.enhancedInput! : this.host,
         );
+        if (!this.options.styleInputs) mirrorHostAccent(this.wrap, csLive);
         const captured: Record<string, string> = {};
         for (const p of layoutProps) {
             captured[p] = (csLive as unknown as Record<string, string>)[p];

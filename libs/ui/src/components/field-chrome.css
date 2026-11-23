@@ -78,7 +78,10 @@
         --ez-color-primary,
         var(--_ez-default-color-primary, #fdb827)
     );
-    color: var(--ez-color-primary-contrast, #1c1c1c);
+    color: var(
+        --ez-color-primary-contrast,
+        var(--_ez-default-color-primary-contrast, #1c1c1c)
+    );
 }
 .ez-field-action__glyph--toggle path:last-child,
 .ez-field-action__checkbox:indeterminate

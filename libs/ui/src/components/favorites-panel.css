@@ -98,7 +98,10 @@
         --ez-color-primary,
         var(--_ez-default-color-primary, #fdb827)
     );
-    color: var(--ez-color-primary-contrast, #111827);
+    color: var(
+        --ez-color-primary-contrast,
+        var(--_ez-default-color-primary-contrast, #111827)
+    );
     border-color: transparent;
 }
 .ez-favorites-panel__storage-actions

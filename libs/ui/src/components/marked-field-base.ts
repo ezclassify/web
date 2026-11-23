@@ -76,6 +76,7 @@ import type { ClearButton } from './clear-button';
 import { isUndoChord, MarkingUndo } from './marking-undo';
 import { announce, createAnnouncer } from './accessibility-helpers';
 import {
+    mirrorHostAccent,
     mountFieldChrome,
     observeFieldTheme,
     type FieldChrome,
@@ -483,6 +484,8 @@ export abstract class MarkedFieldBase<
         hostInputClass: string,
         paintHost: HTMLElement = this.host,
     ): void {
+        if (!this.options.styleInputs)
+            mirrorHostAccent(this.wrap, window.getComputedStyle(paintHost));
         if (typeof MutationObserver === 'undefined') return;
         // Replace any prior observer (defensive against a double install).
         this.disconnectThemeObserver();
@@ -526,6 +529,7 @@ export abstract class MarkedFieldBase<
                     paintHost.classList.remove(hostInputClass);
                 }
                 const cs = window.getComputedStyle(paintHost);
+                if (!this.options.styleInputs) mirrorHostAccent(this.wrap, cs);
                 for (const property of [...layout, ...paintProperties])
                     paint[property] = cs[property];
             } finally {

@@ -41,6 +41,32 @@ export function applyFieldFrame(frame: HTMLElement, root?: HTMLElement): void {
     frame.classList.add(FIELD_FRAME_CLASS);
 }
 
+// White below the WCAG luminance crossover and black above it.
+function contrastingAccent(color: string): string {
+    const channel = 'max(0, sign(0.179 - y))';
+    return `color(from ${color} xyz-d65 calc(0.95047 * ${channel}) ${channel} calc(1.08883 * ${channel}))`;
+}
+
+/** Use the host's ordinary accent-color as the field's palette fallback. */
+export function mirrorHostAccent(
+    frame: HTMLElement,
+    styles: CSSStyleDeclaration,
+): void {
+    const accent = styles.accentColor;
+    const native = accent && accent !== 'auto' ? accent : '';
+    const primary = '--_ez-default-color-primary';
+    const contrast = globalThis.CSS?.supports('color', contrastingAccent('red'))
+        ? contrastingAccent(`var(--ez-color-primary, var(${primary}))`)
+        : '';
+    for (const [property, value] of [
+        [primary, native],
+        [`${primary}-contrast`, native ? contrast : ''],
+    ]) {
+        if (frame.style.getPropertyValue(property) !== value)
+            frame.style.setProperty(property, value);
+    }
+}
+
 /** The custom property each field's text layers read for their reserve. */
 export const FIELD_CHROME_INLINE_SIZE = '--ez-field-chrome-inline-size';
 
@@ -331,18 +357,27 @@ export function mirrorHostFrame(
         !(
             host instanceof HTMLInputElement ||
             host instanceof HTMLTextAreaElement ||
-            host instanceof HTMLFieldSetElement
+            host instanceof HTMLFieldSetElement ||
+            host instanceof HTMLSelectElement
         ) ||
         (host instanceof HTMLInputElement && host.type === 'hidden') ||
-        (!opts.paintOnly && !(host instanceof HTMLInputElement)) ||
+        (!opts.paintOnly &&
+            !(
+                host instanceof HTMLInputElement ||
+                host instanceof HTMLSelectElement
+            )) ||
         opts.styleInputs
     )
         return () => {};
-    const releaseDefaults = !opts.paintOnly
-        ? mountNativeFieldDefaults(host)
-        : undefined;
+    const releaseDefaults =
+        !opts.paintOnly && host instanceof HTMLInputElement
+            ? mountNativeFieldDefaults(host)
+            : undefined;
     const sync = () => {
         const styles = window.getComputedStyle(host);
+        mirrorHostAccent(frame, styles);
+        // A native select is already the visible surface inside the frame.
+        if (host instanceof HTMLSelectElement) return;
         // The frame's own stylesheet floor, read before the host's values are
         // written over it: the suite's single-line height.
         if (!opts.paintOnly) frame.style.minHeight = '';
@@ -386,15 +421,7 @@ export function mirrorHostFrame(
             }
             frame.style[property] = styles[property];
         }
-        if (opts.paintOnly) {
-            frame.style.setProperty(
-                '--_ez-native-color-primary',
-                explicitPalette || styles.accentColor === 'auto'
-                    ? ''
-                    : styles.accentColor,
-            );
-            return;
-        }
+        if (opts.paintOnly) return;
         for (const property of [
             'boxSizing',
             'marginTop',

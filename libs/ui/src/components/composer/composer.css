@@ -144,13 +144,7 @@
     font-weight: 600;
     color: var(
         --ez-color-primary-contrast,
-        var(
-            --ez-dropdown-background,
-            var(
-                --ez-color-background,
-                var(--_ez-default-color-background, #fff)
-            )
-        )
+        var(--_ez-default-color-primary-contrast, #1c1c1c)
     );
     background-color: var(
         --ez-color-primary,
