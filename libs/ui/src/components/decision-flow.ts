@@ -769,18 +769,14 @@ export class DecisionFlow extends ComponentBase {
                 ),
             );
         }
-        this.flowEl.addEventListener('focusin', this.requestOptions);
         // Focus inside the flow opens its step; leaving closes it. A way to a
-        // missing step opens the flow at that step when it is pressed, not
-        // when a press focuses it, which would rebuild it out from under the
-        // press.
+        // missing step opens the flow and refreshes options on activation.
+        // Refreshing on focus would replace the link before activation.
         this.flowEl.addEventListener('focusin', (event) => {
             const target = event.target as Element;
-            if (
-                !this.suiteChrome?.element.contains(target) &&
-                !target.closest?.('.ez-decision-flow__missing')
-            )
-                this.setOpen(true);
+            if (target.closest('.ez-decision-flow__missing')) return;
+            this.requestOptions();
+            if (!this.suiteChrome?.element.contains(target)) this.setOpen(true);
         });
         this.flowEl.addEventListener('focusout', this.focusOut);
         this.flowEl.addEventListener(
@@ -966,7 +962,8 @@ export class DecisionFlow extends ComponentBase {
             // as written without turning an optional step into a requirement.
             if (
                 error.constraintId.startsWith('_part-coverage:') ||
-                error.constraintId.startsWith('_part-excess:')
+                error.constraintId.startsWith('_part-excess:') ||
+                error.constraintId === '_exceeds_whole'
             )
                 continue;
             const categories = error.categoryId

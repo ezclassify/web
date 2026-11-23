@@ -2594,6 +2594,7 @@ describe('DecisionFlow: compact layout', () => {
 
     it('says under its value which steps are missing, never as a list under the flow, each a way to its step', async () => {
         await flow.init(container, toCtx(createMockEngine()));
+        await settle();
         flow.updateValidationErrors([
             {
                 constraintId: 'required',
@@ -2618,6 +2619,8 @@ describe('DecisionFlow: compact layout', () => {
         // Focus alone, as a press gives it, does not open the flow and
         // rebuild the line out from under the press.
         go.focus();
+        await settle();
+        expect(document.activeElement).toBe(go);
         expect(step().hidden).toBe(true);
         const values = problems.closest('.ez-decision-flow__values')!;
         const replace = values.replaceChildren.bind(values);
