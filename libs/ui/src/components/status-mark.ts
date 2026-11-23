@@ -520,8 +520,6 @@ function matchesCorrectionTarget(
 
 function correctionSnapshot(mark: HTMLElement): ReadonlySet<string> {
     const target = markToolsTarget.get(mark);
-    if (markOptions.get(mark)?.shouldShowTooltip?.() === false)
-        return new Set();
     return new Set(
         [...(markFixes.get(mark)?.keys() ?? [])].filter((key) =>
             matchesCorrectionTarget(mark, key, target),
@@ -541,9 +539,7 @@ function refreshCorrections(mark: HTMLElement): void {
     if (!tools || !corrections) return;
     const focused = mark.ownerDocument.activeElement;
     if (hasAttention(mark) !== !!attention) {
-        const returnFocus = tools.contains(focused);
-        dismissStatusMarkPopover(mark);
-        if (returnFocus) mark.focus({ preventScroll: true });
+        dismissStaleStatusMarkPopover(mark);
         attention?.replaceChildren();
         return;
     }
@@ -862,6 +858,14 @@ export function dismissStatusMarkPopover(mark: HTMLElement): void {
     if (!tipId) return;
     const tip = document.getElementById(tipId);
     if (tip?.classList.contains('ez-tooltip')) hideTooltip(markRoot.get(mark));
+}
+
+function dismissStaleStatusMarkPopover(mark: HTMLElement): void {
+    const focused = mark.ownerDocument.activeElement;
+    const returnFocus =
+        popoverOpen(mark) && markToolsContent.get(mark)?.contains(focused);
+    dismissStatusMarkPopover(mark);
+    if (returnFocus) mark.focus({ preventScroll: true });
 }
 
 /**
@@ -1277,7 +1281,8 @@ function setMarkChanges(
     if (!mark) return;
     // An ordinary value change invalidates its explanation. A Favorite's
     // own projection must let that application perform its normal handoff.
-    if (!statusMarkFavoriteApplyOwner(mark)) dismissStatusMarkPopover(mark);
+    if (!statusMarkFavoriteApplyOwner(mark))
+        dismissStaleStatusMarkPopover(mark);
 
     // A change is known by what it did, within its marking: the same change
     // made to two markings is two changes.
@@ -1375,7 +1380,7 @@ function correctionsContent(mark: HTMLElement): HTMLElement {
     const count =
         (target === undefined ? draft?.length : undefined) ??
         correctionSnapshot(mark).size;
-    if (count > 0 && opts?.shouldShowTooltip?.() !== false)
+    if (count > 0)
         return changeList(
             mark,
             undefined,
@@ -1485,7 +1490,8 @@ export function setStatusMarkError(
     if ((markErrors.get(mark) ?? null) === message) return;
     // The popover describes the error it opened with, except while its own
     // Favorite application is completing the associated value.
-    if (!statusMarkFavoriteApplyOwner(mark)) dismissStatusMarkPopover(mark);
+    if (!statusMarkFavoriteApplyOwner(mark))
+        dismissStaleStatusMarkPopover(mark);
     if (message === null) markErrors.delete(mark);
     else markErrors.set(mark, message);
     applyVisualState(mark, deriveState(mark));

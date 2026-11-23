@@ -311,7 +311,8 @@ header, the arrows cycle through the available tabs and Close. Down from the
 selected tab enters its section; Up closes tools and returns to the branding
 button. Each tab shows its current entry count.
 When a marked textarea offers several Favorites targets, the popup first focuses
-the selector above the tabs. It defaults to the marking on the paragraph where\nthe caret last rested and previews
+the selector above the tabs. It defaults to the marking on the paragraph where
+the caret last rested and previews
 each marking with as much of its paragraph as fits on one line. Open the choices
 with Enter or Space. Down from the closed selector moves to the active
 tab, and Up from any tab or Close returns to the selector. Choosing a target

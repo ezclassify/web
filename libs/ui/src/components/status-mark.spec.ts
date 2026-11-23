@@ -484,6 +484,28 @@ describe('field tools findings', () => {
 });
 
 describe('the unseen count', () => {
+    it('shows and acknowledges auto-fixes when explicitly opening tools with hover guidance disabled', () => {
+        const mark = ensureStatusMark(wrap, {
+            shape: 'chrome',
+            tools: true,
+            shouldShowTooltip: () => false,
+        });
+        setStatusMarkFixes(wrap, [makeFix('r1'), makeFix('r2')]);
+        const badge = mark.querySelector('.ez-status-mark__count');
+        expect(badge?.textContent).toBe('2');
+
+        mark.click();
+        const popup = document.getElementById(
+            mark.getAttribute('aria-describedby')!,
+        );
+        expect(popup?.textContent).toContain('Added X-r1 to cat.');
+        expect(popup?.textContent).toContain('Added X-r2 to cat.');
+        expect(badge?.textContent).toBe('');
+        expect(mark.getAttribute('aria-label')).not.toContain(
+            'not yet reviewed',
+        );
+    });
+
     const here = dirname(fileURLToPath(import.meta.url));
     it('stands on the leading side of the icon, so the icon keeps its place when it goes', () => {
         const mark = ensureStatusMark(wrap, { shape: 'chrome' });
@@ -1175,6 +1197,30 @@ describe('tooltip content', () => {
 });
 
 describe('the applied-changes popover does not outstay the value it described', () => {
+    it.each([
+        ['auto-fixes', () => setStatusMarkFixes(wrap, [makeFix('r2')])],
+        ['the field error', () => setStatusMarkError(wrap, 'Scan incomplete.')],
+    ])(
+        'returns focus to the tools button when a read changes %s',
+        (_change, update) => {
+            const mark = ensureStatusMark(wrap, {
+                shape: 'chrome',
+                tools: true,
+            });
+            setStatusMarkFixes(wrap, [makeFix('r1')]);
+            mark.click();
+            const popup = document.getElementById(
+                mark.getAttribute('aria-describedby')!,
+            )!;
+            expect(popup.contains(document.activeElement)).toBe(true);
+
+            update();
+
+            expect(popup.hidden).toBe(true);
+            expect(document.activeElement).toBe(mark);
+        },
+    );
+
     function fieldWithMark() {
         const field = document.createElement('div');
         field.className = 'marking-field-wrap';

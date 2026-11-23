@@ -2,10 +2,7 @@
     max-height: none;
     overflow: visible;
 }
-.ez-favorites-panel__embedded button.proto-dropdown-item,
-.ez-marking-tools
-    [data-tools-panel='attention']
-    button.ez-validation-errors__fix {
+.ez-favorites-panel__embedded button.proto-dropdown-item {
     width: 100%;
     min-height: 2.75em;
     padding: 0.5em 0.625em;
@@ -25,17 +22,11 @@
 .ez-marking-tools .ez-favorites-panel__embedded .proto-dropdown-item__desc {
     font-size: inherit;
 }
-.ez-favorites-panel__embedded button.proto-dropdown-item:focus-visible,
-.ez-marking-tools
-    [data-tools-panel='attention']
-    button.ez-validation-errors__fix:focus-visible {
+.ez-favorites-panel__embedded button.proto-dropdown-item:focus-visible {
     outline: 2px solid var(--ez-color-primary, #fdb827);
     outline-offset: -2px;
 }
-.ez-favorites-panel__embedded button.proto-dropdown-item:hover,
-.ez-marking-tools
-    [data-tools-panel='attention']
-    button.ez-validation-errors__fix:hover {
+.ez-favorites-panel__embedded button.proto-dropdown-item:hover {
     background: var(--ez-dropdown-item-hover, #f3f4f6);
 }
 .ez-favorites-panel__star {

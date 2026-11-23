@@ -36,12 +36,28 @@
     [data-tools-panel='attention']
     button.ez-validation-errors__fix {
     display: block;
+    inline-size: 100%;
+    min-height: 2.75em;
+    padding: 0.5em 0.625em;
     background: transparent;
+    border: 0;
     border-radius: 0;
     color: var(--ez-tooltip-body-color, var(--ez-color-text, #333));
     font-weight: 500;
+    text-align: start;
     white-space: normal;
     overflow-wrap: anywhere;
+}
+.ez-marking-tools
+    [data-tools-panel='attention']
+    button.ez-validation-errors__fix:hover {
+    background: var(--ez-dropdown-item-hover, #f3f4f6);
+}
+.ez-marking-tools
+    [data-tools-panel='attention']
+    button.ez-validation-errors__fix:focus-visible {
+    outline: 2px solid var(--ez-color-primary, #fdb827);
+    outline-offset: -0.125em;
 }
 .ez-marking-tools--with-target {
     position: relative;
