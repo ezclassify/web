@@ -375,6 +375,7 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
             placement,
             header,
             leadingSelect,
+            fontSource: leadingSelect,
         });
         this.mountFieldTools(
             chrome.status,

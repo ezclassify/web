@@ -431,7 +431,10 @@ describe('the reserve rule', () => {
     it('pads every text layer of the family by the row plus a gap, over the host padding', () => {
         const here = dirname(fileURLToPath(import.meta.url));
         const css = readFileSync(join(here, 'field-chrome.css'), 'utf8');
-        const { selector, body } = ruleSetting(css, 'padding-inline-end');
+        const { selector, body } = ruleSetting(
+            css,
+            'var(--ez-field-chrome-inline-size, 0px)',
+        );
         expect(body).toMatch(
             /padding-inline-end:\s*calc\(\s*var\(--ez-field-chrome-inline-size, 0px\)\s*\+\s*0\.5rem\s*\)\s*!important/,
         );
@@ -454,7 +457,7 @@ describe('the reserve rule', () => {
         const { selector, body } = ruleSetting(css, 'padding-inline-end');
         expect(selector).toBe('.select-dropdown-native');
         expect(body).toMatch(
-            /padding-inline-end:\s*calc\(\s*var\(--ez-field-chrome-inline-size, 0px\)\s*\+\s*0\.5rem\s*\+\s*var\(--ez-spacing-md, 0\.75rem\)\s*\+\s*0\.75em\s*\)\s*!important/,
+            /padding-inline-end:\s*calc\(\s*var\(--ez-field-chrome-inline-size, 0px\)\s*\+\s*0\.5rem\s*\+\s*0\.75em\s*\)\s*!important/,
         );
     });
 });

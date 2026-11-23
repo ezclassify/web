@@ -320,7 +320,10 @@ export class MarkingField extends ComposerFieldBase {
         // Branding and clear sit inline at the
         // field's trailing edge, at rest and while editing; the text layers
         // reserve the room they take.
-        this.chrome = mountFieldChrome(this.wrap, { root: this.options.root });
+        this.chrome = mountFieldChrome(this.wrap, {
+            root: this.options.root,
+            fontSource: this.display,
+        });
         this.toolsButton = this.mountFieldTools(
             this.chrome.status,
             {

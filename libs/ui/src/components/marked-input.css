@@ -1,7 +1,6 @@
 .marked-input-wrap {
     position: relative;
-    /* The field takes the first row with its inline chrome (field-chrome.css
-       centers the chrome on that row alone); the footer takes the second. */
+    /* The text and its chrome share the grid's first row. The footer follows. */
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     width: 100%;

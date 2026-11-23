@@ -428,7 +428,7 @@
    status marks also get a 44px hit area through their centered pseudo-element. */
 @media (pointer: coarse) {
     .ez-status-mark__count {
-        font-size: 1em;
+        font-size: 0.875em;
     }
     .ez-status-mark::after {
         content: '';

@@ -19,6 +19,9 @@
     gap: 0.5rem;
     min-height: 1.5rem;
 }
+.ez-decision-flow__header > .ez-field-chrome--inline {
+    margin-inline-end: calc(-0.25rem - var(--ez-border-width, 1px));
+}
 .ez-decision-flow__header-main {
     flex: 1 1 auto;
     min-width: 0;

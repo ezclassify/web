@@ -246,7 +246,6 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
 
     protected override options: MarkedTextAreaOptions = {};
     /** A text area's chrome pins to its first line, top right. */
-    protected override readonly chromeAlign = 'start';
 
     private nativeTextarea!: HTMLTextAreaElement;
     private nativeEditor: ReturnType<typeof bindNativeTextEditor> | null = null;

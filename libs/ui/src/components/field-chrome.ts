@@ -74,6 +74,11 @@ export function mountFieldChrome(
         root?: HTMLElement;
         align?: 'center' | 'start';
         placement?: 'overlay' | 'inline';
+        /**
+         * The visible field when it has its own font outside the chrome's
+         * inheritance.
+         */
+        fontSource?: HTMLElement;
         /** A select before the trailing chrome in the field's arrow order. */
         leadingSelect?: HTMLSelectElement;
         /**
@@ -96,6 +101,33 @@ export function mountFieldChrome(
     element.appendChild(status);
     wrap.appendChild(element);
 
+    const fontSource = opts.fontSource;
+    const syncFont = () => {
+        if (!fontSource) return;
+        const style = getComputedStyle(fontSource);
+        for (const property of [
+            'fontFamily',
+            'fontSize',
+            'fontStyle',
+            'fontWeight',
+            'fontStretch',
+            'lineHeight',
+        ] as const) {
+            if (element.style[property] !== style[property])
+                element.style[property] = style[property];
+        }
+        if (
+            opts.leadingSelect &&
+            wrap.style.getPropertyValue('--ez-chevron-source-size') !==
+                style.fontSize
+        )
+            wrap.style.setProperty('--ez-chevron-source-size', style.fontSize);
+    };
+    syncFont();
+    const fontObserver = fontSource
+        ? observeFieldTheme(fontSource, syncFont, undefined, true)
+        : null;
+
     // A select and its trailing buttons share one physical arrow order.
     // Other fields manage their own text or picker keys.
     const leadingSelect = opts.leadingSelect;
@@ -112,8 +144,8 @@ export function mountFieldChrome(
             return;
         const controls = [
             ...(leadingSelect ? [leadingSelect] : []),
-            ...element.querySelectorAll<HTMLButtonElement>(
-                'button.ez-marked-field-add, button.ez-status-mark, button.ez-clear-button',
+            ...element.querySelectorAll<HTMLButtonElement | HTMLInputElement>(
+                'button.ez-marked-field-add, button.ez-status-mark, button.ez-clear-button, input.ez-field-action__checkbox',
             ),
         ].filter((control) => {
             if (
@@ -140,7 +172,9 @@ export function mountFieldChrome(
         });
         const target =
             event.target instanceof Element
-                ? event.target.closest('button, select')
+                ? event.target.closest(
+                      'button, select, input.ez-field-action__checkbox',
+                  )
                 : null;
         if (!controls.some((control) => control === target)) return;
         const rtl = getComputedStyle(wrap).direction === 'rtl';
@@ -172,6 +206,7 @@ export function mountFieldChrome(
             status,
             measure() {},
             destroy() {
+                fontObserver?.disconnect();
                 keyboardRoot.removeEventListener('keydown', onKeydown);
                 element.remove();
             },
@@ -181,6 +216,7 @@ export function mountFieldChrome(
     let header: HTMLElement | null = null;
     const measure = () => {
         if (!element.isConnected) return;
+        syncFont();
         const reserve = chromeReach(wrap, element);
         wrap.style.setProperty(FIELD_CHROME_INLINE_SIZE, `${reserve}px`);
         const nextHeader = opts.header?.() ?? null;
@@ -222,6 +258,9 @@ export function mountFieldChrome(
         status,
         measure,
         destroy() {
+            fontObserver?.disconnect();
+            if (opts.leadingSelect)
+                wrap.style.removeProperty('--ez-chevron-source-size');
             observer?.disconnect();
             if (frame !== undefined) cancelAnimationFrame(frame);
             keyboardRoot.removeEventListener('keydown', onKeydown);
@@ -236,7 +275,7 @@ export function mountFieldChrome(
  * wrap's trailing border to the chrome's leading edge. Zero for a row with
  * nothing showing.
  */
-function chromeReach(wrap: HTMLElement, chrome: HTMLElement): number {
+export function chromeReach(wrap: HTMLElement, chrome: HTMLElement): number {
     const row = chrome.getBoundingClientRect();
     if (row.width === 0) return 0;
     const box = wrap.getBoundingClientRect();

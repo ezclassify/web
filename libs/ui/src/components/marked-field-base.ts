@@ -197,11 +197,6 @@ export abstract class MarkedFieldBase<
      * 'chrome'`; clear follows it.
      */
     protected chrome!: FieldChrome;
-    /**
-     * Where the chrome sits on the field's trailing edge: centered on a
-     * single-line field, pinned to the first line of a multi-line one.
-     */
-    protected readonly chromeAlign: 'center' | 'start' = 'center';
     private clearControl?: ClearButton;
     /**
      * The undo of a clear (see marking-undo.ts). The field's value is its text,
@@ -466,6 +461,16 @@ export abstract class MarkedFieldBase<
     protected setMeasuredFontSize(size: string): void {
         this.host.style.setProperty('--ez-field-measured-font-size', size);
         this.display.style.setProperty('--ez-field-measured-font-size', size);
+        const { borderTopWidth, paddingTop, lineHeight } = this.display.style;
+        const inset =
+            (parseFloat(borderTopWidth) || 0) + (parseFloat(paddingTop) || 0);
+        const halfLine = lineHeight.endsWith('px')
+            ? `${parseFloat(lineHeight) / 2}px`
+            : '0.5lh';
+        const center = `calc(${inset}px + ${halfLine})`;
+        const property = '--ez-field-first-line-center';
+        if (this.wrap.style.getPropertyValue(property) !== center)
+            this.wrap.style.setProperty(property, center);
     }
 
     /**
@@ -609,7 +614,8 @@ export abstract class MarkedFieldBase<
         // before the chrome.
         this.chrome = mountFieldChrome(this.wrap, {
             root: this.container,
-            align: this.chromeAlign,
+            align: 'start',
+            fontSource: this.display,
         });
         const add = document.createElement('button');
         add.type = 'button';

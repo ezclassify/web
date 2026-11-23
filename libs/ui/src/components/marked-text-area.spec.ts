@@ -924,7 +924,7 @@ describe('MarkedTextArea', () => {
         const here = dirname(fileURLToPath(import.meta.url));
         const css = readFileSync(join(here, 'field-chrome.css'), 'utf8');
         expect(css).toMatch(
-            /\.ez-field-chrome--start\s*\{\s*top:\s*0\.25rem;\s*transform:\s*none;/,
+            /\.ez-field-chrome--start\s*\{\s*top:\s*var\(--ez-field-first-line-center, 1rem\);\s*transform:\s*translateY\(-50%\);/,
         );
         expect(
             readFileSync(join(here, 'marked-text-area.css'), 'utf8'),

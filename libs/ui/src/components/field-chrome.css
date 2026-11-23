@@ -16,12 +16,101 @@
     z-index: 4;
     display: inline-flex;
     align-items: center;
-    gap: 0.25rem;
 }
 .ez-field-chrome__status {
     display: inline-flex;
     align-items: center;
     gap: 0.25rem;
+}
+.ez-field-chrome .ez-status-mark--chrome {
+    justify-content: flex-end;
+    padding-inline-start: 0;
+    padding-inline-end: max(0px, calc((1.5rem - 1cap) / 2 - 0.125rem));
+}
+.ez-field-chrome .ez-status-mark__count {
+    margin-inline-end: 0.0625rem;
+}
+.ez-field-chrome .ez-field-action {
+    font: inherit;
+}
+.ez-field-chrome .ez-field-action__glyph {
+    position: relative;
+    inset-inline-start: -0.125rem;
+    inline-size: min(1em, 1lh, calc(1.5rem - 2px));
+    block-size: min(1em, 1lh, calc(1.5rem - 2px));
+    pointer-events: none;
+}
+
+/* The trailing action can be a button or a native bulk checkbox. */
+.ez-field-action--toggle {
+    position: relative;
+    display: inline-grid;
+    place-items: center;
+    inline-size: 1.5rem;
+    block-size: 1.5rem;
+}
+.ez-field-action__checkbox {
+    position: absolute;
+    inset: 0;
+    inline-size: 100% !important;
+    block-size: 100% !important;
+    margin: 0 !important;
+    opacity: 0 !important;
+    cursor: pointer;
+}
+.ez-field-action__glyph--toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    border: 2px solid var(--ez-color-muted, #6b7280);
+    border-radius: 0.25rem;
+    background: var(--ez-color-background, #fff);
+    color: transparent;
+}
+.ez-field-action__glyph--toggle svg {
+    inline-size: 0.875em;
+    block-size: 0.875em;
+}
+.ez-field-action__checkbox:is(:checked, :indeterminate)
+    + .ez-field-action__glyph--toggle {
+    background: var(--ez-color-primary, #fdb827);
+    border-color: var(--ez-color-primary, #fdb827);
+    color: var(--ez-color-primary-contrast, #1c1c1c);
+}
+.ez-field-action__glyph--toggle path:last-child,
+.ez-field-action__checkbox:indeterminate
+    + .ez-field-action__glyph--toggle
+    path:first-child {
+    display: none;
+}
+.ez-field-action__checkbox:indeterminate
+    + .ez-field-action__glyph--toggle
+    path:last-child {
+    display: inline;
+}
+.ez-field-action__checkbox:focus-visible + .ez-field-action__glyph--toggle {
+    outline: 2px solid var(--ez-color-primary, #fdb827);
+    outline-offset: 2px;
+}
+.ez-field-action__checkbox:disabled + .ez-field-action__glyph--toggle {
+    opacity: 0.45;
+}
+@media (forced-colors: active) {
+    .ez-field-action__glyph--toggle {
+        border-color: ButtonText;
+        background: Canvas;
+        forced-color-adjust: none;
+    }
+    .ez-field-action__checkbox:is(:checked, :indeterminate)
+        + .ez-field-action__glyph--toggle {
+        background: Highlight;
+        border-color: Highlight;
+        color: HighlightText;
+    }
+    .ez-field-action__checkbox:focus-visible + .ez-field-action__glyph--toggle {
+        outline-color: Highlight;
+    }
 }
 
 /* A control with a header row of its own places the row at that row's
@@ -33,11 +122,10 @@
     margin-inline-start: auto;
 }
 
-/* A multi-line field pins the row to its first line, the way a native
-   textarea's own controls sit at its top corner. */
+/* A wrapped field centers its controls on the first line's text. */
 .ez-field-chrome--start {
-    top: 0.25rem;
-    transform: none;
+    top: var(--ez-field-first-line-center, 1rem);
+    transform: translateY(-50%);
 }
 
 /* MarkingField shares its first grid row between the field layers and the
@@ -65,27 +153,24 @@
 
 /* Adjacent touch buttons keep separate hit areas without crowding the text. */
 @media (pointer: coarse) {
-    .ez-field-chrome {
-        gap: 0;
-    }
     .ez-field-chrome .ez-status-mark--chrome,
-    .ez-field-chrome .ez-clear-button {
+    .ez-field-chrome .ez-field-action {
         min-inline-size: 2rem;
         block-size: 2rem;
     }
     .ez-field-chrome .ez-status-mark--chrome {
-        padding-inline: 0.125rem;
+        padding-inline-end: max(0px, calc((2rem - 1cap) / 2 - 0.1875rem));
     }
     .ez-field-chrome .ez-status-mark--chrome::after {
         content: none;
     }
-    .ez-field-chrome .ez-clear-button {
+    .ez-field-chrome .ez-field-action {
         inline-size: 2rem;
-        font: inherit;
     }
-    .ez-field-chrome .ez-clear-button__icon {
-        inline-size: min(1em, 1lh);
-        block-size: min(1em, 1lh);
+    .ez-field-chrome .ez-field-action__glyph {
+        inset-inline-start: -0.1875rem;
+        inline-size: min(1em, 1lh, calc(2rem - 2px));
+        block-size: min(1em, 1lh, calc(2rem - 2px));
     }
 }
 

@@ -1,5 +1,5 @@
 import type { Assertion, Fix } from '@ezclassify/types';
-import { createClearButton } from './clear-button';
+import { createFieldAction, type ClearActionOptions } from './clear-button';
 import { mountNativeFieldDefaults } from './field-chrome';
 import {
     ensureMarkingFavorites,
@@ -60,10 +60,8 @@ export abstract class FieldComponentBase {
         this.findings = [];
     }
 
-    protected createFieldClear(
-        options: Parameters<typeof createClearButton>[0],
-    ) {
-        return createClearButton({
+    protected createFieldClear(options: ClearActionOptions) {
+        return createFieldAction({
             ...options,
             clear: () => {
                 this.ruleErrorList?.update(NO_RULE_ERRORS, null);
