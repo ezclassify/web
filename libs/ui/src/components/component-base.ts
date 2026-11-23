@@ -364,6 +364,7 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
         row: HTMLElement,
         placement: 'inline' | 'overlay' = 'inline',
         header?: () => HTMLElement | null,
+        leadingSelect?: HTMLSelectElement,
     ): FieldChrome {
         if (this.suiteChrome) {
             row.appendChild(this.suiteChrome.element);
@@ -373,6 +374,7 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
             root: this.styleRoot,
             placement,
             header,
+            leadingSelect,
         });
         this.mountFieldTools(
             chrome.status,

@@ -720,6 +720,12 @@ describe('presets and native rows', () => {
                 'proto-dropdown-item--highlighted',
             ),
         ).toBe(true);
+        favoriteTab().focus();
+        expect(
+            favorite('B').classList.contains(
+                'proto-dropdown-item--highlighted',
+            ),
+        ).toBe(false);
     });
     it('deletes an unrelated Favorite without applying it and focuses its neighbor', async () => {
         let entries = [{ marking: 'A' }, { marking: 'B' }];

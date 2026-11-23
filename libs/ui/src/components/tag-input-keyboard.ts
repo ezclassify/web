@@ -64,7 +64,15 @@ export function handleChipKeydown(
                 chip,
                 e.key as FocusGridArrow,
             );
-            if (target === ctx.filterInput) {
+            // The search field follows the final chip even when flex wraps it.
+            const advancesFromLastChip =
+                target === null &&
+                chip === ctx.tagEls.at(-1) &&
+                e.key ===
+                    (getComputedStyle(chip).direction === 'rtl'
+                        ? 'ArrowLeft'
+                        : 'ArrowRight');
+            if (target === ctx.filterInput || advancesFromLastChip) {
                 ctx.unfocusAllChips();
                 ctx.filterInput.focus();
             } else if (target) {

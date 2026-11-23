@@ -405,7 +405,7 @@ export class SingleSelect extends ComponentBase {
         }
         field.appendChild(select);
         this.container.appendChild(field);
-        this.mountSuiteChrome(field, 'overlay');
+        this.mountSuiteChrome(field, 'overlay', undefined, select);
         if (!native) {
             this.stopHostFrame = mirrorHostFrame(
                 field,

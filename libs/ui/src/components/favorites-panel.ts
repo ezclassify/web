@@ -269,6 +269,14 @@ export class FavoritesPanel {
                 ),
             );
         });
+        this.panelItems.addEventListener('focusout', (event) => {
+            if (
+                event.relatedTarget instanceof Node &&
+                this.panelItems.contains(event.relatedTarget)
+            )
+                return;
+            this.moveHighlight(-1);
+        });
         this.announcer = createAnnouncer();
         wrap.appendChild(this.announcer);
         setStatusMarkFavorites(wrap, {
