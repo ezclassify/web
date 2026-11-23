@@ -116,6 +116,16 @@ interface ResolvedBucket {
 /** A level of the rollup tree: a collection id, or `null` for the page. */
 type LevelId = string | null;
 
+const pendingAggregates = new WeakSet<EzClassifyAggregate>();
+
+/**
+ * Whether this view holds a previous result while the store waits for an
+ * answer.
+ */
+export function isAggregatePending(aggregate: EzClassifyAggregate): boolean {
+    return pendingAggregates.has(aggregate);
+}
+
 /** What one level rollup sends the engine, per bucket. */
 interface LevelInputs {
     /** Contributor fact sets per bucket, in document order. */
@@ -565,6 +575,8 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
     /** Rollups asked for while a contributor was unsettled. */
     private readonly heldWholeRollups = new Set<string>();
     private readonly heldLevels = new Set<LevelId>();
+    /** Levels whose pending notification must be followed by a settled one. */
+    private readonly pendingLevelNotifications = new Set<LevelId>();
     private readonly entryLists = new Map<string, readonly string[]>();
     private readonly entryListListeners = new Map<
         string,
@@ -1639,6 +1651,7 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
         this.levelAborts.get(collectionId)?.abort();
         this.levelAborts.delete(collectionId);
         this.heldLevels.delete(collectionId);
+        this.pendingLevelNotifications.delete(collectionId);
         this.writeLevel(collectionId, EMPTY_EZCLASSIFY_AGGREGATE);
         void this.recomputeLevel(parent);
         void this.recomputeLevel(null);
@@ -1849,6 +1862,7 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
         this.incompleteContributors.clear();
         this.heldWholeRollups.clear();
         this.heldLevels.clear();
+        this.pendingLevelNotifications.clear();
         this.entryLists.clear();
         this.entryListListeners.clear();
         this.levelListeners.clear();
@@ -2750,7 +2764,10 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
         }
         const current = this.ensureLevelCell(level).get();
         const next = this.resolveLevel(current, results, inputs);
-        if (aggregateDigest(next) !== aggregateDigest(current)) {
+        if (
+            this.pendingLevelNotifications.delete(level) ||
+            aggregateDigest(next) !== aggregateDigest(current)
+        ) {
             this.writeLevel(level, next);
             if (level !== null)
                 void this.recomputeLevel(this.parentLevel(level));
@@ -2783,7 +2800,10 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
             changed = true;
         }
         if (!changed) return;
-        this.writeLevel(level, { byBucket });
+        const held = { byBucket };
+        pendingAggregates.add(held);
+        this.pendingLevelNotifications.add(level);
+        this.writeLevel(level, held);
         if (level !== null && !this.destroyed) {
             const parent = this.parentLevel(level);
             this.heldLevels.add(parent);

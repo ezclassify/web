@@ -185,6 +185,7 @@ import {
 } from './store/ezclassify-store';
 import {
     BaseEzClassifyStore,
+    isAggregatePending,
     isMarkingComposing,
     runWhenStoreIdle,
 } from './store/base-ezclassify-store';
@@ -738,11 +739,17 @@ export class EzClassifyUI {
         // placed are shown again, and a level the store holds as stale (a
         // contributor whose read failed, or one that read only part of its
         // source) makes those outputs incomplete whether or not a value moved.
-        this.unsubscribeIncomplete = this.store.subscribeAggregate(() => {
-            this.refreshIncomplete();
-            if (!this._destroyed && !this.initializing)
-                void rollup.updateRollup(this);
-        });
+        this.unsubscribeIncomplete = this.store.subscribeAggregate(
+            (aggregate) => {
+                this.refreshIncomplete();
+                if (
+                    !this._destroyed &&
+                    !this.initializing &&
+                    !isAggregatePending(aggregate)
+                )
+                    void rollup.updateRollup(this);
+            },
+        );
 
         // Register this instance in the cross-instance mount-rollup registry. The
         // ancestry edge (which parent scope this child contributes its whole into)
@@ -1608,8 +1615,9 @@ export class EzClassifyUI {
             this.collections.set(el, node.id!);
             this.collectionRollupUnsubscribers.set(
                 el,
-                this.store.subscribeAggregate(() => {
-                    void rollup.updateRollup(this);
+                this.store.subscribeAggregate((aggregate) => {
+                    if (!isAggregatePending(aggregate))
+                        void rollup.updateRollup(this);
                 }, node.id!),
             );
         }
