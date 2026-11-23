@@ -713,10 +713,12 @@ export function showTooltip(
                 ? pendingFocus
                 : undefined;
         if (focusScroll) focusScroll.dialog = tip;
+        let offscreenClose: ReturnType<typeof setTimeout> | undefined;
         const dismiss = (event: Event) => {
             const scrolled = event.target;
             if (scrolled instanceof Node && tip.contains(scrolled)) return;
             if (placement?.followViewport) {
+                clearTimeout(offscreenClose);
                 const trigger = target.getBoundingClientRect();
                 const area = visibleBox(target);
                 if (
@@ -726,9 +728,15 @@ export function showTooltip(
                         trigger.top >= area.bottom ||
                         trigger.right <= area.left ||
                         trigger.left >= area.right)
-                )
-                    hideTooltip(effectiveRoot);
-                else repositionTooltip(target, root, placement);
+                ) {
+                    // A native focus reveal can briefly pass through a frame
+                    // in which the trigger is off-screen. Retire after the
+                    // scrolling settles if it remains out of view.
+                    offscreenClose = setTimeout(
+                        () => hideTooltip(effectiveRoot),
+                        150,
+                    );
+                } else repositionTooltip(target, root, placement);
                 return;
             }
             if (
@@ -770,6 +778,7 @@ export function showTooltip(
         visualViewport?.addEventListener('resize', dismiss);
         visualViewport?.addEventListener('scroll', dismiss);
         entry.detach = () => {
+            clearTimeout(offscreenClose);
             focusScroll?.stop();
             window.removeEventListener('scroll', dismiss, opts);
             window.removeEventListener('resize', dismiss);

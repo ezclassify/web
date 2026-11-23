@@ -584,7 +584,7 @@ describe('tooltip-manager', () => {
                 action.focus({ preventScroll: true });
                 return { f, target, tip, action, input };
             };
-            it('tracks an open field dialog while its trigger remains visible', () => {
+            it('keeps tools anchored through a brief off-screen frame and closes when the trigger stays out of view', async () => {
                 const { f, target, tip, action } = open(
                     false,
                     undefined,
@@ -604,7 +604,14 @@ describe('tooltip-manager', () => {
                 expect(document.activeElement).toBe(action);
                 at(target, box(342, -36, 362, -12));
                 document.dispatchEvent(new Event('scroll'));
-                expect(tip.hidden).toBe(true);
+                expect(tip.hidden).toBe(false);
+                at(target, box(342, 304, 362, 324));
+                document.dispatchEvent(new Event('scroll'));
+                await new Promise((resolve) => setTimeout(resolve, 160));
+                expect(tip.hidden).toBe(false);
+                at(target, box(342, -36, 362, -12));
+                document.dispatchEvent(new Event('scroll'));
+                await vi.waitFor(() => expect(tip.hidden).toBe(true));
             });
             it('reanchors owned tools through native opening scroll, then dismisses ordinary later scrolling', () => {
                 const { f, target, tip, action } = open();
