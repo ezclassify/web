@@ -5,6 +5,12 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-rc.0]
+
+First release candidate of `@ezclassify/ui` and its React, Vue, and Angular
+integrations. The components render marking fields, banners, and suggestions
+reported by a compatible Runtime adapter.
+
 ## [1.0.0]
 
 The first public release. Apache-2.0 UI components and the React, Vue, and
