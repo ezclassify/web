@@ -773,6 +773,8 @@ export class ComposerController {
         ({ text, caret } = this.attachSeparator(text, caret));
         const textChanged = text !== this.text;
         const caretMoved = caret !== this.caret;
+        const previousQuery =
+            !textChanged && caretMoved ? this.currentToken().query : '';
         this.text = text;
         this.caret = caret;
         // Only typing ends browsing: a click or caret move into a finished
@@ -785,6 +787,8 @@ export class ComposerController {
                 this.activeIndex = -1;
                 this.navigated = false;
                 this.showMore = false;
+                if (this.currentToken().query !== previousQuery)
+                    this.refreshGated();
                 this.arm();
             }
             this.emit();
@@ -955,7 +959,12 @@ export class ComposerController {
             this.port.separators(),
             (q) => reachesAny(q, this.catalog, this.aliasesOf),
         );
-        if (this.browsing && !this.tokenUnread(token)) {
+        // Navigation over recognized text inside the draft keeps the full
+        // catalog available. Only an unread fragment there needs completion.
+        if (
+            (this.browsing || this.hasTextAfterCaret()) &&
+            !this.tokenUnread(token)
+        ) {
             return { start: this.caret, end: this.caret, query: '' };
         }
         return token;
@@ -1322,11 +1331,15 @@ export class ComposerController {
      * the user is starting the next part of the marking.
      */
     private startsNewPart(token: CaretToken): boolean {
-        if (token.query) return false;
+        if (token.query || this.hasTextAfterCaret()) return false;
         const before = this.text.slice(0, this.caret).trimEnd();
         return this.port
             .separators()
             .some((sep) => sep.trim() !== '' && before.endsWith(sep.trim()));
+    }
+
+    private hasTextAfterCaret(): boolean {
+        return this.text.slice(this.caret).trim().length > 0;
     }
 
     /** Single-choice categories the current reading already holds a value in. */
