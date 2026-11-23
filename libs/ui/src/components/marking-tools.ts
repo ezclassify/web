@@ -47,6 +47,13 @@ export function focusMarkingTools(mark: HTMLElement): void {
     const popup = doc.getElementById(
         mark.getAttribute('aria-describedby') ?? '',
     );
+    const target = popup?.querySelector<HTMLElement>(
+        '.ez-marking-tools__target',
+    );
+    if (target) {
+        target.focus({ preventScroll: true });
+        return;
+    }
     const tab = popup?.querySelector<HTMLElement>(
         '[role="tab"][aria-selected="true"]',
     );
@@ -62,10 +69,18 @@ export function focusMarkingTools(mark: HTMLElement): void {
     (fix ?? tab)?.focus({ preventScroll: true });
 }
 
+/** Markings offered by a field that contains several independent entries. */
+export interface MarkingToolsTargets {
+    selected: string;
+    options: readonly { value: string; label: string; disabled?: boolean }[];
+    select: (value: string) => void;
+}
+
 /** Content supplied by a field to its branding popover. */
 export interface MarkingToolsContent {
     /** Unresolved errors, warnings, and available remedies. */
     attention?: HTMLElement;
+    targets?: MarkingToolsTargets;
     /** Applied changes and available undo. */
     corrections: HTMLElement;
     /** Host favorites and scheme presets, when either is available. */
@@ -112,6 +127,109 @@ export function updateMarkingToolsCounts(
             ),
         );
     });
+}
+
+/** Select an entry without moving the native editor's saved caret. */
+function markingTargetSelector(
+    targets: MarkingToolsTargets,
+    id: string,
+    focusTab: () => void,
+) {
+    const region = document.createElement('div');
+    region.className = 'ez-marking-tools__target-region';
+    const target = document.createElement('button');
+    target.type = 'button';
+    target.className = 'ez-marking-tools__target';
+    target.setAttribute('role', 'combobox');
+    target.setAttribute('aria-label', t('favorites.target'));
+    target.setAttribute('aria-expanded', 'false');
+    target.setAttribute('aria-controls', id + '-entries');
+    const value = document.createElement('span');
+    value.id = id + '-target-value';
+    value.className = 'ez-marking-tools__target-value';
+    target.setAttribute('aria-describedby', value.id);
+    target.appendChild(value);
+    const list = document.createElement('div');
+    list.id = id + '-entries';
+    list.className = 'ez-marking-tools__target-options';
+    list.setAttribute('role', 'listbox');
+    list.setAttribute('aria-label', t('favorites.target'));
+    list.hidden = true;
+    let selected = Math.max(
+        0,
+        targets.options.findIndex(({ value }) => value === targets.selected),
+    );
+    let active = selected;
+    const options = targets.options.map(({ label, disabled }, index) => {
+        const option = document.createElement('div');
+        option.id = list.id + '-' + index;
+        option.setAttribute('role', 'option');
+        if (disabled) option.setAttribute('aria-disabled', 'true');
+        option.textContent = label;
+        option.addEventListener('click', () => choose(index));
+        list.appendChild(option);
+        return option;
+    });
+    const showSelection = () => {
+        value.textContent = targets.options[selected].label;
+        options.forEach((option, index) =>
+            option.setAttribute('aria-selected', String(index === selected)),
+        );
+    };
+    const activate = (index: number) => {
+        active = Math.min(Math.max(index, 0), options.length - 1);
+        options.forEach((option, key) =>
+            option.toggleAttribute('data-active', key === active),
+        );
+        target.setAttribute('aria-activedescendant', options[active].id);
+        options[active].scrollIntoView?.({ block: 'nearest' });
+    };
+    const setOpen = (open: boolean) => {
+        if (
+            list.hidden === !open ||
+            (open && target.getAttribute('aria-disabled') === 'true')
+        )
+            return;
+        list.hidden = !open;
+        target.setAttribute('aria-expanded', String(open));
+        if (open) activate(selected);
+        else target.removeAttribute('aria-activedescendant');
+    };
+    function choose(index: number) {
+        if (
+            targets.options[index].disabled ||
+            target.getAttribute('aria-disabled') === 'true'
+        )
+            return;
+        const changed = selected !== index;
+        selected = index;
+        showSelection();
+        setOpen(false);
+        if (changed) targets.select(targets.options[selected].value);
+    }
+    target.addEventListener('click', () => setOpen(list.hidden));
+    target.addEventListener('blur', () => setOpen(false));
+    target.addEventListener('keydown', (event) => {
+        if (event.altKey || event.ctrlKey || event.metaKey || event.isComposing)
+            return;
+        const { key } = event;
+        if (key === 'Enter' || key === ' ') {
+            if (list.hidden) setOpen(true);
+            else choose(active);
+        } else if (key === 'ArrowDown' || key === 'ArrowUp') {
+            if (!list.hidden) activate(active + (key === 'ArrowDown' ? 1 : -1));
+            else if (key === 'ArrowDown') focusTab();
+        } else if (key === 'Escape' && !list.hidden) {
+            setOpen(false);
+        } else {
+            return;
+        }
+        event.preventDefault();
+        event.stopPropagation();
+    });
+    showSelection();
+    region.append(target);
+    return { region, target, list };
 }
 
 /** Build the popover's tabs, close button, and keyboard-navigable sections. */
@@ -168,10 +286,32 @@ export function buildMarkingTools(content: MarkingToolsContent): HTMLElement {
         content.attention || content.showCorrections || !content.favorites
             ? 0
             : sections.length - 1;
+    const selector =
+        content.targets && content.targets.options.length > 1
+            ? markingTargetSelector(content.targets, id, () =>
+                  tabs[selected].focus(),
+              )
+            : undefined;
+    if (selector) {
+        tools.classList.add('ez-marking-tools--with-target');
+        tools.prepend(selector.region, selector.list);
+        close.addEventListener('keydown', (event) => {
+            if (
+                event.key !== 'ArrowUp' ||
+                event.altKey ||
+                event.ctrlKey ||
+                event.metaKey ||
+                event.isComposing
+            )
+                return;
+            event.preventDefault();
+            selector.target.focus();
+        });
+    }
     const actions = (panel: HTMLElement) =>
         [
             ...panel.querySelectorAll<HTMLButtonElement | HTMLInputElement>(
-                'button, input',
+                'button, input, select',
             ),
         ].filter(
             (button) =>
@@ -236,7 +376,8 @@ export function buildMarkingTools(content: MarkingToolsContent): HTMLElement {
                     return;
                 event.preventDefault();
                 event.stopPropagation();
-                content.onClose();
+                if (selector) selector.target.focus();
+                else content.onClose();
                 return;
             }
             if (event.key === 'ArrowDown') {
@@ -278,6 +419,7 @@ export function buildMarkingTools(content: MarkingToolsContent): HTMLElement {
     tools.addEventListener('keydown', (event) => {
         if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
             if (
+                event.target === selector?.target ||
                 event.altKey ||
                 event.ctrlKey ||
                 event.metaKey ||
@@ -297,8 +439,9 @@ export function buildMarkingTools(content: MarkingToolsContent): HTMLElement {
                 ? control
                 : null;
             if (favorite && event.key === 'ArrowLeft') {
-                select(0, false);
-                (actions(panels[0])[0] ?? panels[0]).focus();
+                const previous = selected - 1;
+                select(previous, false);
+                (actions(panels[previous])[0] ?? panels[previous]).focus();
                 return;
             }
             if (favorite && event.key === 'ArrowRight') {
@@ -359,7 +502,7 @@ export function buildMarkingTools(content: MarkingToolsContent): HTMLElement {
         }
         const controls = [
             ...tools.querySelectorAll<HTMLButtonElement | HTMLInputElement>(
-                'button, input',
+                'button, input, select',
             ),
         ].filter(
             (control) =>

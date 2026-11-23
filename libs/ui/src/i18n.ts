@@ -50,6 +50,9 @@ export const defaultLocale = {
     'favorites.empty': 'No favorites saved yet',
     'favorites.fromScheme': 'From the scheme',
     'favorites.saved': 'Saved Favorites',
+    'favorites.target': 'Marking target',
+    'favorites.finishCurrentMarking':
+        'Finish the current edit to switch paragraphs.',
     'favorites.editingMarking': 'Editing marking {n} of {total}',
     'favorites.insertParagraph': 'Insert a marking at the current paragraph',
     'favorites.insertAfterParagraph':

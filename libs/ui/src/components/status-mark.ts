@@ -78,6 +78,7 @@ import {
     bindMarkingToolsShortcut,
     buildMarkingTools,
     focusMarkingTools,
+    type MarkingToolsTargets,
     updateMarkingToolsCounts,
 } from './marking-tools';
 
@@ -561,6 +562,7 @@ const markContentSnapshot = new WeakMap<HTMLElement, ReadonlySet<string>>();
 /** A field's host-fed Favorites content inside its branding popover. */
 export interface StatusMarkFavorites {
     element: HTMLElement;
+    targets?: () => MarkingToolsTargets | undefined;
     /** Available saved markings and scoped scheme presets. */
     count: () => number;
     open: () => void;
@@ -998,6 +1000,7 @@ export function ensureStatusMark(
             );
             const tools = buildMarkingTools({
                 attention,
+                targets: favorites?.targets?.(),
                 corrections: correctionsContent(mark),
                 favorites: favorites?.element,
                 favoritesCount: favorites?.count() ?? 0,

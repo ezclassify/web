@@ -583,6 +583,10 @@ describe('MarkedTextArea two-way entry bindings', () => {
                 '[data-favorite-marking="ST"]',
             )!;
             expect(favorite).not.toBeNull();
+            const selector = document.querySelector<HTMLButtonElement>(
+                '.ez-marking-tools__target',
+            )!;
+            expect(selector).not.toBeNull();
             favorite.focus();
             delayed = true;
             const outside = document.createElement('button');
@@ -592,6 +596,9 @@ describe('MarkedTextArea two-way entry bindings', () => {
                 .mockReturnValue(performance.now() + 1000);
             try {
                 favorite.click();
+                expect(selector.getAttribute('aria-disabled')).toBe('true');
+                selector.click();
+                expect(selector.getAttribute('aria-expanded')).toBe('false');
                 expect(releases).toHaveLength(1);
                 expect(publishedIds).toEqual([ids[0]]);
                 expect(favorite.isConnected).toBe(true);

@@ -310,6 +310,13 @@ With the popover open, Left/Right switches tabs from content controls. In the
 header, the arrows cycle through the available tabs and Close. Down from the
 selected tab enters its section; Up closes tools and returns to the branding
 button. Each tab shows its current entry count.
+When a marked textarea offers several Favorites targets, the popup first focuses
+the selector above the tabs. It defaults to the last caret target and previews
+each marking with as much of its paragraph as fits on one line. Open the choices
+with Enter or Space. Down from the closed selector moves to the active
+tab, and Up from any tab or Close returns to the selector. Choosing a target
+leaves the textarea value alone until a Favorite is applied.
+
 On a saved marking, Right moves to its Remove button and Left enters Auto-fixes'
 first action. Left on Remove returns to the marking. Up/Down moves through its actions, including Save, saved markings,
 and presets. Enter or Space activates a focused action. Delete removes a

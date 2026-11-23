@@ -554,8 +554,16 @@ function toolsMinimumHeight(tip: HTMLElement): number {
     const length = (value: string | undefined) =>
         Number.parseFloat(value ?? '') || 0;
     const headerHeight = header?.getBoundingClientRect().height ?? 0;
+    const target = tip.querySelector<HTMLElement>(
+        '.ez-marking-tools__target-region',
+    );
+    const targetHeight = target
+        ? target.getBoundingClientRect().height +
+          length(window.getComputedStyle(target).marginBottom)
+        : 0;
     const rowHeight = row?.getBoundingClientRect().height ?? 0;
     return (
+        targetHeight +
         headerHeight +
         Math.max(headerHeight, Math.min(rowHeight, headerHeight || rowHeight)) +
         length(headerStyle?.marginTop) +

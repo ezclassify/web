@@ -139,7 +139,12 @@ export abstract class MarkedFieldBase<
     protected markedFavoritesHost(
         actions: Pick<
             FavoritesPanelHost,
-            'getCurrent' | 'onApply' | 'focusField' | 'describeTarget'
+            | 'getCurrent'
+            | 'onApply'
+            | 'focusField'
+            | 'describeTarget'
+            | 'targets'
+            | 'endTargetSelection'
         >,
     ): FavoritesPanelHost {
         const { getCurrent, ...rest } = actions;

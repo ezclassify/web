@@ -407,18 +407,102 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         readonly Fix[]
     >();
 
+    /** A choice in Favorites is separate from the field's live caret. */
+    private favoriteSelection: { key: string; text: string } | null = null;
+
+    private favoriteTargetKey(segment: MarkedSegment): string {
+        return segment.entryId
+            ? 'entry:' + segment.entryId
+            : 'span:' + segment.start;
+    }
+
+    private selectedFavoriteSegment(): MarkedSegment | undefined {
+        const selection = this.favoriteSelection;
+        if (!selection || this.textarea.value !== selection.text) return;
+        return this.segments.find(
+            (segment) => this.favoriteTargetKey(segment) === selection.key,
+        );
+    }
+
+    private favoriteCaretSegment(): MarkedSegment | undefined {
+        const range = this.activeRange;
+        return range
+            ? this.segments.find(({ start }) => start === range.start)
+            : this.segments[this.activeSegmentIndex];
+    }
+
     /**
-     * The caret's entry, or the entry still owned by the active Favorite
+     * The chosen entry, or the entry still owned by the active Favorite
      * application.
      */
     private favoriteEntryId(): string | undefined {
+        if (this.favoriteSelection?.text === this.textarea.value)
+            return this.selectedFavoriteSegment()?.entryId;
         const owner = statusMarkFavoriteApplyOwner(this.toolsButton);
-        return (
-            this.segments[this.activeSegmentIndex]?.entryId ??
-            (owner && owner === this.applyingEntry?.owner
-                ? this.applyingEntry.entryId
-                : undefined)
+        if (owner && owner === this.applyingEntry?.owner)
+            return this.applyingEntry.entryId;
+        return this.favoriteCaretSegment()?.entryId;
+    }
+
+    private favoriteTargets() {
+        const text = this.textarea.value;
+        if (text !== this.lastSegmentedText) return;
+        const caret = this.favoriteCaretSegment();
+        if (this.activeRange && !caret) return;
+        const caretKey = caret ? this.favoriteTargetKey(caret) : '';
+        const draft = this.picker?.isDirty() ?? false;
+        const options = this.segments.flatMap((segment, index) => {
+            if (text.slice(segment.start, segment.end) !== segment.marking)
+                return [];
+            const end = this.segments[index + 1]?.start ?? text.length;
+            const body = text.slice(segment.end, end).split('\n', 1)[0].trim();
+            return [
+                {
+                    value: this.favoriteTargetKey(segment),
+                    disabled: draft && segment !== caret,
+                    label: body
+                        ? segment.marking + ' ' + body
+                        : segment.marking,
+                },
+            ];
+        });
+        if (!caretKey)
+            options.unshift({
+                value: '',
+                label: this.favoriteInsertionLabel(),
+                disabled: false,
+            });
+        const selected = this.favoriteSelection?.key ?? caretKey;
+        if (!options.some(({ value }) => value === selected)) return;
+        if (options.length > 1 && !this.favoriteSelection)
+            this.favoriteSelection = { key: selected, text };
+        return {
+            selected,
+            options,
+            select: (key: string) => {
+                this.favoriteSelection = { key, text };
+            },
+        };
+    }
+
+    private favoriteInsertionLabel(): string {
+        return t(
+            this.newMarkedLineInsertion(this._lastCaret).prefix
+                ? 'favorites.insertAfterParagraph'
+                : 'favorites.insertParagraph',
         );
+    }
+
+    private describeFavoriteTarget(): string {
+        if (this.picker?.isDirty()) return t('favorites.finishCurrentMarking');
+        const selected = this.favoriteSelection
+            ? this.selectedFavoriteSegment()
+            : this.favoriteCaretSegment();
+        return selected
+            ? t('favorites.editingMarking')
+                  .replace('{n}', String(this.segments.indexOf(selected) + 1))
+                  .replace('{total}', String(this.segments.length))
+            : this.favoriteInsertionLabel();
     }
 
     async init(
@@ -599,30 +683,14 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
             },
             () =>
                 this.markedFavoritesHost({
-                    describeTarget: () =>
-                        this.activeSegmentIndex >= 0
-                            ? t('favorites.editingMarking')
-                                  .replace(
-                                      '{n}',
-                                      String(this.activeSegmentIndex + 1),
-                                  )
-                                  .replace(
-                                      '{total}',
-                                      String(this.segments.length),
-                                  )
-                            : t(
-                                  this.newMarkedLineInsertion(this._lastCaret)
-                                      .prefix
-                                      ? 'favorites.insertAfterParagraph'
-                                      : 'favorites.insertParagraph',
-                              ),
-                    getCurrent: () => this.currentFavoritesMarking(),
-                    onApply: (marking, signal) => {
-                        const target = markingTarget(this);
-                        return target && this.favoriteEntryId()
-                            ? target.onApply(marking, signal)
-                            : this.applyFavorite(marking, signal);
+                    describeTarget: () => this.describeFavoriteTarget(),
+                    targets: () => this.favoriteTargets(),
+                    endTargetSelection: () => {
+                        this.favoriteSelection = null;
                     },
+                    getCurrent: () => this.currentFavoritesMarking(),
+                    onApply: (marking, signal) =>
+                        this.applyFavoriteFromTools(marking, signal),
                     focusField: () =>
                         this.picker
                             ? this.picker.focus()
@@ -2998,7 +3066,9 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
 
     /** The caret segment remains the target while its tools hold focus. */
     private currentFavoritesMarking(): { rendered: string; valid: boolean } {
-        const segment = this.segments[this.activeSegmentIndex];
+        const segment = this.favoriteSelection
+            ? this.selectedFavoriteSegment()
+            : this.favoriteCaretSegment();
         return segment
             ? {
                   rendered: segment.rendered,
@@ -3047,23 +3117,55 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
      * freshly templated (Ctrl+Enter, nothing typed yet) or a previously
      * loaded/edited marking.
      */
+    private applyFavoriteFromTools(marking: string, signal: AbortSignal) {
+        const selection = this.favoriteSelection;
+        const active = this.favoriteCaretSegment();
+        const segment = selection ? this.selectedFavoriteSegment() : active;
+        if (
+            this.nativeTextarea.matches(':disabled, [readonly]') ||
+            (!this.picker && this.textarea.value !== this.lastSegmentedText) ||
+            (selection &&
+                (selection.text !== this.textarea.value ||
+                    (selection.key && !segment))) ||
+            (selection && this.picker?.isDirty() && segment !== active)
+        )
+            throw new Error(t('favorites.applyFailed'));
+
+        const target = markingTarget(this);
+        // Store reflections preserve unread or unresolved source. An explicit
+        // author action replaces that source, then runs the normal scan.
+        return target && this.favoriteEntryId() && !segment?.preserveSource
+            ? target.onApply(marking, signal)
+            : this.applyFavorite(marking, signal);
+    }
+
     private async applyFavorite(
         marking: string,
         signal?: AbortSignal,
     ): Promise<void> {
+        const selection = this.favoriteSelection;
         const result = await this.readForFavorites(marking);
-        if (signal?.aborted) return;
+        if (
+            signal?.aborted ||
+            this.nativeTextarea.matches(':disabled, [readonly]')
+        )
+            return;
+        if (selection && selection.text !== this.textarea.value)
+            throw new Error(t('favorites.applyFailed'));
         const rendered = result.rendered.trim();
         const wrapped = this.wrapRendered(rendered);
 
         // A recent close can deliberately hold the editor closed while the
         // caret already targets another marking. That marking remains the
         // replacement target shown by Favorites, even without an open picker.
-        const range =
-            this.activeRange ??
-            (this.textarea.value === this.lastSegmentedText
-                ? this.segments[this.activeSegmentIndex]
-                : undefined);
+        const range = selection
+            ? this.selectedFavoriteSegment()
+            : (this.activeRange ??
+              (this.textarea.value === this.lastSegmentedText
+                  ? this.segments[this.activeSegmentIndex]
+                  : undefined));
+        if (selection?.key && !range)
+            throw new Error(t('favorites.applyFailed'));
         if (range) {
             // Replacing an existing segment's span excludes the template's
             // trailing separator (the span ends at the marking's own close

@@ -43,6 +43,92 @@
     white-space: normal;
     overflow-wrap: anywhere;
 }
+.ez-marking-tools--with-target {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto minmax(0, 1fr);
+}
+.ez-marking-tools__target-region {
+    grid-area: 1 / 1;
+    margin-block-end: 0.375em;
+}
+.ez-marking-tools__target-region,
+.ez-marking-tools__target-options {
+    font-size: calc(1em * 0.85);
+}
+.ez-marking-tools--with-target .ez-marking-tools__header {
+    grid-area: 2 / 1;
+}
+.ez-marking-tools--with-target .ez-marking-tools__section {
+    grid-area: 3 / 1;
+}
+.ez-marking-tools__target {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5em;
+    inline-size: 100%;
+    min-height: 2.75em;
+    padding: 0.375em 0.625em;
+    border: 1px solid var(--ez-color-border, #d1d5db);
+    border-radius: var(--ez-border-radius, 0.25em);
+    background: var(--ez-dropdown-background, var(--ez-color-background, #fff));
+    color: inherit;
+    font: inherit;
+    text-align: start;
+    cursor: pointer;
+}
+.ez-marking-tools__target-value {
+    min-inline-size: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.ez-marking-tools__target::after {
+    content: '';
+    flex: none;
+    width: 0.42em;
+    height: 0.42em;
+    border: solid currentColor;
+    border-width: 0 1px 1px 0;
+    transform: rotate(45deg);
+}
+.ez-marking-tools__target[aria-disabled='true'] {
+    opacity: 0.65;
+    cursor: default;
+}
+.ez-marking-tools__target:focus-visible {
+    outline: 2px solid var(--ez-color-primary, #fdb827);
+    outline-offset: -2px;
+}
+.ez-marking-tools__target-options:not([hidden]) {
+    position: absolute;
+    grid-area: 2 / 1 / 4 / 2;
+    inset: 0;
+    z-index: 1;
+    overflow: auto;
+    background: var(--ez-dropdown-background, var(--ez-color-background, #fff));
+    border: 1px solid var(--ez-color-border, #d1d5db);
+    border-radius: var(--ez-border-radius, 0.25em);
+}
+.ez-marking-tools__target-options [role='option'] {
+    padding: 0.5em 0.625em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: pointer;
+}
+.ez-marking-tools__target-options [role='option'][aria-disabled='true'] {
+    color: var(--ez-color-muted, #6b7280);
+    cursor: default;
+}
+.ez-marking-tools__target-options [role='option']:hover {
+    background: var(--ez-dropdown-item-hover, #f3f4f6);
+}
+.ez-marking-tools__target-options [data-active] {
+    background: var(--ez-dropdown-highlight, #fef3c7);
+}
 .ez-marking-tools__header {
     flex: none;
     display: flex;
