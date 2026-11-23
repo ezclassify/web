@@ -11,6 +11,7 @@ import type {
     SchemeEngineAdapter,
 } from '@ezclassify/types';
 import { EzClassifyUI } from './ezclassify-ui';
+import { EMPTY_RENDER_ASSESSMENT } from './engine-result-mock';
 import { mockRenderFormats } from './render-format-layout-mock';
 import { __resetMountRollupRegistry } from './mount-rollup-registry';
 import { BaseEzClassifyStore } from './store/base-ezclassify-store';
@@ -506,6 +507,107 @@ describe('marking adapter calls', () => {
         expect(output.value).toBe('');
         expect(context.scheme.aggregateAssertions).not.toHaveBeenCalled();
         expect(context.scheme.validate).not.toHaveBeenCalled();
+    });
+
+    it('shows the page banner as incomplete until every initial marking has been read', async () => {
+        document.body.innerHTML = `
+            <input id="first" type="hidden" data-ezclassify-marking value="A">
+            <input id="second" type="hidden" data-ezclassify-marking value="B">
+            <div id="banner" data-ezclassify-controller="banner" data-ezclassify-aggregate></div>`;
+        const context = createContext();
+        const process = vi.mocked(context.scheme.process);
+        const run = process.getMockImplementation()!;
+        const gate = deferred();
+        process.mockImplementation((input, options) =>
+            input === 'B'
+                ? gate.promise.then(() => run(input, options))
+                : run(input, options),
+        );
+        ui = new EzClassifyUI(context);
+        const banner = () => document.querySelector('#banner .status-banner');
+        try {
+            await expect.poll(() => process.mock.calls.length).toBe(2);
+            await expect
+                .poll(() =>
+                    banner()?.classList.contains('status-banner--incomplete'),
+                )
+                .toBe(true);
+            expect(context.scheme.aggregateAssertions).not.toHaveBeenCalled();
+            gate.resolve();
+            await expect.poll(() => ui?.isReady).toBe(true);
+            await expect
+                .poll(
+                    () =>
+                        banner()?.querySelector('.status-banner-label')
+                            ?.textContent,
+                )
+                .toBe('AB');
+            expect(
+                banner()?.classList.contains('status-banner--incomplete'),
+            ).toBe(false);
+        } finally {
+            gate.resolve();
+        }
+    });
+
+    it('flags the last page marking while an alternate banner format is still writing', async () => {
+        document.body.innerHTML = `
+            <input id="memo" type="hidden" data-ezclassify-marking value="A">
+            <div id="banner" data-ezclassify-controller="banner" data-ezclassify-aggregate
+                data-ezclassify-format="alternate"></div>`;
+        const context = createContext();
+        const meta = context.scheme.getSchemeMeta();
+        vi.spyOn(context.scheme, 'getSchemeMeta').mockReturnValue({
+            ...meta,
+            formats: [
+                ...meta.formats!,
+                { ...meta.formats![0]!, id: 'alternate' },
+            ],
+        });
+        const render = vi.mocked(context.scheme.render);
+        const runRender = (assertions: Assertion[]) => ({
+            rendered: spell(assertions),
+            assessment: EMPTY_RENDER_ASSESSMENT,
+        });
+        render.mockImplementation(runRender);
+        ui = new EzClassifyUI(context);
+        const banner = () => document.querySelector('#banner .status-banner');
+        const text = () =>
+            banner()?.querySelector('.status-banner-label')?.textContent;
+        await expect.poll(text).toBe('A');
+
+        const read = deferred();
+        const write = deferred();
+        const process = vi.mocked(context.scheme.process);
+        const runProcess = process.getMockImplementation()!;
+        process.mockImplementationOnce((...args) =>
+            read.promise.then(() => runProcess(...args)),
+        );
+        render.mockImplementation((...args) =>
+            args[1] === 'alternate'
+                ? write.promise.then(() => runRender(args[0]))
+                : runRender(args[0]),
+        );
+        try {
+            const published = ui.store.publishRendered('memo', 'B');
+            expect(
+                banner()?.classList.contains('status-banner--incomplete'),
+            ).toBe(true);
+            expect(text()).toBe('A');
+            read.resolve();
+            await published;
+            expect(
+                banner()?.classList.contains('status-banner--incomplete'),
+            ).toBe(true);
+            write.resolve();
+            await expect.poll(text).toBe('B');
+            expect(
+                banner()?.classList.contains('status-banner--incomplete'),
+            ).toBe(false);
+        } finally {
+            read.resolve();
+            write.resolve();
+        }
     });
 
     it('skips aggregation when a marking excluded from rollups commits', async () => {

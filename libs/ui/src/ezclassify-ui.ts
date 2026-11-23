@@ -4627,6 +4627,7 @@ export class EzClassifyUI {
                             show('');
                             return;
                         }
+                        if (incomplete) showIncomplete?.(true);
                         const engine = schemeEngineOf(
                             this.resolveContext(el),
                             el,
@@ -4711,7 +4712,8 @@ export class EzClassifyUI {
                                     stale: refused || state.stale === true,
                                 };
                             });
-                            showIncomplete?.(lines.some((line) => line.stale));
+                            const incomplete = lines.some((line) => line.stale);
+                            if (incomplete) showIncomplete?.(true);
                             // Each bucket is shown as the view's scopes write
                             // it in its own scheme: the listed ones, else that
                             // scheme's default (see scopesToWrite).
@@ -4728,6 +4730,7 @@ export class EzClassifyUI {
                                     : [];
                             });
                             if (bucketScopes.every((s) => s.length === 0)) {
+                                showIncomplete?.(incomplete);
                                 showsBuckets(lines);
                                 return;
                             }
@@ -4750,7 +4753,7 @@ export class EzClassifyUI {
                                 // blank line, so the view says it may be
                                 // missing markings.
                                 showIncomplete?.(
-                                    lines.some((line) => line.stale) ||
+                                    incomplete ||
                                         texts.some((text) => text === null),
                                 );
                                 showsBuckets(

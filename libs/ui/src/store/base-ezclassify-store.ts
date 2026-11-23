@@ -1070,12 +1070,18 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
     private async recompose(id: string, trigger: Trigger = {}): Promise<void> {
         let composition = this.compose(id);
         const publish = this.beginPublish(id);
+        const awaitRead = <T>(answer: T | PromiseLike<T>) => {
+            const result = answerOrAbort(answer, publish.signal);
+            if (isPromiseLike(answer) && this.isNewest(id, publish.sequence))
+                this.holdLevelForReading(id);
+            return result;
+        };
         let failed = false;
         try {
             if (composition.kind === 'unread') {
                 const { layer } = composition;
                 const read = this.readRendered(id, layer.text, publish, []);
-                const answer = await answerOrAbort(read.answer, publish.signal);
+                const answer = await awaitRead(read.answer);
                 if (
                     answer === abortedComposition ||
                     !this.isNewest(id, publish.sequence)
@@ -1092,7 +1098,7 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
                 state = EMPTY_EZCLASSIFY_STATE;
             } else if (composition.kind === 'aggregate') {
                 const whole = this.wholeContextOf(id);
-                const result = await answerOrAbort(
+                const result = await awaitRead(
                     this.bucketOf(id).engine.aggregateAssertions(
                         composition.contributors.map(withoutTakenFromWhole),
                         {
@@ -1101,7 +1107,6 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
                             ...(whole ? { context: whole } : {}),
                         },
                     ),
-                    publish.signal,
                 );
                 if (
                     result === abortedComposition ||
@@ -1118,10 +1123,7 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
                         (category) => edits.has(category),
                     );
                     const read = this.readAssertions(id, assertions, publish);
-                    const answer = await answerOrAbort(
-                        read.answer,
-                        publish.signal,
-                    );
+                    const answer = await awaitRead(read.answer);
                     if (answer === abortedComposition) return;
                     state = read.settle(answer);
                 } else state = this.fromProcessResult('', result);
@@ -1143,7 +1145,7 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
             } else if (composition.kind === 'text') {
                 const { layer, scoped } = composition;
                 const read = this.readRendered(id, layer.text, publish, scoped);
-                const answer = await answerOrAbort(read.answer, publish.signal);
+                const answer = await awaitRead(read.answer);
                 if (answer === abortedComposition) return;
                 state = read.settle(answer);
                 if (this.isNewest(id, publish.sequence)) {
@@ -1160,7 +1162,7 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
                     composition.assertions,
                     publish,
                 );
-                const answer = await answerOrAbort(read.answer, publish.signal);
+                const answer = await awaitRead(read.answer);
                 if (answer === abortedComposition) return;
                 state = read.settle(answer);
             }
@@ -2733,7 +2735,10 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
         this.levelAborts.set(level, controller);
         const inputs = this.gatherLevel(level);
         // Single suspension point: see rollupResult.
-        const results = await this.rollupLevel(inputs);
+        const result = this.rollupLevel(inputs);
+        if (isPromiseLike(result))
+            this.markLevelHeld(level, inputs.sets.keys());
+        const results = await result;
         if (revision !== this.levelRevisions.get(level) || this.destroyed)
             return;
         if (this.levelAborts.get(level) === controller)
@@ -2751,6 +2756,39 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
                 void this.recomputeLevel(this.parentLevel(level));
         }
         this.rerunHeldRollups();
+    }
+
+    private holdLevelForReading(id: string): void {
+        if (this.standaloneParts.has(id)) return;
+        const whole = this.partOfByMarking.get(id) ?? id;
+        if (this.keptOut(whole)) return;
+        const bucket = this.wholeBucketKey(whole);
+        if (bucket === undefined) return;
+        const level = this.levelOfWhole(whole);
+        this.heldLevels.add(level);
+        this.markLevelHeld(level, [bucket]);
+    }
+
+    /** Keep settled facts visible while the adapter is still answering. */
+    private markLevelHeld(level: LevelId, buckets: Iterable<BucketKey>): void {
+        const current = this.ensureLevelCell(level).get();
+        const byBucket = new Map(current.byBucket);
+        let changed = false;
+        for (const bucket of new Set([...byBucket.keys(), ...buckets])) {
+            const held = this.heldState(
+                byBucket.get(bucket) ?? EMPTY_EZCLASSIFY_STATE,
+            );
+            if (!held) continue;
+            byBucket.set(bucket, held);
+            changed = true;
+        }
+        if (!changed) return;
+        this.writeLevel(level, { byBucket });
+        if (level !== null && !this.destroyed) {
+            const parent = this.parentLevel(level);
+            this.heldLevels.add(parent);
+            this.markLevelHeld(parent, byBucket.keys());
+        }
     }
 
     /**
@@ -3171,8 +3209,8 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
         } catch {
             return null;
         }
-        if (result instanceof Promise) {
-            return result.then(
+        if (isPromiseLike(result)) {
+            return Promise.resolve(result).then(
                 (r) => this.fromProcessResult('', r),
                 () => null,
             );

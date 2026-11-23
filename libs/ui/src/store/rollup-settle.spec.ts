@@ -63,6 +63,42 @@ async function rollupRequestsAnswering(order: number[]): Promise<string[]> {
 }
 
 describe('rollups over settled contributors', () => {
+    it('marks a collection and its parent incomplete through a sole contributor read and rollup', async () => {
+        const harness = createLatencyEngineHarness();
+        const store = new TestStore(harness.engine);
+        store.registerCollection('folder', null);
+        store.setMembership('memo', 'folder');
+        await harness.settleAll();
+
+        const seed = store.seedRendered('memo', 'cat:a');
+        for (const level of ['folder', undefined]) {
+            expect(levelState(store, level).rendered).toBe('');
+            expect(levelState(store, level).stale).toBe(true);
+        }
+        expect(harness.pending('aggregateAssertions')).toHaveLength(0);
+        harness.pending('process')[0]!.resolve();
+        await harness.flush();
+        expect(harness.pending('aggregateAssertions')).toHaveLength(1);
+        for (const level of ['folder', undefined])
+            expect(levelState(store, level).stale).toBe(true);
+        await harness.settleAll();
+        await seed;
+
+        const edit = store.publishRendered('memo', 'cat:b');
+        for (const level of ['folder', undefined]) {
+            expect(levelState(store, level).rendered).toBe('cat:a');
+            expect(levelState(store, level).stale).toBe(true);
+        }
+        expect(harness.pending('aggregateAssertions')).toHaveLength(0);
+        await harness.settleAll();
+        await edit;
+        for (const level of ['folder', undefined]) {
+            expect(levelState(store, level).rendered).toBe('cat:b');
+            expect(levelState(store, level).stale).toBeUndefined();
+        }
+        store.destroy();
+    });
+
     it('sends no rollup of an incomplete part set and the same rollups in any answer order', async () => {
         const inOrder = await rollupRequestsAnswering([0, 1, 2]);
         const complete = JSON.stringify([
@@ -244,11 +280,12 @@ describe('rollups over settled contributors', () => {
         store.setPartOf('part-b', 'whole');
         await harness.settleAll();
         expect(wholeRollups).toEqual([]);
+        expect(aggregates).toEqual([]);
         void store.seedRendered('part-a', 'cat:x');
         void store.seedRendered('part-b', 'cat:y');
         await harness.settleAll();
         expect(wholeRollups).toEqual(['cat:x cat:y']);
-        expect(aggregates).toEqual(['cat:x cat:y']);
+        expect(aggregates).toEqual(['', 'cat:x cat:y']);
         store.destroy();
     });
 });
