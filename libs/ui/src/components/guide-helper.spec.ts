@@ -1496,7 +1496,7 @@ describe('GuideChecklist', () => {
 describe('GuideChecklist marking typography', () => {
     it('writes the computed marking and each outcome in the chrome font, not a code font', () => {
         // A marking is not code. It reads in the font of the rest of the
-        // helper, which the host sets through --ez-font-family.
+        // helper, which inherits the font from the host.
         const css = readFileSync(
             join(dirname(fileURLToPath(import.meta.url)), 'guide-helper.css'),
             'utf8',
@@ -1512,8 +1512,6 @@ describe('GuideChecklist marking typography', () => {
             expect(body, selector).not.toMatch(/font-family/);
         }
         expect(css).not.toMatch(/mono/);
-        expect(rule('.ezc-guide-helper')).toMatch(
-            /font-family:\s*var\(--ez-font-family, inherit\)/,
-        );
+        expect(rule('.ezc-guide-helper')).toMatch(/font-family:\s*inherit/);
     });
 });

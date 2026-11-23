@@ -75,7 +75,7 @@
     padding: 0.1875rem 0.3125rem 0.1875rem 0.625rem;
     margin: 0;
     font: inherit;
-    font-size: calc(var(--ez-font-size, 1rem) * 0.8125);
+    font-size: calc(1em * 0.8125);
     border-radius: 999px;
     background: var(
         --ez-category-background,
@@ -190,7 +190,7 @@
     position: relative;
     border: none;
     color: inherit;
-    font-size: calc(var(--ez-font-size, 1rem) * 0.8125);
+    font-size: calc(1em * 0.8125);
     cursor: pointer;
     padding: 0;
     margin-left: 0.0625rem;
@@ -234,8 +234,8 @@
 
 /* ── Preview ─────────────────────────────────────────── */
 .proto-preview {
-    font-family: var(--ez-font-family, inherit);
-    font-size: calc(var(--ez-font-size, 1rem) * 0.875);
+    font-family: inherit;
+    font-size: calc(1em * 0.875);
     font-weight: 600;
     padding: 0.5rem 0.75rem;
     background: var(--ez-color-background, #f8f9fa);
@@ -294,7 +294,7 @@
 .proto-dropdown-item {
     padding: 0.5rem 0.625rem;
     cursor: pointer;
-    font-size: calc(var(--ez-font-size, 1rem) * 0.8125);
+    font-size: calc(1em * 0.8125);
     display: flex;
     align-items: baseline;
     flex-wrap: wrap;
@@ -324,7 +324,7 @@
 }
 .proto-dropdown-item__desc {
     color: var(--ez-color-muted, #555);
-    font-size: calc(var(--ez-font-size, 1rem) * 0.75);
+    font-size: calc(1em * 12 / 13);
     white-space: normal;
     overflow-wrap: anywhere;
     flex: 1 1 12rem;
@@ -339,7 +339,7 @@
 /* ── Dropdown group header ───────────────────────────── */
 .proto-dropdown-group {
     padding: 0.375rem 0.5rem;
-    font-size: calc(var(--ez-font-size, 1rem) * 0.75);
+    font-size: calc(1em * 0.75);
     font-weight: 600;
     color: var(--ez-color-muted, #555);
     text-transform: uppercase;

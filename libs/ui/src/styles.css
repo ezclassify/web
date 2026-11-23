@@ -180,7 +180,6 @@
     --ez-dropdown-item-hover: #374151;
     --ez-dropdown-group-bg: rgba(255, 255, 255, 0.05);
     --ez-dropdown-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-    --ez-dropdown-group-sticky-bg: #1f2937;
     /* Resolve aliases against this dark block's local palette. */
     --ez-dropdown-highlight: color-mix(
         in srgb,
@@ -241,7 +240,6 @@
     --ez-dropdown-item-hover: #f3f4f6;
     --ez-dropdown-group-bg: rgba(0, 0, 0, 0.04);
     --ez-dropdown-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    --ez-dropdown-group-sticky-bg: initial;
     /* Resolve aliases against this light block's local palette, including
        light islands nested inside a dark ancestor. */
     --ez-dropdown-highlight: color-mix(
@@ -276,7 +274,6 @@
     .marked-input-wrap,
     .marked-textarea-wrap
 ) {
-    font-family: var(--ez-font-family, inherit);
     color: var(--ez-color-text, inherit);
 }
 
@@ -284,8 +281,6 @@
 .ez-styled-inputs .ez-input,
 .ez-input.ez-styled {
     font: inherit;
-    font-family: var(--ez-font-family, inherit);
-    font-size: var(--ez-font-size, inherit);
     font-weight: var(--ez-font-weight, inherit);
     line-height: var(--ez-line-height, inherit);
 }
@@ -334,8 +329,8 @@
 
 /* Display */
 .ez-display {
-    font-family: var(--ez-font-family, inherit);
-    font-size: var(--ez-font-size, 1em);
+    font-family: inherit;
+    font-size: 1em;
     font-weight: 600;
     color: var(--ez-color-text);
     letter-spacing: 0.02em;
@@ -343,8 +338,8 @@
 
 /* Validation */
 .ez-validation {
-    font-family: var(--ez-font-family, inherit);
-    font-size: calc(var(--ez-font-size, 1em) * 0.875);
+    font-family: inherit;
+    font-size: calc(1em * 0.875);
     margin-top: var(--ez-spacing-xs, 0.25rem);
 }
 

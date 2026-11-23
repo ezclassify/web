@@ -778,7 +778,7 @@ injectDefaultStyles();
 ```css
 .ez-root,
 [data-ezclassify] {
-    --ez-font-size: 0.875rem;
+    font-size: 0.875rem;
     --ez-border-radius: 0.25rem;
     --ez-color-success: #2e7d32;
     --ez-color-error: #c62828;
@@ -787,15 +787,14 @@ injectDefaultStyles();
 
 ### Fit fields to a host form
 
-Mounted components have their own default typography, spacing, and borders.
-Set theme variables on a form wrapper to apply them to the fields and their
-pickers. Style an original native control with ordinary CSS to adjust a single
+Set ordinary typography on the form, and use theme variables for colors,
+spacing, and borders. Style an original native control to adjust a single
 field. Enhanced editors mirror that control's typography, padding, and border.
 
 ```css
 .case-form {
-    --ez-font-family: Georgia, serif;
-    --ez-font-size: 1rem;
+    font-family: Georgia, serif;
+    font-size: 1rem;
     --ez-color-background: #f6f7ff;
     --ez-color-primary: #41368a;
     --ez-color-primary-contrast: #fff;
@@ -843,9 +842,8 @@ messages use the surrounding form's font. Secondary labels and actions scale
 with the form's text size. The built-in themes leave font family and size to
 the application.
 
-Use ordinary CSS to style the form or a specific native field. Set
-`--ez-font-family` or `--ez-font-size` for an explicit EzClassify theme
-override. Use `rem` for the base so it follows the user's browser font setting.
+Set `font-family` and `font-size` with ordinary CSS on the form or a native
+field. A form size expressed in `rem` follows the user's browser font setting.
 TagInput uses the same font and size for its chips and search text. Use
 `--ez-tag-input-font-size` to adjust both. Touch devices keep a minimum of
 16px for those labels to avoid zooming when the search field receives focus.

@@ -746,8 +746,10 @@ export function repositionTooltip(
     const tip = entry.el;
     // Position near the target
     const rect = target.getBoundingClientRect();
-    const tipWidth = Math.min(32 * 16, window.innerWidth - 16); // max 32rem
-    tip.style.maxWidth = tipWidth + 'px';
+    const tools = tip.classList.contains('ez-tooltip--tools');
+    tip.style.maxWidth = tools
+        ? ''
+        : Math.min(32 * 16, window.innerWidth - 16) + 'px'; // max 32rem
 
     // Natural-size measurement temporarily expands the content section.
     // Retain its scroll position while laying the same focused actions out.
@@ -770,7 +772,6 @@ export function repositionTooltip(
     const rtl = clear
         ? window.getComputedStyle(target).direction === 'rtl'
         : false;
-    const tools = tip.classList.contains('ez-tooltip--tools');
     const minimumHeight = tools ? toolsMinimumHeight(tip) : 0;
     let toolsPlacement: ToolsPlacement | undefined;
     if (tools) {

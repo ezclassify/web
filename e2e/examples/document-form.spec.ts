@@ -598,7 +598,7 @@ for (const viewport of [
 test.describe('README document form beside monospace fields', () => {
     test.use({ viewport: { width: 1280, height: 900 } });
 
-    test("inherits the host's typography and honors explicit theme overrides", async ({
+    test("uses the host's CSS for field and picker typography", async ({
         page,
     }, info) => {
         const observed = observe(page);
@@ -645,11 +645,13 @@ test.describe('README document form beside monospace fields', () => {
         await expect(markingAction).toBeVisible();
         await expect(markingAction).toHaveCSS('font-family', 'Georgia, serif');
         await expect(markingAction).toHaveCSS('font-size', '13.75px');
+        const setMarking = page.getByRole('button', { name: /^Set marking$/i });
+        await expect(setMarking).toHaveCSS('font-size', '13.75px');
         const composer = page.locator('.ez-composer:not([hidden])');
         await summary.focus();
         await page.keyboard.press('Alt+ArrowDown');
         await expect(composer).toHaveCSS('font-family', 'Georgia, serif');
-        await expect(composer).toHaveCSS('font-size', '17.5px');
+        await expect(composer).toHaveCSS('font-size', '20px');
         await page.keyboard.press('Escape');
         await expect(composer).toHaveCount(0);
         await settle(observed);
@@ -658,11 +660,12 @@ test.describe('README document form beside monospace fields', () => {
         await page
             .locator('form[data-ezclassify-whole="document"]')
             .evaluate((form, font) => {
-                form.style.setProperty('--ez-font-family', font);
-                form.style.setProperty('--ez-font-size', '24px');
+                form.style.fontFamily = font;
+                form.style.fontSize = '24px';
             }, themeFont);
         await expect(markingAction).toHaveCSS('font-family', themeFont);
         await expect(markingAction).toHaveCSS('font-size', '16.5px');
+        await expect(setMarking).toHaveCSS('font-size', '16.5px');
         await expect(page.locator('.marked-textarea-display')).toHaveCSS(
             'font-family',
             fieldFont,
@@ -672,7 +675,7 @@ test.describe('README document form beside monospace fields', () => {
             '22px',
         );
 
-        // The composer, portaled to the body, reads the form's theme font whether it
+        // The composer, portaled to the body, reads the form's font whether it
         // opens from the tag field or the text area's inline editor, in the
         // README path's order.
         observed.step = 'browse-summary';
@@ -681,7 +684,7 @@ test.describe('README document form beside monospace fields', () => {
         await expect(composer).toBeVisible();
         await settle(observed);
         await expect(composer).toHaveCSS('font-family', themeFont);
-        await expect(composer).toHaveCSS('font-size', '21px');
+        await expect(composer).toHaveCSS('font-size', '24px');
         await page.keyboard.press('Escape');
         await expect(composer).toHaveCount(0);
         await settle(observed);

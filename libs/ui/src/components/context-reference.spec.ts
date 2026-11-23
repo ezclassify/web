@@ -567,16 +567,14 @@ describe('ContextReference', () => {
         });
 
         it('applies a named preset theme inline on the host', async () => {
-            container.style.setProperty('--ez-font-family', 'Georgia, serif');
+            container.style.fontFamily = 'Georgia, serif';
             component.init(container, await schemeOnlyCtx(), {
                 theme: 'government',
             } as never);
             expect(
                 container.style.getPropertyValue('--ez-color-background'),
             ).toBe('#162040');
-            expect(container.style.getPropertyValue('--ez-font-family')).toBe(
-                'Georgia, serif',
-            );
+            expect(container.style.fontFamily).toBe('Georgia, serif');
         });
     });
 

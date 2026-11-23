@@ -1,7 +1,7 @@
 /* EquivalencyMap: read-only cross-profile mapping table */
 
 .ez-equivalency-map {
-    font-family: var(--ez-font-family, inherit);
+    font-family: inherit;
     border: 0.0625rem solid var(--ez-color-border, #d1d5db);
     border-radius: 0.5rem;
     overflow: hidden;
@@ -15,7 +15,7 @@
     background: var(--ez-color-surface, #f8fafc);
     border-bottom: 0.0625rem solid var(--ez-color-border, #d1d5db);
     font-weight: 600;
-    font-size: calc(var(--ez-font-size, 1rem) * 0.8125);
+    font-size: calc(1em * 0.8125);
     color: var(--ez-color-text, #1e293b);
 }
 
@@ -25,7 +25,7 @@
     gap: 0;
     padding: 0.5rem 0.75rem;
     border-bottom: 0.0625rem solid var(--ez-color-border, #d1d5db);
-    font-size: calc(var(--ez-font-size, 1rem) * 0.8125);
+    font-size: calc(1em * 0.8125);
     align-items: center;
 }
 
@@ -58,7 +58,7 @@
     display: inline-block;
     padding: 0.0625rem 0.375rem;
     border-radius: 0.25rem;
-    font-size: calc(var(--ez-font-size, 1rem) * 0.6875);
+    font-size: calc(1em * 0.6875);
     font-weight: 600;
     text-transform: uppercase;
 }

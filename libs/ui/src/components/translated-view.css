@@ -17,7 +17,7 @@
 }
 
 .ez-translated-view__note {
-    font-size: calc(var(--ez-font-size, 1rem) * 0.8125);
+    font-size: calc(1em * 0.8125);
     color: var(--ez-color-text-muted, #475569);
 }
 
@@ -29,7 +29,7 @@
 .ez-translated-view__list {
     margin: 0;
     padding-left: 1.25rem;
-    font-size: calc(var(--ez-font-size, 1rem) * 0.8125);
+    font-size: calc(1em * 0.8125);
     color: var(--ez-color-text-muted, #475569);
 }
 

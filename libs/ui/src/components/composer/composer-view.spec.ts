@@ -927,15 +927,13 @@ describe('the sheet bar', () => {
 
     it('takes the current form font size when the sheet opens', async () => {
         asPhone();
-        root.style.setProperty('--ez-font-size', '1rem');
+        root.style.fontSize = '16px';
         mount();
-        root.style.setProperty('--ez-font-size', '1.25rem');
+        root.style.fontSize = '20px';
 
         await openSheetAndType('SECRET');
 
-        expect(
-            openSurface()?.style.getPropertyValue('--ez-font-size').trim(),
-        ).toBe('1.25rem');
+        expect(openSurface()?.style.fontSize).toBe('20px');
     });
 
     it('hands first sheet Escape to the ongoing editor before hiding, preserving the Escape ladder without a blur commit', async () => {
@@ -1875,7 +1873,6 @@ describe('the UI font', () => {
     } {
         const style = document.createElement('style');
         style.textContent = `
-            .ez-root, [data-ezclassify] { --ez-font-family: inherit; }
             .page [data-ezclassify] { font-family: Georgia, serif; ${rootCss} }
             .page input { font: 13px "SF Mono", monospace; }
         `;
@@ -1926,8 +1923,10 @@ describe('the UI font', () => {
         );
     });
 
-    it('takes the host --ez-font-family when one is set', async () => {
-        mountIn(monospaceField('--ez-font-family: Inter, sans-serif;'));
+    it('takes the updated host family when the picker opens', async () => {
+        const shape = monospaceField();
+        mountIn(shape);
+        shape.field.style.fontFamily = 'Inter, sans-serif';
         input.focus();
         await view.open('keyboard');
         expect(getComputedStyle(openSurface()!).fontFamily).toBe(

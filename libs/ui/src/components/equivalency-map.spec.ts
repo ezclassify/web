@@ -215,7 +215,7 @@ describe('EquivalencyMap marking typography', () => {
         ).replace(/\/\*[\s\S]*?\*\//g, '');
         expect(css).not.toMatch(/mono/);
         expect(css).toMatch(
-            /\.ez-equivalency-map\s*\{[^}]*font-family:\s*var\(--ez-font-family, inherit\)/,
+            /\.ez-equivalency-map\s*\{[^}]*font-family:\s*inherit/,
         );
     });
 });

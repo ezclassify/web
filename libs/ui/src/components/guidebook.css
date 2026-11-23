@@ -1,7 +1,7 @@
 /* Guidebook: read-only guide reference viewer */
 
 .ez-guidebook {
-    font-family: var(--ez-font-family, inherit);
+    font-family: inherit;
     color: var(--ez-color-text, inherit);
     line-height: 1.5;
 }
@@ -13,24 +13,24 @@
 }
 
 .ez-guidebook__overview-name {
-    font-size: calc(var(--ez-font-size, 1rem) * 1.125);
+    font-size: calc(1em * 1.125);
     font-weight: 600;
 }
 
 .ez-guidebook__overview-meta {
-    font-size: calc(var(--ez-font-size, 1rem) * 0.8125);
+    font-size: calc(1em * 0.8125);
     color: var(--ez-color-muted);
     margin-top: 0.125rem;
 }
 
 .ez-guidebook__overview-desc {
     margin-top: 0.375rem;
-    font-size: calc(var(--ez-font-size, 1rem) * 0.875);
+    font-size: calc(1em * 0.875);
 }
 
 .ez-guidebook__overview-profiles {
     margin-top: 0.25rem;
-    font-size: calc(var(--ez-font-size, 1rem) * 0.8125);
+    font-size: calc(1em * 0.8125);
     color: var(--ez-color-muted);
 }
 
@@ -41,7 +41,7 @@
 .ez-guidebook__search-input {
     width: 100%;
     padding: 0.375rem 0.5rem;
-    font-size: calc(var(--ez-font-size, 1rem) * 0.875);
+    font-size: calc(1em * 0.875);
     border: 1px solid var(--ez-color-border);
     border-radius: 0.25rem;
     background: var(--ez-color-background);
@@ -73,7 +73,7 @@
 
 .ez-guidebook__guide-marking {
     font-weight: 700;
-    font-size: calc(var(--ez-font-size, 1rem) * 0.75);
+    font-size: calc(1em * 0.75);
     letter-spacing: 0.02em;
     color: var(--ez-color-text, #111);
     padding: 0.25rem 1rem;
@@ -105,7 +105,7 @@
 }
 
 .ez-guidebook__guide-arrow {
-    font-size: calc(var(--ez-font-size, 1rem) * 0.8125);
+    font-size: calc(1em * 0.8125);
     width: 1rem;
     text-align: center;
     flex-shrink: 0;
@@ -116,7 +116,7 @@
 .ez-guidebook__guide-title {
     margin: 0;
     padding: 0.625rem 1rem 0.25rem;
-    font-size: calc(var(--ez-font-size, 1rem) * 0.9375);
+    font-size: calc(1em * 0.9375);
     font-weight: 700;
     background: var(--ez-color-surface);
 }
@@ -130,13 +130,13 @@
 .ez-guidebook__guide-count {
     font-weight: 400;
     color: var(--ez-color-muted);
-    font-size: calc(var(--ez-font-size, 1rem) * 0.8125);
+    font-size: calc(1em * 0.8125);
 }
 
 .ez-guidebook__guide-desc {
     margin: 0;
     padding: 0.375rem 1rem 0.5rem;
-    font-size: calc(var(--ez-font-size, 1rem) * 0.875);
+    font-size: calc(1em * 0.875);
     color: var(--ez-color-muted);
 }
 
@@ -174,7 +174,7 @@
     padding: 0.5rem 1rem;
     cursor: pointer;
     font-weight: 600;
-    font-size: calc(var(--ez-font-size, 1rem) * 0.875);
+    font-size: calc(1em * 0.875);
     border-bottom: 1px solid var(--ez-color-border);
     user-select: none;
 }
@@ -185,7 +185,7 @@
 }
 
 .ez-guidebook__category-arrow {
-    font-size: calc(var(--ez-font-size, 1rem) * 0.8125);
+    font-size: calc(1em * 0.8125);
     width: 1rem;
     text-align: center;
     flex-shrink: 0;
@@ -219,12 +219,12 @@
 
 .ez-guidebook__entry-name {
     font-weight: 600;
-    font-size: calc(var(--ez-font-size, 1rem) * 0.875);
+    font-size: calc(1em * 0.875);
 }
 
 .ez-guidebook__computed-badge {
     display: inline-block;
-    font-size: calc(var(--ez-font-size, 1rem) * 0.6875);
+    font-size: calc(1em * 0.6875);
     font-weight: 600;
     padding: 0.0625rem 0.375rem;
     border-radius: 0.1875rem;
@@ -240,7 +240,7 @@
 
 .ez-guidebook__outcome {
     display: inline-block;
-    font-size: calc(var(--ez-font-size, 1rem) * 0.75);
+    font-size: calc(1em * 0.75);
     font-weight: 600;
     padding: 0.0625rem 0.375rem;
     border-radius: 0.1875rem;
@@ -262,7 +262,7 @@
 }
 
 .ez-guidebook__keyword {
-    font-size: calc(var(--ez-font-size, 1rem) * 0.6875);
+    font-size: calc(1em * 0.6875);
     padding: 0.0625rem 0.3125rem;
     border-radius: 0.1875rem;
 }
@@ -287,26 +287,26 @@
 }
 
 .ez-guidebook__desc {
-    font-size: calc(var(--ez-font-size, 1rem) * 0.8125);
+    font-size: calc(1em * 0.8125);
     color: var(--ez-color-muted);
     margin-top: 0.25rem;
 }
 
 .ez-guidebook__condition {
-    font-size: calc(var(--ez-font-size, 1rem) * 0.8125);
+    font-size: calc(1em * 0.8125);
     color: var(--ez-color-muted);
     margin-top: 0.25rem;
     font-style: italic;
 }
 
 .ez-guidebook__overrides {
-    font-size: calc(var(--ez-font-size, 1rem) * 0.8125);
+    font-size: calc(1em * 0.8125);
     color: var(--ez-color-muted);
     margin-top: 0.125rem;
 }
 
 .ez-guidebook__rationale {
-    font-size: calc(var(--ez-font-size, 1rem) * 0.8125);
+    font-size: calc(1em * 0.8125);
     color: var(--ez-color-muted);
     margin-top: 0.125rem;
 }
@@ -315,7 +315,7 @@
     padding: 1rem;
     text-align: center;
     color: var(--ez-color-muted);
-    font-size: calc(var(--ez-font-size, 1rem) * 0.875);
+    font-size: calc(1em * 0.875);
 }
 
 /* Failure state. Deliberately louder than the empty state: it reads as an
@@ -325,7 +325,7 @@
     border-left: 0.25rem solid var(--ez-color-error, #b91c1c);
     background: var(--ez-color-error-bg, #fef2f2);
     color: var(--ez-color-error-text, #7f1d1d);
-    font-size: calc(var(--ez-font-size, 1rem) * 0.875);
+    font-size: calc(1em * 0.875);
 }
 
 .ez-guidebook__tabs {
@@ -336,7 +336,7 @@
 
 .ez-guidebook__tab {
     padding: 0.375rem 0.75rem;
-    font-size: calc(var(--ez-font-size, 1rem) * 0.8125);
+    font-size: calc(1em * 0.8125);
     border: none;
     background: none;
     cursor: pointer;

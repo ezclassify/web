@@ -26,10 +26,10 @@ afterEach(() => {
     document.head.innerHTML = '';
 });
 
-/** Add page CSS, including the library's own root declaration. */
+/** Add the host's page CSS. */
 function pageStyles(css: string): void {
     const style = document.createElement('style');
-    style.textContent = `.ez-root, [data-ezclassify] { --ez-font-family: inherit; }\n${css}`;
+    style.textContent = css;
     document.head.appendChild(style);
 }
 
@@ -49,35 +49,24 @@ describe('copyOverlayTheme', () => {
         expect(getComputedStyle(overlay).fontFamily).toBe('Georgia, serif');
     });
 
-    it("leaves size, weight and line height to the overlay's own stylesheet", () => {
+    it("leaves weight and line height to the overlay's own stylesheet", () => {
         pageStyles('.page [data-ezclassify] { font-family: Georgia, serif; }');
         copyOverlayTheme(fieldLayer(), overlay);
-        expect(overlay.style.fontSize).toBe('');
         expect(overlay.style.fontWeight).toBe('');
         expect(overlay.style.lineHeight).toBe('');
     });
 
-    it('uses the host --ez-font-family when one is set', () => {
-        pageStyles(
-            '.page [data-ezclassify] { font-family: Georgia, serif; --ez-font-family: Inter, sans-serif; }',
-        );
-        copyOverlayTheme(fieldLayer(), overlay);
-        expect(getComputedStyle(overlay).fontFamily).toBe('Inter, sans-serif');
-    });
-
-    it('uses the surrounding font size when the form supplies no size token', () => {
+    it('refreshes the surrounding font size without taking the field text size', () => {
         const anchor = fieldLayer();
         const owner = page.querySelector<HTMLElement>('[data-ezclassify]')!;
         owner.style.fontSize = '14px';
 
         copyOverlayTheme(anchor, overlay, owner);
-        expect(overlay.style.getPropertyValue('--ez-font-size')).toBe('14px');
+        expect(overlay.style.fontSize).toBe('14px');
 
-        anchor.style.setProperty('--ez-font-size', '1.25rem');
+        owner.style.fontSize = '20px';
         copyOverlayTheme(anchor, overlay, owner);
-        expect(overlay.style.getPropertyValue('--ez-font-size')).toBe(
-            '1.25rem',
-        );
+        expect(overlay.style.fontSize).toBe('20px');
     });
 
     it('uses the nearer form typography inside a themed application root', () => {
@@ -91,7 +80,7 @@ describe('copyOverlayTheme', () => {
         copyOverlayTheme(anchor, overlay);
 
         expect(overlay.style.fontFamily).toBe('Georgia, serif');
-        expect(overlay.style.getPropertyValue('--ez-font-size')).toBe('20px');
+        expect(overlay.style.fontSize).toBe('20px');
     });
 
     it("reads the owner's root when the source sits in field text beside it", () => {
@@ -105,6 +94,16 @@ describe('copyOverlayTheme', () => {
         const owner = page.querySelector<HTMLElement>('[data-ezclassify]')!;
         copyOverlayTheme(anchor, overlay, owner);
         expect(getComputedStyle(overlay).fontFamily).toBe('Georgia, serif');
+    });
+
+    it('keeps the anchor’s sticky picker header color after portaling', () => {
+        const anchor = fieldLayer();
+        const property = '--ez-dropdown-group-sticky-bg';
+        anchor.style.setProperty(property, '#263a31');
+
+        copyOverlayTheme(anchor, overlay);
+
+        expect(overlay.style.getPropertyValue(property)).toBe('#263a31');
     });
 
     it('discards an old dropdown override when the next anchor stops supplying it', () => {
