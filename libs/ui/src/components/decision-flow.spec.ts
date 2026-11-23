@@ -2619,7 +2619,16 @@ describe('DecisionFlow: compact layout', () => {
         // rebuild the line out from under the press.
         go.focus();
         expect(step().hidden).toBe(true);
+        const values = problems.closest('.ez-decision-flow__values')!;
+        const replace = values.replaceChildren.bind(values);
+        // Browsers dispatch focusout when the focused link is removed.
+        const replacement = vi.spyOn(values, 'replaceChildren');
+        replacement.mockImplementation((...nodes) => {
+            if (document.activeElement === go) go.blur();
+            replace(...nodes);
+        });
         go.click();
+        replacement.mockRestore();
         expect(step().hidden).toBe(false);
         expect(title()).toBe('2 of 2 · Impact');
     });
@@ -2630,6 +2639,31 @@ describe('DecisionFlow: compact layout', () => {
         expect(
             container.querySelector('.ez-decision-flow__problems'),
         ).toBeNull();
+    });
+
+    it('keeps optional steps optional when the whole does not cover a part', async () => {
+        await flow.init(container, toCtx(createMockEngine()));
+        const message = 'The whole does not cover a value carried by a part.';
+        flow.updateValidationErrors([
+            {
+                constraintId: '_part-coverage:impact:IMPACT_A',
+                categoryId: 'impact',
+                affectedConcepts: ['IMPACT_A'],
+                message,
+            },
+        ]);
+        expect(dots()[1].dataset.state).toBe('optional');
+        expect(
+            container.querySelector('.ez-decision-flow__missing'),
+        ).toBeNull();
+        expect(
+            container.querySelector('.ez-decision-flow__problem')?.textContent,
+        ).toBe(message);
+
+        await enterFlow(container);
+        expect(
+            container.querySelector('.ez-decision-flow__problem')?.textContent,
+        ).toBe(message);
     });
 
     it("reads each option as the field writes it, with the concept's name as its tooltip and description", async () => {
