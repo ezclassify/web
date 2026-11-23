@@ -1228,6 +1228,37 @@ describe('MarkedInput', () => {
         expect(inputEl.selectionEnd).toBe(markEnd);
     });
 
+    it('opens the phone picker when the painted marking is tapped without focusing the native editor', async () => {
+        vi.stubGlobal('innerWidth', 390);
+        vi.stubGlobal('matchMedia', () => ({ matches: true }));
+        try {
+            const engine = await createTestEngine();
+            root.innerHTML = `
+                <input id="field" data-ezclassify-controller="marked-input" value="(U) Text">
+            `;
+            const forms = new EzClassifyUI(asContext(engine as never), {});
+            activeForms.push(forms);
+            await expect
+                .poll(() => root.querySelector('.marked-input-chip'))
+                .not.toBeNull();
+            const editor = editingField('field') as HTMLTextAreaElement;
+            expect(document.activeElement).not.toBe(editor);
+            root.querySelector<HTMLElement>('.marked-input-chip')!.click();
+            expect(document.activeElement).not.toBe(editor);
+            await expect
+                .poll(
+                    () =>
+                        document.querySelector<HTMLInputElement>(
+                            '.ez-composer[data-surface="sheet"]:not([hidden]) .ez-composer__sheet-input',
+                        )?.value,
+                )
+                .toBe('U');
+            expect(editor.value).toBe('(U) Text');
+        } finally {
+            vi.unstubAllGlobals();
+        }
+    });
+
     it('the chip hit-test resolves adjacent integer clicks against fractional layout geometry', async () => {
         // Use a fractional chip rectangle and the adjacent integer coordinates
         // on each side of its edge to check which clicks enter marking edit mode.

@@ -763,8 +763,8 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         // click. The release decides (see MarkedFieldBase.pressing): a drag or
         // a double-click is a text selection and opens nothing.
         this.watchPresses();
-        // A phone can move the caret before dispatching compatibility mouse
-        // events. Let the touch click open the sheet after native selection.
+        // Touches on markings go to the painted chips. Touches on the native
+        // editor are for placing a caret in the surrounding text.
         this.listenToTextarea('pointerdown', (event) => {
             this.touchingText =
                 event.pointerType === 'touch' && event.isPrimary;
@@ -772,10 +772,8 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         this.listenToTextarea('pointercancel', () => {
             this.touchingText = false;
         });
-        this.listenToTextarea('click', (event) => {
-            if (!this.touchingText) return;
+        this.listenToTextarea('click', () => {
             this.touchingText = false;
-            if (event.detail === 1) this.openFromClick();
         });
         this.listenToTextarea('mouseup', (event) => {
             if (this.touchingText || event.button !== 0 || event.detail > 1)
@@ -2400,13 +2398,14 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                 (event) => {
                     event.preventDefault();
                     event.stopPropagation();
-                    this.textarea.setSelectionRange(
-                        seg.start + 1,
-                        seg.start + 1,
-                    );
-                    this.activeSegmentIndex = this.segments.indexOf(seg);
+                    if (this.textarea.value !== this.lastSegmentedText) return;
+                    const index = this.segments.indexOf(seg);
+                    if (index < 0) return;
+                    this.textarea.setSelectionRange(seg.start, seg.start);
+                    this.activeSegmentIndex = index;
                     void this.openPicker(seg.start, seg.end);
                 },
+                true,
             );
 
             const caretInChip =
@@ -2485,12 +2484,6 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                 paragraph.appendChild(editorChip);
                 into = paragraph;
             } else {
-                // Click on a chip opens the inline editor for that marking.
-                // The chip is in the display div (z-index 1) under the textarea
-                // (z-index 2). We use mousedown on the textarea and check if the
-                // click position overlaps a chip's bounding box.
-                chip.dataset.segStart = String(seg.start);
-                chip.dataset.segEnd = String(seg.end);
                 this.display.appendChild(chip);
             }
 

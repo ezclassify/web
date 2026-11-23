@@ -1201,11 +1201,19 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
                 this.display.appendChild(editorChip);
             } else {
                 const chip = document.createElement('span');
-                this.attachSegmentFeedback(chip, 'marked-input-chip', {
-                    valid: this.valid,
-                    errors: this.errors,
-                    warnings: this.warnings,
-                });
+                this.attachSegmentFeedback(
+                    chip,
+                    'marked-input-chip',
+                    {
+                        valid: this.valid,
+                        errors: this.errors,
+                        warnings: this.warnings,
+                    },
+                    () => {
+                        if (!this.picker && this.getMarkString() === mark)
+                            this.openFromClick(undefined);
+                    },
+                );
                 chip.dataset.start = '0';
                 chip.dataset.end = String(this.markEnd);
                 // Selection can span into the chip (e.g. select-all): render

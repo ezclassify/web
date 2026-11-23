@@ -258,6 +258,14 @@
 }
 
 @media (pointer: coarse) {
+    .marked-textarea-display .ez-marked-field-tap-target {
+        pointer-events: auto;
+        cursor: pointer;
+        touch-action: manipulation;
+        user-select: none;
+        -webkit-user-select: none;
+    }
+
     /* iOS Safari zooms the page when a focused field's effective font-size is
        under 16px. The threshold is defined in device px, not rem, so px is
        correct here; max() keeps larger host fonts intact. The invisible textarea

@@ -599,6 +599,42 @@ for (const viewport of [
     });
 }
 
+test.describe('README document form with touch input', () => {
+    test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
+
+    test('opens the sheet directly from a painted marking', async ({
+        page,
+    }, info) => {
+        test.skip(
+            info.project.name !== 'vanilla-example',
+            'Shared UI touch behavior',
+        );
+        const observed = observe(page);
+        await page.goto('/');
+
+        const sheet = page.locator(
+            '.ez-composer[data-surface="sheet"]:visible',
+        );
+        for (const [selector, value] of [
+            ['.marked-input-chip', 'PUBLIC'],
+            ['.marked-textarea-chip', 'INTERNAL'],
+        ] as const) {
+            const chip = page.locator(selector).getByText(`(${value})`, {
+                exact: true,
+            });
+            await chip.tap({ position: { x: 2, y: 8 } });
+            await expect(
+                sheet.locator('.ez-composer__sheet-input'),
+            ).toHaveValue(value);
+            await page.keyboard.press('Escape');
+            await expect(sheet).toHaveCount(0);
+        }
+        await settle(observed);
+        expect(observed.failures).toEqual([]);
+        expect(observed.errors).toEqual([]);
+    });
+});
+
 test.describe('README document form beside monospace fields', () => {
     test.use({ viewport: { width: 1280, height: 900 } });
 

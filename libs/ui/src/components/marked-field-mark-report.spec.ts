@@ -176,7 +176,11 @@ describe('MarkedTextArea portion report', () => {
     it('a valid portion with nothing to say is plain text, not a button', async () => {
         await mount();
         const plain = chip('(I)');
-        expect(plain.className).toBe('marked-textarea-chip');
+        expect(
+            plain.matches(
+                '.marked-textarea-chip--warning, .marked-textarea-chip--invalid',
+            ),
+        ).toBe(false);
         expect(plain.hasAttribute('role')).toBe(false);
         expect(plain.hasAttribute('tabindex')).toBe(false);
     });
