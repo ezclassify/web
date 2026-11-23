@@ -118,13 +118,18 @@ import {
     COLLECTION_ATTR,
     CONTEXT_ATTR,
     MARKING_ATTR,
+    MEMBER_OF_ATTR,
+    hasParts,
     PART_OF_ATTR,
     SCHEME_ATTR,
     type BindingNode,
     type HostError,
     type HostErrorCode,
 } from './binding-model';
-import type { StatusBannerBucket } from './components/status-banner';
+import type {
+    StatusBanner,
+    StatusBannerBucket,
+} from './components/status-banner';
 import { bucketKey, bucketParts, type BucketKey } from './store/store-shared';
 import { reportPublishFailure } from './store/publish-failure';
 import {
@@ -626,6 +631,10 @@ export class EzClassifyUI {
      * removed under the id the store knows.
      */
     private readonly collections = new Map<HTMLElement, string>();
+    private readonly collectionRollupUnsubscribers = new Map<
+        HTMLElement,
+        () => void
+    >();
     /**
      * How many times each marking host has been registered. A teardown whose
      * store release lands after the host was registered again (a structural
@@ -1120,7 +1129,15 @@ export class EzClassifyUI {
             // its init or the initial sweep was still running.
             if (this._destroyed || this.markingHosts.get(id) !== host)
                 return Promise.resolve();
-            return this.seedMarkingHost(id, host);
+            const mountedField = () =>
+                this.mounted.get(host) ??
+                this.autocompleters.get(host as HTMLInputElement);
+            const component = mountedField();
+            return this.seedMarkingHost(id, host).catch((error) => {
+                if (mountedField() === component)
+                    component?.showFailedStoreSeed?.(error);
+                throw error;
+            });
         };
         // A host whose init has settled starts at once. The initial sweep's
         // inits have all settled when it starts its seeds, so they go out
@@ -1200,12 +1217,12 @@ export class EzClassifyUI {
 
         // The store composes the native edits over the served text, preserving
         // its other categories and any unread text.
-        await Promise.all([
-            this.store.seedRendered(id, rendered),
-            this.store.publishAssertions(id, selected, undefined, {
-                categories: [...facets.keys()],
-            }),
-        ]);
+        if (this.store.seedRenderedWithFacets)
+            return this.store.seedRenderedWithFacets(id, rendered, facets);
+        await this.store.seedRendered(id, rendered);
+        await this.store.publishAssertions(id, selected, undefined, {
+            categories: [...facets.keys()],
+        });
     }
 
     /** Capture the authored inputs before a picker replaces or disables them. */
@@ -1395,13 +1412,9 @@ export class EzClassifyUI {
                 // An element that left the root is no longer this instance's;
                 // what add wrote on it stays, as its markup.
                 this.addedAttributes.delete(el);
-                const collection = this.collections.get(el);
-                if (collection !== undefined) {
-                    this.store.unregisterCollection(collection);
-                    this.collections.delete(el);
-                }
+                this.unregisterCollectionOf(el);
             },
-            (el) => this.rederive(el),
+            (el, membershipOnly) => this.rederive(el, membershipOnly),
             () => this.rederiveDependents(),
         );
     }
@@ -1562,11 +1575,30 @@ export class EzClassifyUI {
             this.reportHostError(node.error, null);
             return;
         }
-        const previous = this.collections.get(el);
-        if (previous !== undefined && previous !== node.id)
-            this.store.unregisterCollection(previous);
-        this.collections.set(el, node.id!);
+        this.placeCollection(el, node);
+    }
+
+    private placeCollection(el: HTMLElement, node: BindingNode): void {
+        if (this.collections.get(el) !== node.id) {
+            this.unregisterCollectionOf(el);
+            this.collections.set(el, node.id!);
+            this.collectionRollupUnsubscribers.set(
+                el,
+                this.store.subscribeAggregate(() => {
+                    void rollup.updateRollup(this);
+                }, node.id!),
+            );
+        }
         this.store.registerCollection(node.id!, node.collectionId ?? null);
+    }
+
+    private unregisterCollectionOf(el: HTMLElement): void {
+        const id = this.collections.get(el);
+        if (id === undefined) return;
+        this.collectionRollupUnsubscribers.get(el)?.();
+        this.collectionRollupUnsubscribers.delete(el);
+        this.collections.delete(el);
+        this.store.unregisterCollection(id);
     }
 
     /**
@@ -1643,8 +1675,12 @@ export class EzClassifyUI {
      * names a whole inside it: whether that part is accepted depends on where
      * its whole now sits.
      */
-    private rederive(el: HTMLElement): void {
+    private rederive(el: HTMLElement, membershipOnly = false): void {
         if (this._destroyed) return;
+        if (membershipOnly && this.rederiveMembership(el)) {
+            void rollup.updateRollup(this);
+            return;
+        }
         this.invalidateDecisionFlow(el);
         this.rederiveScope(el);
         if (!this.root.contains(el)) return;
@@ -1661,6 +1697,50 @@ export class EzClassifyUI {
             const named = part.getAttribute(PART_OF_ATTR)?.trim();
             if (named && wholes.has(named)) this.rederiveScope(part);
         }
+    }
+
+    /**
+     * Refresh only collection edges when a membership mutation keeps every
+     * binding valid. Anything that changes a marking's role or makes its markup
+     * invalid goes through the normal detach and rederive path.
+     */
+    private rederiveMembership(scope: HTMLElement): boolean {
+        const hosts = [
+            scope,
+            ...scope.querySelectorAll<HTMLElement>(EZ_SELECTOR),
+        ].filter((host) => isOwnedBy(host, this._instanceId));
+        const placements = hosts.map((host) => ({
+            host,
+            before: this.bindingNodes.get(host),
+            next: classify(host, this.root),
+            collection: describeCollection(host, this.root),
+        }));
+        if (
+            placements.some(
+                ({ host, before, next, collection }) =>
+                    this.hostErrors.has(host) ||
+                    next.error ||
+                    collection?.error ||
+                    before?.wholeId !== next.wholeId ||
+                    (next.kind === 'whole' &&
+                        (before?.kind !== 'whole' ||
+                            before.id !== next.id ||
+                            before.contextKey !== next.contextKey ||
+                            before.schemeSelector !== next.schemeSelector ||
+                            before.contributes !== next.contributes)),
+            )
+        )
+            return false;
+        for (const { host, collection } of placements) {
+            if (collection) this.placeCollection(host, collection);
+            else this.unregisterCollectionOf(host);
+        }
+        for (const { host, next } of placements) {
+            this.bindingNodes.set(host, next);
+            if (next.kind === 'whole' && next.id)
+                this.store.setMembership(next.id, next.collectionId ?? null);
+        }
+        return true;
     }
 
     /**
@@ -1684,6 +1764,14 @@ export class EzClassifyUI {
                 !node.error &&
                 node.wholeId &&
                 !el.ownerDocument.getElementById(node.wholeId)
+            )
+                stale.add(el);
+        for (const [el, node] of this.bindingNodes)
+            if (
+                node.kind === 'whole' &&
+                !node.error &&
+                el.hasAttribute(MEMBER_OF_ATTR) &&
+                classify(el, this.root).error
             )
                 stale.add(el);
         // Reading an element again that is still refused for the same reason
@@ -1730,11 +1818,9 @@ export class EzClassifyUI {
             this.clearHostError(host);
             this.bindingNodes.delete(host);
         }
-        for (const [container, id] of Array.from(this.collections))
-            if (scope.contains(container)) {
-                this.store.unregisterCollection(id);
-                this.collections.delete(container);
-            }
+        for (const container of this.collections.keys())
+            if (scope.contains(container))
+                this.unregisterCollectionOf(container);
         this.collectMarkingHosts(scope);
         const behave = (host: HTMLElement, binding: BehaviorBinding) =>
             this.bindBehavior(host, binding);
@@ -4097,6 +4183,32 @@ export class EzClassifyUI {
         if (storeBinding && !facetOfId && storeMarkingId)
             this.draftHosts.set(component, storeMarkingId);
 
+        // A standalone field and its store read the same value in the same
+        // format. Use the store's seed for both. A field with its own format,
+        // surface or coverage inputs still needs its own judgment.
+        let storeSeedFormat: string | undefined;
+        if (
+            component.useStoreSeed &&
+            (controller === 'marking' || controller === 'tags') &&
+            selfRenderedId &&
+            !componentOpts.holdsPart &&
+            !componentOpts.scopes?.length &&
+            !componentOpts.formatId &&
+            !hasParts(this.root, selfRenderedId)
+        ) {
+            const meta = schemeEngineOf(resolved!, el).getSchemeMeta();
+            const format =
+                (controller === 'marking'
+                    ? meta.defaultWholeRenderFormat
+                    : undefined) ??
+                meta.defaultRenderFormat ??
+                '';
+            if (this.store.usesRenderedFormat?.(selfRenderedId, format)) {
+                storeSeedFormat = format;
+                component.useStoreSeed();
+            }
+        }
+
         // The component marks with the Context its element resolved.
         const mounted = drawer
             ? (component as ContextReference).init(
@@ -4297,6 +4409,7 @@ export class EzClassifyUI {
                         storeBinding,
                         !!facetOfId,
                         facetCategory,
+                        storeSeedFormat,
                     );
                 }
             };
@@ -4455,6 +4568,79 @@ export class EzClassifyUI {
                 };
 
                 if (el.hasAttribute('data-ezclassify-aggregate')) {
+                    const banner =
+                        controller === 'banner'
+                            ? (component as ComponentInstance & {
+                                  showRollup: StatusBanner['showRollup'];
+                                  setBuckets(
+                                      buckets: readonly StatusBannerBucket[],
+                                  ): void;
+                              })
+                            : null;
+                    const showBannerRollup = (state: EzClassifyState) => {
+                        if (!banner) return;
+                        const write = ++scopedWrite;
+                        const refused = renderViewRefused(state);
+                        const incomplete = state.stale === true || refused;
+                        const show = (rendered: string | null) => {
+                            if (write !== scopedWrite || this._destroyed)
+                                return;
+                            banner.showRollup(
+                                refused || rendered === null
+                                    ? []
+                                    : state.assertions,
+                                rendered ?? '',
+                                refused || rendered === null
+                                    ? undefined
+                                    : state.displayColor,
+                                incomplete || rendered === null,
+                            );
+                        };
+                        if (refused) {
+                            show('');
+                            return;
+                        }
+                        const engine = schemeEngineOf(
+                            this.resolveContext(el),
+                            el,
+                        );
+                        const meta = engine.getSchemeMeta();
+                        const format =
+                            resolveFormatAttr(el) ??
+                            meta.defaultWholeRenderFormat ??
+                            meta.defaultRenderFormat;
+                        const scopes = scopesToWrite(
+                            engine,
+                            viewScopes,
+                            state.assertions,
+                        );
+                        if (scopes.length > 0) {
+                            void this.writeInScopes(
+                                el,
+                                state.assertions,
+                                scopes,
+                            )
+                                .catch(() => null)
+                                .then(show);
+                        } else if (
+                            format &&
+                            format !== this.formatsOf(el).whole &&
+                            state.assertions.length > 0
+                        ) {
+                            void Promise.resolve()
+                                .then(() =>
+                                    engine.render(state.assertions, format),
+                                )
+                                .then((result) =>
+                                    show(
+                                        renderViewRefused(result)
+                                            ? null
+                                            : result.rendered,
+                                    ),
+                                )
+                                .catch(() => show(null));
+                        } else show(state.rendered);
+                    };
                     // React renders boolean JSX attributes as `="true"`, not `=""`.
                     // Treat "true" and "" identically: both mean "page aggregate, no whole id".
                     const rawWhole =
@@ -4471,13 +4657,7 @@ export class EzClassifyUI {
                             el.getAttribute(CONTEXT_ATTR),
                             el.getAttribute(SCHEME_ATTR),
                         );
-                    const showsBuckets = (
-                        component as {
-                            setBuckets?: (
-                                buckets: readonly StatusBannerBucket[],
-                            ) => void;
-                        }
-                    ).setBuckets?.bind(component);
+                    const showsBuckets = banner?.setBuckets.bind(banner);
                     const applyLevel = (aggregate: EzClassifyAggregate) => {
                         const buckets = named();
                         const shown = shownBuckets(aggregate, buckets);
@@ -4491,23 +4671,28 @@ export class EzClassifyUI {
                         ) {
                             // Every bucket on its own labeled line, in its own
                             // scheme's colors. Buckets never merge.
-                            const lines = shown.map(([key, state]) => ({
-                                key,
-                                label: this.bucketLabel(key),
-                                rendered: state.rendered,
-                                colors: state.displayColor ?? null,
-                                stale: state.stale === true,
-                            }));
-                            showIncomplete?.(
-                                shown.some(([, state]) => state.stale === true),
-                            );
+                            const write = ++scopedWrite;
+                            const lines = shown.map(([key, state]) => {
+                                const refused = renderViewRefused(state);
+                                return {
+                                    key,
+                                    label: this.bucketLabel(key),
+                                    rendered: refused ? '' : state.rendered,
+                                    colors: refused
+                                        ? null
+                                        : (state.displayColor ?? null),
+                                    stale: refused || state.stale === true,
+                                };
+                            });
+                            showIncomplete?.(lines.some((line) => line.stale));
                             // Each bucket is shown as the view's scopes write
                             // it in its own scheme: the listed ones, else that
                             // scheme's default (see scopesToWrite).
                             const bucketScopes = shown.map(([key, state]) => {
+                                if (renderViewRefused(state)) return [];
                                 if (viewScopes.length > 0) return viewScopes;
                                 const engine = this.bucketEngine(key);
-                                return engine && !renderViewRefused(state)
+                                return engine
                                     ? scopesToWrite(
                                           engine,
                                           viewScopes,
@@ -4520,7 +4705,6 @@ export class EzClassifyUI {
                                 return;
                             }
                             // Shown once every write lands.
-                            const write = ++scopedWrite;
                             void Promise.all(
                                 shown.map(([key, state], at) =>
                                     bucketScopes[at]!.length === 0
@@ -4528,9 +4712,7 @@ export class EzClassifyUI {
                                         : this.writeBucketInScopes(
                                               el,
                                               key,
-                                              renderViewRefused(state)
-                                                  ? []
-                                                  : state.assertions,
+                                              state.assertions,
                                               bucketScopes[at]!,
                                           ).catch(() => null),
                                 ),
@@ -4553,11 +4735,11 @@ export class EzClassifyUI {
                             });
                             return;
                         }
-                        showsBuckets?.([]);
                         if (shown.length <= 1) {
-                            applyState(
-                                shown[0]?.[1] ?? { ...EMPTY_EZCLASSIFY_STATE },
-                            );
+                            const state =
+                                shown[0]?.[1] ?? EMPTY_EZCLASSIFY_STATE;
+                            if (banner) showBannerRollup(state);
+                            else applyState(state);
                             return;
                         }
                         // Several buckets and a view that shows one: showing
@@ -4788,6 +4970,7 @@ export class EzClassifyUI {
         binding: StoreBinding,
         isFacet: boolean,
         category: string | undefined,
+        storeSeedFormat: string | undefined,
     ): void {
         const host = binding.token.token as HTMLElement;
         if (!isFacet && isMarkingController(host))
@@ -4828,9 +5011,16 @@ export class EzClassifyUI {
                     this.factsOfOwnScopes(host, state.assertions ?? []),
                 );
             } else {
+                const useStoreSeed =
+                    storeSeedFormat !== undefined &&
+                    this.store.usesRenderedFormat?.(
+                        binding.markingId,
+                        storeSeedFormat,
+                    );
                 const facts = signAssertions(state.assertions);
                 const origins = signAssertionOrigins(state.assertions);
                 if (
+                    !useStoreSeed &&
                     state.rendered === binding.lastSeenRendered &&
                     (facts !== binding.lastSeenFactSig ||
                         origins === binding.lastSeenAssertionSig)
@@ -4847,7 +5037,8 @@ export class EzClassifyUI {
                 // reading intact so a receiver cannot echo a shortened or
                 // empty marking over the input the engine refused.
                 if (
-                    (!state.valid ||
+                    (useStoreSeed ||
+                        !state.valid ||
                         ('recognition' in state &&
                             state.recognition?.status !== 'complete')) &&
                     component.applyStoreState
@@ -5645,9 +5836,8 @@ export class EzClassifyUI {
             this.releaseErrorContributors(contributors);
         this.hostErrors.clear();
         this.bindingNodes.clear();
-        for (const id of this.collections.values())
-            this.store.unregisterCollection(id);
-        this.collections.clear();
+        for (const el of this.collections.keys())
+            this.unregisterCollectionOf(el);
         // Release cross-instance ownership of every host this instance enhanced so a
         // remount on the same DOM (StrictMode), or a peer instance, can re-claim
         // them. Done before the component/field maps are cleared below.

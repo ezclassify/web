@@ -25,6 +25,7 @@ import type { EzClassifyClient } from '@ezclassify/rest-client';
 import {
     createEzClassify,
     EzClassify,
+    EzClassifyBanner,
     useEzClassify,
     useEzClassifyFacet,
     useEzClassifyState,
@@ -121,6 +122,34 @@ describe('public API: entry points', () => {
         expect(typeof useEzClassify).toBe('function');
         expect(typeof useEzClassifyState).toBe('function');
         expect(typeof useEzClassifyFacet).toBe('function');
+    });
+
+    it('exposes a banner that binds instance presentation to the scanner', async () => {
+        wrapper = mount(EzClassifyBanner, {
+            props: {
+                label: 'Visible markings',
+                source: 'visible',
+                noLive: true,
+            },
+        });
+        expect(wrapper.attributes()).toMatchObject({
+            'data-ezclassify-controller': 'banner',
+            'data-ezclassify-source': 'visible',
+            'data-ezclassify-banner-label': 'Visible markings',
+            'data-ezclassify-banner-no-live': '',
+        });
+        await wrapper.setProps({
+            label: 'Page markings',
+            source: undefined,
+            noLive: false,
+        });
+        expect(wrapper.attributes('data-ezclassify-aggregate')).toBe('');
+        expect(wrapper.attributes('data-ezclassify-banner-label')).toBe(
+            'Page markings',
+        );
+        expect(
+            wrapper.attributes('data-ezclassify-banner-no-live'),
+        ).toBeUndefined();
     });
 
     it('exports no initialization path beside the plugin and the root', () => {

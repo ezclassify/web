@@ -329,7 +329,7 @@ function collectionNamed(root: HTMLElement, id: string): HTMLElement | null {
 }
 
 /** Whether any element on the page declares a part of `wholeId`. */
-function hasParts(root: HTMLElement, wholeId: string): boolean {
+export function hasParts(root: HTMLElement, wholeId: string): boolean {
     for (const attr of [WHOLE_ATTR, PART_OF_ATTR])
         for (const el of Array.from(root.querySelectorAll(`[${attr}]`)))
             if (valueOf(el, attr) === wholeId) return true;

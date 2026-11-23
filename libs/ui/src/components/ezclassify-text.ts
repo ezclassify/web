@@ -431,9 +431,7 @@ export class EzClassifyText implements ComponentInstance {
 
     private injectStyles(): void {
         if (this.options.injectStyles === false) return;
-        const root = (this.options.root ??
-            this.host.ownerDocument?.head ??
-            document.head) as HTMLElement;
+        const root = this.options.root ?? this.host;
         // Reference counted: every controller under the root holds its own
         // handle, and the sheet detaches when the last one is released.
         this.adoptedStyle = adoptStyles(EZCLASSIFY_TEXT_CSS, root);

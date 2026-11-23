@@ -911,6 +911,15 @@ describe('StatusBanner: boundary mode', () => {
         ).toBeNull();
     });
 
+    it('pins a plain banner when only affix is set', async () => {
+        await component.init(container, toCtx(createEngineWithCoverage()), {
+            affix: 'top',
+        });
+        expect(container.classList.contains('ez-banner-affix-top')).toBe(true);
+        expect(container.querySelector('.status-banner-label')).not.toBeNull();
+        expect(container.querySelector('.status-banner-current')).toBeNull();
+    });
+
     it('applies affix-top class to container when affix="top"', async () => {
         const engine = createEngineWithCoverage();
         await component.init(container, toCtx(engine), {
@@ -1095,7 +1104,7 @@ describe('StatusBanner: display nouns come from the scheme', () => {
     it('names the region with the product noun for the whole role when the scheme declares none', async () => {
         const engine = createEngineWithCoverage();
         await component.init(container, toCtx(engine), {
-            affix: 'top',
+            boundary: '',
             showCurrentData: false,
         });
         expect(
@@ -1108,7 +1117,7 @@ describe('StatusBanner: display nouns come from the scheme', () => {
     it("names the region with the scheme's own whole-role noun", async () => {
         const engine = createEngineWithCoverage(schemeWithVocabulary());
         await component.init(container, toCtx(engine), {
-            affix: 'top',
+            boundary: '',
             showCurrentData: false,
         });
         expect(

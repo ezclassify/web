@@ -11,12 +11,15 @@
  * by the split.
  */
 
-import type { Assertion, Suggestion } from '@ezclassify/types';
+import type { Assertion, Suggestion, Warning } from '@ezclassify/types';
 import type {
     EzClassifyAggregate,
     EzClassifyState,
     FacetState,
 } from './ezclassify-store';
+
+/** Adapter diagnostics kept for the UI without widening the store state. */
+export const storeWarnings = new WeakMap<EzClassifyState, Warning[]>();
 
 /**
  * Canonical empty `EzClassifyState`. Identity is not stable across calls; copy

@@ -2,6 +2,7 @@ import { defineComponent, h, type VNodeChild } from 'vue';
 import {
     ContextReference,
     ContextReferenceTab,
+    EzClassifyBanner,
     VueRefStore,
     type UseEzClassifyFacetReturn,
 } from '@ezclassify/vue';
@@ -22,6 +23,11 @@ const tab: InstanceType<typeof ContextReferenceTab>['$props'] = {
     label: 'Custom',
     icon: 'tag',
     order: 2,
+};
+const banner: InstanceType<typeof EzClassifyBanner>['$props'] = {
+    source: 'document',
+    label: 'Document marking',
+    noLive: true,
 };
 const component = defineComponent({
     setup() {
@@ -52,6 +58,7 @@ const typedSlots: InstanceType<typeof ContextReference>['$slots'] = {
     default: () => [h('span', 'Typed slot')],
 };
 void [
+    banner,
     component,
     missingLabel,
     wrongLabel,

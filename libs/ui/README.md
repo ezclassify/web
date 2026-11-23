@@ -349,6 +349,21 @@ be submitted, place a hidden input with `data-ezclassify-aggregate` where you
 want it, and it holds the rendered value. Any other element with no controller
 shows the value as text. A view never feeds back into a rollup.
 
+Give each banner an accessible name prefix with
+`data-ezclassify-banner-label="Page markings"`. The banner includes its current
+marking after that label. Add `data-ezclassify-banner-no-live` to silence its
+announcements while keeping the banner available to assistive technology. Use
+`bannerLabel` and `bannerNoLive: true` with `ui.add(element, 'banner', …)`.
+React and Vue expose `label` and `noLive` on `EzClassifyBanner`. Angular
+exposes the same inputs on `EzClassifyBannerComponent` (`<ez-classify-banner>`).
+Place these components inside their framework's marking root. Each shows the
+page rollup by default. Set `aggregate` to a rollup ID or `source` to a marking ID.
+
+Use `data-ezclassify-banner-affix="top"` or `"bottom"` to pin the banner to
+the viewport. Reserve enough space in the page layout for the fixed banner.
+Use `data-ezclassify-banner-boundary` or `data-ezclassify-banner-show-current-data`
+to opt into the structured boundary display.
+
 ### A part outside its whole's container
 
 When a part cannot sit inside its whole's container, name the whole on it:

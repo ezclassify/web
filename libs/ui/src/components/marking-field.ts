@@ -66,11 +66,7 @@ export class MarkingField extends ComposerFieldBase {
     private toolsButton: HTMLElement | null = null;
     /** True while the host textarea is the visible, editable surface. */
     private hasFocus = false;
-    /**
-     * True from the start of a mount-time host correction until its write
-     * lands. The write dispatches the host's native `input` event, which must
-     * not read as typing.
-     */
+    /** A reflected commit is writing the native input. */
     private _committing = false;
     /** Whether setup() added aria-label itself (destroy() undoes only that). */
     private _addedAriaLabel = false;
@@ -86,6 +82,14 @@ export class MarkingField extends ComposerFieldBase {
 
     private boundFocus!: () => void;
     private boundDisplayMouseDown!: (e: MouseEvent) => void;
+
+    protected override nativeInputFor(container: HTMLDivElement) {
+        const host = getMountHost(container);
+        return host instanceof HTMLInputElement ||
+            host instanceof HTMLTextAreaElement
+            ? host
+            : super.nativeInputFor(container);
+    }
 
     /** A marking field shows its marking as one string of text. */
     protected override writesScopesAsText(): boolean {
@@ -164,7 +168,6 @@ export class MarkingField extends ComposerFieldBase {
     }
 
     protected setup(): void {
-        this.resolveCorrectHost();
         const native = this.enhancedInput;
         if (
             !native ||
@@ -468,11 +471,7 @@ export class MarkingField extends ComposerFieldBase {
                 }
             });
             on(native, type, () => {
-                if (
-                    !this.forwarding &&
-                    !this._committing &&
-                    native.value !== this._lastRendered
-                )
+                if (!this.forwarding && native.value !== this._lastRendered)
                     void this.setValue(native.value);
             });
         }
@@ -601,37 +600,6 @@ export class MarkingField extends ComposerFieldBase {
         this.editor = null;
         this.wrap.remove();
         if (!this.container.contains(native)) this.container.innerHTML = '';
-    }
-
-    /**
-     * Bind the exact registered native control, never the first sibling input.
-     * Seed its own value before the base's post-setup write can touch it; the
-     * subsequent read must not reuse another field's assertions.
-     */
-    private resolveCorrectHost(): void {
-        const correctHost = getMountHost(this.container) as
-            HTMLInputElement | undefined;
-        if (!correctHost || correctHost === this.enhancedInput) return;
-        this.enhancedInput = correctHost;
-        // Seed _lastRendered/assertions from the CORRECT host's own value
-        // synchronously, before returning, so the base's post-setup
-        // `enhancedInput.value = this._lastRendered` write
-        // (component-base-readonly.ts, right after setup() returns) is a
-        // no-op. Without this, that line runs in the gap between this method
-        // returning and setValue()'s microtask landing below, overwriting the
-        // just-corrected host with the WRONG (previous) host's stale rendered
-        // value; setValue's own write-back then sees a real difference and
-        // dispatches a spurious bubbling `input` event on a field the user
-        // never touched. Clearing assertions rather than reusing the previous
-        // host's is deliberate: painting the previous host's concepts on this
-        // one would show the wrong data, which is worse than a brief blank
-        // paint until the reprocess below lands.
-        this.assertions = [];
-        this._lastRendered = correctHost.value;
-        this._committing = true;
-        void this.setValue(correctHost.value).catch(() => {
-            this._committing = false;
-        });
     }
 
     // --- Focus / rest: swap between the editable host and the painted display ---

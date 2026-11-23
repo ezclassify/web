@@ -113,3 +113,4 @@ declare module 'vue' {
         EzClassify: typeof EzClassify;
     }
 }
+export { EzClassifyBanner } from './EzClassifyBanner';

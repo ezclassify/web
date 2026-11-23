@@ -1,3 +1,4 @@
+import { storeWarnings } from '../store/store-shared';
 import { AppliedFixHistory } from './applied-fix-history';
 import { conceptHint, conceptHintName } from './concept-hint';
 /**
@@ -623,6 +624,22 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
     }
 
     /**
+     * Let the store supply the first judgment of this field's native value.
+     *
+     * @internal
+     */
+    useStoreSeed(): void {
+        this.readInitialValueFromStore = true;
+    }
+
+    /** @internal */
+    showFailedStoreSeed(error: unknown): void {
+        if (!this.readInitialValueFromStore || this._destroyed) return;
+        this.failedRead = this._lastRendered;
+        this.showReadFailure(error);
+    }
+
+    /**
      * Reflect an already evaluated marking, including unrecognized text and
      * facts its text leaves out, of those the field holds (see
      * {@link heldFacts}). Reprocessing only its assertions would erase the text
@@ -653,7 +670,12 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
         this.recordAppliedFixes(state.appliedFixes ?? [], replacesValue);
         if (refused)
             this.showRenderRefusal(state, state.errors, state.proposedFixes);
-        else this.updateValidationErrors(state.errors, state.proposedFixes);
+        else
+            this.updateValidationErrors(
+                state.errors,
+                state.proposedFixes,
+                storeWarnings.get(state),
+            );
         this.onAssertionsChanged();
         if (!refused && !state.assessment) this.assessHeldForm();
     }

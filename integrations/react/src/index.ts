@@ -32,3 +32,5 @@ export type {
     ContextReferenceProps,
     ContextReferenceTabProps,
 } from './ContextReference';
+export { EzClassifyBanner } from './EzClassifyBanner';
+export type { EzClassifyBannerProps } from './EzClassifyBanner';

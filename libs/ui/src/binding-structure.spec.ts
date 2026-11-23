@@ -91,23 +91,34 @@ function createContext(): ContextAdapter {
             rendered: spell(assertions),
             assessment: valid,
         })),
-        process: vi.fn((input: string | Assertion[]) => {
-            const assertions = Array.isArray(input) ? input : read(input);
-            return {
-                assertions,
-                rendered: spell(assertions),
-                valid: true,
-                errors: [],
-                recognition: {
-                    status: 'complete',
-                    inputFormat: 'default',
-                    surface: 'default',
-                    unmatched: [],
-                    corrections: [],
-                },
-            };
-        }),
-        validate: vi.fn(() => ({ valid: true, errors: [] })),
+        process: vi.fn(
+            (
+                input: string | Assertion[],
+                options?: { assertions?: Assertion[] },
+            ) => {
+                const assertions = Array.isArray(input)
+                    ? input
+                    : [...read(input), ...(options?.assertions ?? [])];
+                return {
+                    assertions,
+                    rendered: spell(assertions),
+                    valid: true,
+                    errors: [],
+                    recognition: {
+                        status: 'complete',
+                        inputFormat: 'default',
+                        surface: 'default',
+                        unmatched: [],
+                        corrections: [],
+                    },
+                };
+            },
+        ),
+        validate: vi.fn((input: string) => ({
+            assertions: read(input),
+            valid: true,
+            errors: [],
+        })),
         suggest: vi.fn(() => ({ suggestions: [] })),
         aggregate: vi.fn((values: string[]) => ({
             assertions: read(values.join('')),
@@ -146,6 +157,191 @@ afterEach(() => {
     ui = undefined;
     document.body.innerHTML = '';
     vi.restoreAllMocks();
+});
+
+describe('marking adapter calls', () => {
+    it('processes each mounted standalone marking once without aborting its read', async () => {
+        document.body.innerHTML = `
+            <input id="a" type="hidden" data-ezclassify-marking value="A">
+            <input id="b" data-ezclassify-controller="marking" value="B">
+            <textarea id="c" data-ezclassify-controller="marking">A</textarea>
+            <input id="d" data-ezclassify-controller="tags" value="B">
+            <div data-ezclassify-controller="banner" data-ezclassify-aggregate></div>`;
+        const context = createContext();
+        ui = new EzClassifyUI(context);
+        await expect.poll(() => ui?.isReady).toBe(true);
+
+        const calls = vi.mocked(context.scheme.process).mock.calls;
+        expect(calls.map(([input]) => input)).toEqual(['A', 'B', 'A', 'B']);
+        for (const [id, conceptId] of [
+            ['b', 'B'],
+            ['c', 'A'],
+            ['d', 'B'],
+        ]) {
+            const host = document.querySelector<HTMLInputElement>(`#${id}`)!;
+            const field =
+                ui.components.get(host) ?? ui.autocompleters.get(host);
+            expect(field?.getAssertions()).toEqual([
+                expect.objectContaining({ conceptId }),
+            ]);
+        }
+        expect(calls.every(([, options]) => !options?.signal?.aborted)).toBe(
+            true,
+        );
+    });
+
+    it('reads served text once when a native facet changes its initial selection', async () => {
+        document.body.innerHTML = `
+            <input id="a" type="hidden" data-ezclassify-marking value="A">
+            <select id="facet" data-ezclassify-controller="select"
+                    data-ezclassify-facet-of="a" data-ezclassify-category="level">
+                <option value="A" selected>A</option>
+                <option value="B">B</option>
+            </select>`;
+        document.querySelector<HTMLSelectElement>('#facet')!.value = 'B';
+        const context = createContext();
+        ui = new EzClassifyUI(context);
+        await expect.poll(() => ui?.isReady).toBe(true);
+
+        const calls = vi.mocked(context.scheme.process).mock.calls;
+        expect(calls.filter(([input]) => input === 'A')).toHaveLength(1);
+        expect(calls.every(([, options]) => !options?.signal?.aborted)).toBe(
+            true,
+        );
+        expect(ui.store.get('a').rendered).toBe('B');
+    });
+
+    it('updates collection membership from committed facts without remounting or reading the marking', async () => {
+        document.body.innerHTML = `
+            <section data-ezclassify-collection="folder"></section>
+            <input id="a" data-ezclassify-controller="marking" value="A">
+            <input id="out" type="hidden" data-ezclassify-aggregate="folder">
+            <div id="banner" data-ezclassify-controller="banner" data-ezclassify-aggregate="folder"></div>`;
+        const context = createContext();
+        ui = new EzClassifyUI(context);
+        await expect.poll(() => ui?.isReady).toBe(true);
+        const marking = document.getElementById('a')!;
+        const output = document.querySelector<HTMLInputElement>('#out')!;
+        const bannerText = () =>
+            document.querySelector('#banner .status-banner-label')?.textContent;
+        const component = ui.components.get(marking);
+        expect(component).toBeDefined();
+        const process = vi.mocked(context.scheme.process);
+        const validate = vi.mocked(context.scheme.validate);
+        process.mockClear();
+        validate.mockClear();
+
+        marking.setAttribute('data-ezclassify-member-of', 'folder');
+        await expect.poll(() => output.value).toBe('A');
+        expect(bannerText()).toBe('A');
+        expect(ui.components.get(marking) === component).toBe(true);
+        marking.removeAttribute('data-ezclassify-member-of');
+        await expect.poll(() => output.value).toBe('');
+        expect(bannerText()).toBe('No marking');
+        expect(ui.components.get(marking) === component).toBe(true);
+        expect(process).not.toHaveBeenCalled();
+        expect(validate).not.toHaveBeenCalled();
+    });
+
+    it('adds and removes a collection around a known marking without rereading it', async () => {
+        document.body.innerHTML = `
+            <section id="region">
+                <input id="whole" type="hidden" data-ezclassify-marking value="A">
+            </section>`;
+        const context = createContext();
+        ui = new EzClassifyUI(context);
+        await expect.poll(() => ui?.isReady).toBe(true);
+        const process = vi.mocked(context.scheme.process);
+        const validate = vi.mocked(context.scheme.validate);
+        process.mockClear();
+        validate.mockClear();
+        const region = document.querySelector('#region')!;
+        region.setAttribute('data-ezclassify-collection', 'folder');
+        await expect
+            .poll(
+                () =>
+                    [...ui!.store.getAggregate('folder').byBucket.values()][0]
+                        ?.rendered,
+            )
+            .toBe('A');
+        region.removeAttribute('data-ezclassify-collection');
+        await expect
+            .poll(() => ui!.store.getAggregate('folder').byBucket.size)
+            .toBe(0);
+        expect(process).not.toHaveBeenCalled();
+        expect(validate).not.toHaveBeenCalled();
+    });
+
+    it('shows an unchecked collection marking as incomplete without displaying a rollup', async () => {
+        document.body.innerHTML = `
+            <section data-ezclassify-collection="folder">
+                <input id="unchecked" type="hidden" data-ezclassify-marking value="A">
+            </section>
+            <input id="out" type="hidden" data-ezclassify-aggregate="folder">
+            <div id="banner" data-ezclassify-controller="banner" data-ezclassify-aggregate="folder"></div>`;
+        const context = createContext();
+        vi.mocked(context.scheme.process).mockImplementationOnce(() => {
+            throw new Error('Adapter offline');
+        });
+        ui = new EzClassifyUI(context);
+        await expect.poll(() => ui?.isReady).toBe(true);
+        const banner = document.querySelector('#banner .status-banner')!;
+        await expect
+            .poll(() => banner.classList.contains('status-banner--incomplete'))
+            .toBe(true);
+        expect(banner.querySelector('.status-banner-label')?.textContent).toBe(
+            'No marking',
+        );
+        const output = document.querySelector<HTMLInputElement>('#out')!;
+        await expect
+            .poll(() => output.getAttribute('aria-invalid'))
+            .toBe('true');
+        expect(output.value).toBe('');
+        expect(context.scheme.aggregateAssertions).not.toHaveBeenCalled();
+        expect(context.scheme.validate).not.toHaveBeenCalled();
+    });
+
+    it('skips aggregation when a marking excluded from rollups commits', async () => {
+        document.body.innerHTML = `
+            <input id="a" type="hidden" data-ezclassify-marking value="A">
+            <input id="b" type="hidden" data-ezclassify-marking data-ezclassify-no-rollup value="A">
+            <input id="out" type="hidden" data-ezclassify-aggregate>`;
+        const context = createContext();
+        ui = new EzClassifyUI(context);
+        const output = document.querySelector<HTMLInputElement>('#out')!;
+        await expect.poll(() => output.value).toBe('A');
+        const aggregate = vi.mocked(context.scheme.aggregateAssertions);
+        aggregate.mockClear();
+
+        await ui.store.publishRendered('b', 'B');
+        await ui.flushRollupNow();
+        expect(ui.store.get('b').rendered).toBe('B');
+        expect(output.value).toBe('A');
+        expect(aggregate).not.toHaveBeenCalled();
+    });
+});
+
+it('names each mounted banner independently and supports silent updates', async () => {
+    ui = await mount(`
+        <input id="a" type="hidden" data-ezclassify-marking value="A">
+        <div id="page" data-ezclassify-controller="banner" data-ezclassify-aggregate
+            data-ezclassify-banner-label="Detected on this page"></div>
+        <div id="screen" data-ezclassify-controller="banner" data-ezclassify-source="a"
+            data-ezclassify-banner-label="Visible on screen" data-ezclassify-banner-no-live></div>`);
+    const page = document.querySelector('#page .status-banner')!;
+    const screen = document.querySelector('#screen .status-banner')!;
+    expect(page.getAttribute('aria-label')).toBe('Detected on this page: A');
+    expect(page.getAttribute('aria-live')).toBe('polite');
+    expect(screen.getAttribute('aria-label')).toBe('Visible on screen: A');
+    expect(screen.getAttribute('aria-live')).toBe('off');
+    expect(screen.getAttribute('role')).toBe('group');
+
+    await ui.store.publishRendered('a', 'B');
+    await expect
+        .poll(() => page.getAttribute('aria-label'))
+        .toBe('Detected on this page: B');
+    expect(screen.getAttribute('aria-label')).toBe('Visible on screen: B');
+    expect(screen.getAttribute('aria-live')).toBe('off');
 });
 
 describe('whole containers', () => {

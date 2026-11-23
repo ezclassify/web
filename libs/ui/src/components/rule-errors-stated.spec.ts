@@ -238,7 +238,8 @@ describe.each(FIELDS)('$name holds author-stated conflicts', (field) => {
         forms = new EzClassifyUI(asContext(engine as never), { root, store });
         try {
             await vi.waitFor(() => expect(seed).toHaveBeenCalled());
-            fixButton('Remove C');
+            // The field has no judgment until the store's initial read lands.
+            expect(errorsHidden()).toBe(true);
             await store.publishRendered('f', 'LOW//A');
             await wait(120);
             expect(errorsHidden()).toBe(true);

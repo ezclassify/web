@@ -34,3 +34,4 @@ export type {
 } from './lib/angular-signal-store';
 export { EzContextReferenceComponent } from './lib/context-reference/context-reference.component';
 export { EzContextReferenceTabComponent } from './lib/context-reference/context-reference-tab.component';
+export { EzClassifyBannerComponent } from './lib/ezclassify-banner.component';

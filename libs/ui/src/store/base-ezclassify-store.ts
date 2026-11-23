@@ -44,6 +44,7 @@ import type {
     Assertion,
     ProcessingContext,
     Suggestion,
+    Warning,
 } from '@ezclassify/types';
 import {
     assertionFactKey,
@@ -72,6 +73,7 @@ import {
     EMPTY_FACET_STATE,
     SOLE_BUCKET,
     facetStateEqual,
+    storeWarnings,
     type BucketKey,
 } from './store-shared';
 
@@ -991,6 +993,26 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
     }
 
     /**
+     * Compose the served text and native selections in the same seed.
+     *
+     * @internal
+     */
+    seedRenderedWithFacets(
+        id: string,
+        rendered: string,
+        facets: ReadonlyMap<string, Assertion[]>,
+    ): Promise<void> {
+        if (this.destroyed) return Promise.reject(this.destroyedError());
+        const unplaced = this.unplacedError(id);
+        if (unplaced) return Promise.reject(unplaced);
+        const layers = this.layersOf(id);
+        layers.baseline = { text: rendered };
+        for (const [category, assertions] of facets)
+            layers.edits.categories.set(category, assertions);
+        return this.recompose(id);
+    }
+
+    /**
      * Seed a marking with assertions its host already carries, such as the
      * leading mark a body editor parsed. Same contract as {@link seedRendered};
      * an assertion baseline contributes both scopes.
@@ -1320,18 +1342,22 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
                     : processText(settled.rendered),
             ),
             settle: (result) => {
-                const read = {
-                    ...this.fromProcessResult(rendered, result),
-                    // The engine's writing, fixes included, verbatim.
-                    rendered: acceptedValue(rendered, result),
-                    // Where the author's text stands instead, the engine's
-                    // account of its own writing is not about the value.
-                    ...(keepsSource(result) ? { assessment: undefined } : {}),
-                    // Keep this property even when absent from the response:
-                    // receivers distinguish an unproven string read from an
-                    // assertion-native state, which has no recognition field.
-                    recognition: result.recognition,
-                };
+                const read = Object.assign(
+                    this.fromProcessResult(rendered, result),
+                    {
+                        // The engine's writing, fixes included, verbatim.
+                        rendered: acceptedValue(rendered, result),
+                        // Where the author's text stands instead, the engine's
+                        // account of its own writing is not about the value.
+                        ...(keepsSource(result)
+                            ? { assessment: undefined }
+                            : {}),
+                        // Keep this property even when absent from the response:
+                        // receivers distinguish an unproven string read from an
+                        // assertion-native state, which has no recognition field.
+                        recognition: result.recognition,
+                    },
+                );
                 const defaultScope = read.assertions.filter((a) =>
                     this.isDefaultScope(id, a.categoryId),
                 );
@@ -1342,10 +1368,12 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
                         defaultScope,
                     );
                 }
-                return defaultScope.length === read.assertions.length &&
-                    scoped.length === 0
-                    ? read
-                    : { ...read, assertions: [...defaultScope, ...scoped] };
+                if (
+                    defaultScope.length !== read.assertions.length ||
+                    scoped.length > 0
+                )
+                    read.assertions = [...defaultScope, ...scoped];
+                return read;
             },
         };
     }
@@ -1901,6 +1929,18 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
     }
 
     /**
+     * Whether a view can paint the store's own rendering in its native field.
+     *
+     * @internal
+     */
+    usesRenderedFormat(id: string, formatId: string): boolean {
+        return (
+            this.bucketKeyOf(id) !== undefined &&
+            (this.formatFor(id) ?? '') === formatId
+        );
+    }
+
+    /**
      * The render format one marking entry is published in.
      *
      * A bucket carries at most one format, the one the host page authors in,
@@ -2034,7 +2074,7 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
         rendered: string,
         result: EzClassifyStoreProcessResult | EzClassifyStoreAggregateResult,
     ): EzClassifyState {
-        return {
+        const state: EzClassifyState = {
             rendered: result.rendered ?? rendered,
             // A process result says what writing `rendered` did; a rollup
             // writes no output of its own and says nothing.
@@ -2051,6 +2091,9 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
             errors: result.errors ?? [],
             displayColor: result.displayColor,
         };
+        if ('warnings' in result && Array.isArray(result.warnings))
+            storeWarnings.set(state, result.warnings as Warning[]);
+        return state;
     }
 
     private commit(
@@ -2091,7 +2134,7 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
         // contributes its stated value to its level directly.
         const partOfWhole = this.partOfByMarking.get(id);
         if (partOfWhole) void this.recomputeWholeRollup(partOfWhole);
-        else if (!this.standaloneParts.has(id))
+        else if (!this.standaloneParts.has(id) && !this.keptOut(id))
             void this.recomputeLevel(this.levelOfWhole(id));
         // Recompose only when contribution rules can read the changed whole.
         // Coverage diagnostics are refreshed independently by the bound views.
