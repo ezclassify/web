@@ -152,7 +152,6 @@ function observeDialogFocusScroll(
     target: HTMLElement,
     origin: HTMLElement,
     anchor: HTMLElement,
-    pointerOpening = false,
 ): void {
     dialogFocusScroll.get(target)?.stop();
     if (target.getAttribute('aria-haspopup') !== 'dialog') return;
@@ -162,7 +161,6 @@ function observeDialogFocusScroll(
     let frame = 0;
     let stable = 0;
     let samples = 0;
-    const stableFrames = pointerOpening ? 8 : 2;
     const geometry = () => {
         const box = anchor.getBoundingClientRect();
         return [
@@ -226,10 +224,9 @@ function observeDialogFocusScroll(
     const scrollEnd = (event: Event) => {
         const node = event.target;
         if (
-            (!pointerOpening || samples >= stableFrames) &&
-            (node === doc ||
-                node === view ||
-                (node instanceof Node && node.contains(anchor)))
+            node === doc ||
+            node === view ||
+            (node instanceof Node && node.contains(anchor))
         )
             state.stop();
     };
@@ -240,7 +237,7 @@ function observeDialogFocusScroll(
         previous = current;
         // Retire even a continuously animated host; this is opening focus,
         // never a permanent exemption from scroll dismissal.
-        if (stable >= stableFrames || ++samples >= 120 || !target.isConnected)
+        if (stable >= 2 || ++samples >= 120 || !target.isConnected)
             state.stop();
         else frame = view.requestAnimationFrame(sample);
     };
@@ -311,10 +308,8 @@ export interface TooltipPlacement {
      * below it.
      */
     readonly preferNearTarget?: boolean;
-    /** A dialog in a mobile sheet follows the viewport as its keyboard moves. */
+    /** An open field dialog tracks its trigger during scroll and resize. */
     readonly followViewport?: boolean;
-    /** A pointer activation may arrive in the frame that revealed its trigger. */
-    readonly pointerOpening?: boolean;
 }
 
 /** A rectangle in viewport coordinates. */
@@ -709,20 +704,6 @@ export function showTooltip(
         const fieldAtOpen = tip.classList.contains('ez-tooltip--tools')
             ? clearBox(placement?.clearOf)
             : null;
-        const openingFocus = target.ownerDocument.activeElement;
-        if (
-            placement?.pointerOpening &&
-            fieldAtOpen &&
-            openingFocus instanceof HTMLElement
-        ) {
-            // A host can start a smooth reveal a few frames after the press.
-            observeDialogFocusScroll(
-                target,
-                openingFocus,
-                fieldAtOpen.anchor,
-                true,
-            );
-        }
         const pendingFocus = dialogFocusScroll.get(target);
         const focusScroll =
             tip.classList.contains('ez-tooltip--tools') &&
@@ -736,7 +717,18 @@ export function showTooltip(
             const scrolled = event.target;
             if (scrolled instanceof Node && tip.contains(scrolled)) return;
             if (placement?.followViewport) {
-                repositionTooltip(target, root, placement);
+                const trigger = target.getBoundingClientRect();
+                const area = visibleBox(target);
+                if (
+                    event.type === 'scroll' &&
+                    scrolled !== window.visualViewport &&
+                    (trigger.bottom <= area.top ||
+                        trigger.top >= area.bottom ||
+                        trigger.right <= area.left ||
+                        trigger.left >= area.right)
+                )
+                    hideTooltip(effectiveRoot);
+                else repositionTooltip(target, root, placement);
                 return;
             }
             if (

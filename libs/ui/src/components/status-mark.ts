@@ -849,7 +849,7 @@ function popoverPlacement(mark: HTMLElement): TooltipPlacement {
     return {
         clearOf: tools ? surface : [field, ...errorListsOf(field)],
         preferNearTarget: field.classList.contains('marked-textarea-wrap'),
-        followViewport: mark.closest('.ez-composer__sheet-tools') !== null,
+        followViewport: tools === true,
     };
 }
 
@@ -1149,15 +1149,8 @@ export function ensureStatusMark(
             opts.onToolsOpen?.();
         const text = opts.tools || mayShow() ? content() : undefined;
         if (!text) return;
-        showTooltip(
-            mark,
-            text,
-            opts.root,
-            {
-                ...popoverPlacement(mark),
-                pointerOpening: opts.tools && e.detail > 0,
-            },
-            () => collapse(mark),
+        showTooltip(mark, text, opts.root, popoverPlacement(mark), () =>
+            collapse(mark),
         );
         expand(mark);
         shown();
