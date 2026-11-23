@@ -529,6 +529,7 @@ describe('tooltip-manager', () => {
                 fromField = false,
                 beforeOpenKey?: string,
                 kind = 'text',
+                pointerOpening = false,
             ) => {
                 const tools = phoneTools(() => 200);
                 const { field: f, target } = field(box(24, 500, 366, 540));
@@ -562,7 +563,7 @@ describe('tooltip-manager', () => {
                 }
                 f.append(input);
                 const origin = fromField ? input : target;
-                origin.focus();
+                if (!pointerOpening) origin.focus();
                 if (beforeOpenKey) {
                     const event = new KeyboardEvent('keydown', {
                         key: beforeOpenKey,
@@ -572,7 +573,10 @@ describe('tooltip-manager', () => {
                     origin.dispatchEvent(event);
                     expect(event.defaultPrevented).toBe(false);
                 }
-                showTooltip(target, tools, root, { clearOf: f });
+                showTooltip(target, tools, root, {
+                    clearOf: f,
+                    pointerOpening,
+                });
                 const tip = document.getElementById(
                     target.getAttribute('aria-describedby')!,
                 )!;
@@ -580,6 +584,25 @@ describe('tooltip-manager', () => {
                 action.focus({ preventScroll: true });
                 return { f, target, tip, action, input };
             };
+            it('keeps pointer-opened tools through a host reveal that begins a few frames later', () => {
+                const { f, target, tip, action } = open(
+                    false,
+                    undefined,
+                    'text',
+                    true,
+                );
+                const before = tip.style.top;
+                frame();
+                frame();
+                frame();
+                document.dispatchEvent(new Event('scrollend'));
+                at(f, box(24, 300, 366, 340));
+                at(target, box(342, 304, 362, 324));
+                document.dispatchEvent(new Event('scroll'));
+                expect(tip.hidden).toBe(false);
+                expect(tip.style.top).not.toBe(before);
+                expect(document.activeElement).toBe(action);
+            });
             it('reanchors owned tools through native opening scroll, then dismisses ordinary later scrolling', () => {
                 const { f, target, tip, action } = open();
                 const before = tip.style.top;

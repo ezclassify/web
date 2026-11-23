@@ -152,6 +152,7 @@ function observeDialogFocusScroll(
     target: HTMLElement,
     origin: HTMLElement,
     anchor: HTMLElement,
+    pointerOpening = false,
 ): void {
     dialogFocusScroll.get(target)?.stop();
     if (target.getAttribute('aria-haspopup') !== 'dialog') return;
@@ -161,6 +162,7 @@ function observeDialogFocusScroll(
     let frame = 0;
     let stable = 0;
     let samples = 0;
+    const stableFrames = pointerOpening ? 8 : 2;
     const geometry = () => {
         const box = anchor.getBoundingClientRect();
         return [
@@ -224,9 +226,10 @@ function observeDialogFocusScroll(
     const scrollEnd = (event: Event) => {
         const node = event.target;
         if (
-            node === doc ||
-            node === view ||
-            (node instanceof Node && node.contains(anchor))
+            (!pointerOpening || samples >= stableFrames) &&
+            (node === doc ||
+                node === view ||
+                (node instanceof Node && node.contains(anchor)))
         )
             state.stop();
     };
@@ -237,7 +240,7 @@ function observeDialogFocusScroll(
         previous = current;
         // Retire even a continuously animated host; this is opening focus,
         // never a permanent exemption from scroll dismissal.
-        if (stable >= 2 || ++samples >= 120 || !target.isConnected)
+        if (stable >= stableFrames || ++samples >= 120 || !target.isConnected)
             state.stop();
         else frame = view.requestAnimationFrame(sample);
     };
@@ -710,10 +713,15 @@ export function showTooltip(
         if (
             placement?.pointerOpening &&
             fieldAtOpen &&
-            openingFocus instanceof HTMLElement &&
-            !dialogFocusScroll.has(target)
+            openingFocus instanceof HTMLElement
         ) {
-            observeDialogFocusScroll(target, openingFocus, fieldAtOpen.anchor);
+            // A host can start a smooth reveal a few frames after the press.
+            observeDialogFocusScroll(
+                target,
+                openingFocus,
+                fieldAtOpen.anchor,
+                true,
+            );
         }
         const pendingFocus = dialogFocusScroll.get(target);
         const focusScroll =
