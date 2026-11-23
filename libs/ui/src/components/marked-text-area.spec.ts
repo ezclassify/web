@@ -1428,7 +1428,7 @@ describe('MarkedTextArea favorites', () => {
     });
 });
 
-it('waits for a touch click before opening the paragraph marking in a phone sheet', async () => {
+it('opens the tapped paragraph marking independently of the native caret on phones', async () => {
     vi.stubGlobal('innerWidth', 390);
     vi.stubGlobal('matchMedia', () => ({ matches: true }));
     const native = document.createElement('textarea');
@@ -1439,29 +1439,24 @@ it('waits for a touch click before opening the paragraph marking in a phone shee
     try {
         await field.init(container, await createTestContext());
         const editor = textareaEditor(native);
-        editor.dispatchEvent(
-            Object.assign(new Event('pointerdown', { bubbles: true }), {
-                pointerType: 'touch',
-                isPrimary: true,
-            }),
-        );
-        editor.focus();
-        editor.setSelectionRange(2, 2);
-        document.dispatchEvent(new Event('selectionchange'));
-        // Let a selection-first browser finish its caret work before it
-        // dispatches click. Focus should still be on the touched area.
-        await wait(80);
-        expect(document.activeElement).toBe(editor);
-        editor.dispatchEvent(
+        editor.setSelectionRange(8, 8);
+        const target = root.querySelector<HTMLElement>(
+            '.marked-textarea-chip',
+        )!;
+        expect(target.textContent).toBe('(U)');
+        expect(document.activeElement).not.toBe(editor);
+        target.dispatchEvent(
             new MouseEvent('click', { bubbles: true, detail: 1 }),
         );
+        expect(document.activeElement).not.toBe(editor);
         await expect
-            .poll(() =>
-                document.querySelector(
-                    '.ez-composer[data-surface="sheet"]:not([hidden])',
-                ),
+            .poll(
+                () =>
+                    document.querySelector<HTMLInputElement>(
+                        '.ez-composer[data-surface="sheet"]:not([hidden]) .ez-composer__sheet-input',
+                    )?.value,
             )
-            .not.toBeNull();
+            .toBe('U');
         expect(native.value).toBe('(U) Body text here.');
     } finally {
         field.destroy();

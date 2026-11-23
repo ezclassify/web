@@ -1163,6 +1163,7 @@ export abstract class MarkedFieldBase<
             warnings?: readonly string[];
         },
         open?: (event: Event) => void,
+        openAttentionOnDesktop = false,
     ) {
         const attention = this.segmentAttention(segment);
         chip.className = !segment.valid
@@ -1170,11 +1171,27 @@ export abstract class MarkedFieldBase<
             : attention
               ? `${className} ${className}--warning`
               : className;
-        if (attention && open) {
+        if (open) {
+            chip.classList.add('ez-marked-field-tap-target');
+            // On touch layouts the painted chip owns the tap. Let scrolling
+            // cancel the click and keep the native editor from taking focus.
+            chip.addEventListener('mousedown', (event) => {
+                if (window.matchMedia?.('(pointer: coarse)').matches)
+                    event.preventDefault();
+                else if (attention && openAttentionOnDesktop) open(event);
+            });
+            chip.addEventListener('click', (event) => {
+                if (
+                    event.detail < 2 &&
+                    window.matchMedia?.('(pointer: coarse)').matches
+                )
+                    open(event);
+            });
+        }
+        if (attention && open && openAttentionOnDesktop) {
             chip.tabIndex = 0;
             chip.setAttribute('role', 'button');
             chip.setAttribute('aria-label', attention.label);
-            chip.addEventListener('mousedown', open);
             chip.addEventListener('keydown', (event) => {
                 if (event.key === 'Enter' || event.key === ' ') open(event);
             });
