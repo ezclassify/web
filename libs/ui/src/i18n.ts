@@ -84,6 +84,10 @@ export const defaultLocale = {
     'tools.emptyAttention': 'No findings for this marking.',
     'tools.unresolvedEntry': 'Has unresolved errors',
     'tools.emptyCorrections': 'No auto-fixes yet',
+    'mark.touchActions': 'Marking actions',
+    'mark.editMarking': 'Edit marking',
+    'mark.removeMarking': 'Remove marking',
+    'mark.removeExplicitly': 'Use Remove marking to remove this marking.',
 
     'dualPane.available': 'Available',
     'dualPane.availableRegion': 'Available concepts',

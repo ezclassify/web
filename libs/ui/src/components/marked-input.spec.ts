@@ -1259,6 +1259,136 @@ describe('MarkedInput', () => {
         }
     });
 
+    it.each(['deleteContentBackward', 'deleteByCut', 'insertFromPaste'])(
+        'routes a phone %s that crosses a marking into the picker without changing the value',
+        async (inputType) => {
+            vi.stubGlobal('innerWidth', 390);
+            vi.stubGlobal('matchMedia', () => ({ matches: true }));
+            try {
+                const engine = await createTestEngine();
+                root.innerHTML =
+                    '<input id="field" data-ezclassify-controller="marked-input" value="(U) Text">';
+                const forms = new EzClassifyUI(asContext(engine as never), {});
+                activeForms.push(forms);
+                await expect
+                    .poll(() => root.querySelector('.marked-input-chip'))
+                    .not.toBeNull();
+                const editor = editingField('field') as HTMLTextAreaElement;
+                editor.focus();
+                editor.setSelectionRange(4, 4);
+                const outside = new InputEvent('beforeinput', {
+                    bubbles: true,
+                    cancelable: true,
+                    inputType: 'deleteContentBackward',
+                });
+                expect(editor.dispatchEvent(outside)).toBe(true);
+                editor.setSelectionRange(
+                    inputType === 'deleteContentBackward' ? 3 : 2,
+                    3,
+                );
+                const edit = new InputEvent('beforeinput', {
+                    bubbles: true,
+                    cancelable: true,
+                    inputType,
+                });
+                expect(editor.dispatchEvent(edit)).toBe(false);
+                await expect
+                    .poll(
+                        () =>
+                            document.querySelector<HTMLInputElement>(
+                                '.ez-composer[data-surface="sheet"]:not([hidden]) .ez-composer__sheet-input',
+                            )?.value,
+                    )
+                    .toBe('U');
+                expect(editor.value).toBe('(U) Text');
+                const native = root.querySelector<HTMLInputElement>('#field')!;
+                native.value = 'Newer host value';
+                const action =
+                    inputType === 'insertFromPaste' ? 'done' : 'cancel';
+                document
+                    .querySelector<HTMLButtonElement>(
+                        `.ez-composer__sheet-${action}`,
+                    )!
+                    .click();
+                await expect
+                    .poll(() =>
+                        document.querySelector(
+                            '.ez-composer[data-surface="sheet"]:not([hidden])',
+                        ),
+                    )
+                    .toBeNull();
+                expect(native.value).toBe('Newer host value');
+                expect(editor.value).toBe('Newer host value');
+            } finally {
+                vi.unstubAllGlobals();
+            }
+        },
+    );
+
+    it('offers explicit phone removal after a long press and keeps the marking when an empty draft is submitted', async () => {
+        vi.stubGlobal('innerWidth', 390);
+        vi.stubGlobal('matchMedia', () => ({ matches: true }));
+        try {
+            const engine = await createTestEngine();
+            root.innerHTML =
+                '<input id="field" data-ezclassify-controller="marked-input" value="(U) Text">';
+            const forms = new EzClassifyUI(asContext(engine as never), {});
+            activeForms.push(forms);
+            const chip = () =>
+                root.querySelector<HTMLElement>('.marked-input-chip');
+            await expect.poll(chip).not.toBeNull();
+            chip()!.dispatchEvent(
+                Object.assign(
+                    new MouseEvent('pointerdown', { bubbles: true }),
+                    {
+                        pointerType: 'touch',
+                        pointerId: 1,
+                        isPrimary: true,
+                    },
+                ),
+            );
+            const actions = () =>
+                root.querySelector<HTMLElement>('.ez-marking-touch-actions');
+            await expect.poll(actions).not.toBeNull();
+            chip()!.dispatchEvent(
+                new MouseEvent('click', {
+                    bubbles: true,
+                    cancelable: true,
+                    detail: 1,
+                }),
+            );
+            expect(actions()).not.toBeNull();
+            actions()!.querySelector<HTMLButtonElement>('button')!.click();
+            const native = root.querySelector<HTMLInputElement>('#field')!;
+            const sheet = () =>
+                document.querySelector<HTMLElement>(
+                    '.ez-composer[data-surface="sheet"]:not([hidden])',
+                );
+            await expect.poll(sheet).not.toBeNull();
+            const editor = sheet()!.querySelector<HTMLInputElement>(
+                '.ez-composer__sheet-input',
+            )!;
+            editor.value = '';
+            editor.dispatchEvent(new Event('input', { bubbles: true }));
+            const done = sheet()!.querySelector<HTMLButtonElement>(
+                '.ez-composer__sheet-done',
+            )!;
+            done.click();
+            await expect
+                .poll(() => done.getAttribute('aria-disabled'))
+                .toBe('true');
+            expect(native.value).toBe('(U) Text');
+
+            sheet()!
+                .querySelector<HTMLButtonElement>('.ez-composer__sheet-remove')!
+                .click();
+            expect(native.value).toBe('Text');
+            expect(sheet()).toBeNull();
+        } finally {
+            vi.unstubAllGlobals();
+        }
+    });
+
     it('the chip hit-test resolves adjacent integer clicks against fractional layout geometry', async () => {
         // Use a fractional chip rectangle and the adjacent integer coordinates
         // on each side of its edge to check which clicks enter marking edit mode.

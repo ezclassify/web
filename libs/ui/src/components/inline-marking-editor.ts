@@ -108,6 +108,8 @@ export interface InlineMarkingEditorOptions {
     isFieldChrome?: (node: Node) => boolean;
     /** Keep the host's control reachable in the phone sheet. */
     sheetTools?: () => HTMLElement | null;
+    /** Remove an existing marking without accepting the editor's draft. */
+    removeMarking?: () => void;
     /** Whether this mark ends the host's complete editable text. */
     textToolsEdges?: () => boolean;
     /** The host field's accessible name, for the combobox and listbox. */
@@ -253,6 +255,9 @@ export class InlineMarkingEditor {
             port: this.port(),
             shape: 'whole',
             announce: (text) => this.view?.announce(text),
+            emptyCommitProblem: options.removeMarking
+                ? t('mark.removeExplicitly')
+                : undefined,
         });
         const root = options.root ?? container;
         this.view = new ComposerView({
@@ -277,6 +282,7 @@ export class InlineMarkingEditor {
                 this.options.onExit?.('commit', fromSheet),
             isFieldChrome: options.isFieldChrome,
             sheetTools: options.sheetTools,
+            removeMarking: options.removeMarking,
             textToolsEdges: options.textToolsEdges,
             onEscapeIdle: (fromSheet) => {
                 this.options.onCancel?.(fromSheet);
@@ -654,19 +660,21 @@ export class InlineMarkingEditor {
     private async store(
         reading: ComposerReading,
         commit: ComposerCommit,
-    ): Promise<void> {
+    ): Promise<void | false> {
         // Commit the resulting facts; diagnostic pre-repair facts are history.
         const result = await this.process(
             '',
             statedAssertions(reading.assertions),
         );
         if (this.destroyed) return;
-        this.assertions = result.assertions;
         // A refused write is the engine's marker: the draft it read stands,
         // and the facts still go to the host, which judges them.
-        this.rendered = renderViewRefused(result)
+        const rendered = renderViewRefused(result)
             ? reading.rendered
             : result.rendered;
+        if (this.options.removeMarking && !rendered.trim()) return false;
+        this.assertions = result.assertions;
+        this.rendered = rendered;
         // A second commit in the same session replaces the first, and what
         // was fixed in the value it replaces no longer describes the mark.
         if (commit.replaces) this._appliedFixes.clear();

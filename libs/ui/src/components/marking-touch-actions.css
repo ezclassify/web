@@ -1,0 +1,38 @@
+@media (pointer: coarse) and (width < 768px) {
+    .ez-marked-field-tap-target {
+        -webkit-touch-callout: none;
+    }
+}
+
+.ez-marking-touch-actions {
+    position: fixed;
+    z-index: var(--ez-z-dropdown, 1000);
+    display: flex;
+    max-width: calc(100vw - 1rem);
+    overflow: hidden;
+    border: 1px solid var(--ez-color-border, #d1d5db);
+    border-radius: var(--ez-border-radius, 0.5rem);
+    background: var(--ez-color-surface, #fff);
+    color: var(--ez-color-text, #1a1a2e);
+    box-shadow: var(--ez-dropdown-shadow, 0 4px 12px rgb(0 0 0 / 18%));
+    font: inherit;
+}
+
+.ez-marking-touch-actions button {
+    border: 0;
+    padding: 0.75em;
+    min-height: 44px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+}
+
+.ez-marking-touch-actions button + button {
+    border-inline-start: 1px solid var(--ez-color-border, #d1d5db);
+}
+
+.ez-marking-touch-actions button:focus-visible {
+    outline: 2px solid var(--ez-color-primary, #fdb827);
+    outline-offset: -3px;
+}

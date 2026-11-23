@@ -12,7 +12,6 @@ import type {
     Suggestion,
 } from '@ezclassify/types';
 import type {
-    ComposerCommit,
     ComposerCommitted,
     ComposerDraftShape,
     ComposerPort,
@@ -64,7 +63,7 @@ export interface ComposerPortField {
     suggestions(live?: readonly Assertion[]): Promise<Suggestion[]>;
     gated(query: string, live: readonly Assertion[]): Promise<Suggestion[]>;
     committed(): ComposerCommitted;
-    store(reading: ComposerReading, commit: ComposerCommit): Promise<void>;
+    store: ComposerPort['store'];
     /**
      * For a field that holds one category of a larger marking (a facet): what
      * the rest of that marking holds. A reading is judged together with it.

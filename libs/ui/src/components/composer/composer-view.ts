@@ -133,6 +133,8 @@ export interface ComposerViewOptions {
      * open.
      */
     readonly sheetTools?: () => HTMLElement | null;
+    /** Hosts can offer explicit removal of the marking in the phone sheet. */
+    readonly removeMarking?: () => void;
     /** Whole-field text may reach its tools at the collapsed trailing edge. */
     readonly textToolsEdges?: () => boolean;
     /** An owned chip preceding the filter, retaining its unfinished draft. */
@@ -368,6 +370,14 @@ export class ComposerView {
         this.sheetActions.append(this.sheetTools, this.sheetDone);
         bar.append(this.sheetCancel, this.sheetLabel, this.sheetActions);
         this.sheetField.append(bar, this.sheetInput);
+        if (options.removeMarking) {
+            const remove = barButton(
+                'ez-composer__sheet-remove',
+                t('mark.removeMarking'),
+            );
+            this.on(remove, 'click', options.removeMarking);
+            this.sheetField.append(remove);
+        }
 
         this.result = document.createElement('div');
         this.result.className = 'ez-composer__result';

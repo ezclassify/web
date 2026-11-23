@@ -1464,6 +1464,66 @@ it('opens the tapped paragraph marking independently of the native caret on phon
     }
 });
 
+it('protects the closing delimiter on a phone and removes only the selected marking on request', async () => {
+    vi.stubGlobal('innerWidth', 390);
+    vi.stubGlobal('matchMedia', () => ({ matches: true }));
+    const native = document.createElement('textarea');
+    const source = '(U) Body text here.';
+    native.value = source;
+    const container = document.createElement('div');
+    root.append(native, container);
+    const field = new MarkedTextArea();
+    try {
+        const context = await createTestContext();
+        const scan = context.scheme.scan.bind(context.scheme);
+        vi.spyOn(context.scheme, 'scan').mockImplementation(
+            async (text, options) => {
+                if (text === 'Body text here.') {
+                    const result = (await scan(source, options)) as ScanOutcome;
+                    return { ...result, results: [] };
+                }
+                return scan(text, options);
+            },
+        );
+        await field.init(container, context);
+        const editor = textareaEditor(native);
+        editor.focus();
+        editor.setSelectionRange(3, 3);
+        expect(
+            editor.dispatchEvent(
+                new InputEvent('beforeinput', {
+                    inputType: 'deleteContentBackward',
+                    bubbles: true,
+                    cancelable: true,
+                }),
+            ),
+        ).toBe(false);
+        const sheet = () =>
+            document.querySelector<HTMLElement>(
+                '.ez-composer[data-surface="sheet"]:not([hidden])',
+            );
+        await expect
+            .poll(
+                () =>
+                    sheet()?.querySelector<HTMLInputElement>(
+                        '.ez-composer__sheet-input',
+                    )?.value,
+            )
+            .toBe('U');
+        expect(native.value).toBe(source);
+        sheet()!
+            .querySelector<HTMLButtonElement>('.ez-composer__sheet-remove')!
+            .click();
+        await expect.poll(() => native.value).toBe('Body text here.');
+        await expect
+            .poll(() => root.querySelector('.marked-textarea-chip'))
+            .toBeNull();
+    } finally {
+        field.destroy();
+        vi.unstubAllGlobals();
+    }
+});
+
 it.each(['before', 'after'])(
     'keeps the restored native textarea free of a picker on mouse-up %s teardown',
     async (when) => {

@@ -83,6 +83,11 @@ import {
 import { FieldComponentBase } from './field-component-base';
 import type { FavoritesPanelHost } from './favorites-panel';
 import { markingTarget } from './marking-target';
+import {
+    bindMarkingLongPress,
+    showMarkingActions,
+} from './marking-touch-actions';
+import markingTouchCss from './marking-touch-actions.css?inline';
 
 /**
  * CSS class-name set a concrete field uses. Keeps the shared scaffolding (wrap,
@@ -424,6 +429,7 @@ export abstract class MarkedFieldBase<
     protected injectStyle(): void {
         this.container.setAttribute('data-ezclassify', '');
         adoptStylesOnce(COMPONENT_CSS + this.css, this.container);
+        adoptStylesOnce(markingTouchCss, this.container);
     }
 
     /**
@@ -678,6 +684,42 @@ export abstract class MarkedFieldBase<
         }
     }
 
+    private phoneMarkingSource?: {
+        expected: string;
+        native: HTMLInputElement | HTMLTextAreaElement;
+    };
+
+    protected holdPhoneMarkingSource(
+        expected: string,
+        native: HTMLInputElement | HTMLTextAreaElement,
+    ): void {
+        this.phoneMarkingSource = { expected, native };
+    }
+
+    protected writePhoneMarkingValue(value: string): void {
+        if (this.phoneMarkingSource) this.phoneMarkingSource.expected = value;
+        this.setHostValue(value);
+    }
+
+    /** A native host replacement wins over the older editor and its snapshot. */
+    protected discardStalePhoneMarking(): boolean {
+        const source = this.phoneMarkingSource;
+        if (!source) return false;
+        const native = source.native.value;
+        if (
+            source.expected === native &&
+            source.expected === this.host.value &&
+            !source.native.matches(':disabled, [readonly]')
+        )
+            return false;
+        this.finishClose();
+        this._editorAssertions = null;
+        this.host.value = native;
+        this.afterCancel(false);
+        this.afterClose();
+        return true;
+    }
+
     /**
      * How the field's status mark names values and categories: a value the way
      * this field writes its concept, in its scan format as a part, a category
@@ -820,6 +862,7 @@ export abstract class MarkedFieldBase<
             | 'openList'
             | 'resolveParts'
             | 'sheetTools'
+            | 'removeMarking'
             | 'textToolsEdges'
         >,
         finishBlur: () => void,
@@ -846,12 +889,20 @@ export abstract class MarkedFieldBase<
                         finishBlur();
                 },
                 onCancel: (fromSheet) => this.escapeClosePicker(fromSheet),
+                onChange: (...args) => {
+                    if (!this.discardStalePhoneMarking())
+                        options.onChange?.(...args);
+                },
                 focusTarget: this.wrap,
                 isFieldChrome: (node) => this.isFieldChrome(node),
                 root: this.container,
             },
         );
         if (openSeq !== this.pickerOpenSeq) {
+            picker.destroy();
+            return false;
+        }
+        if (this.discardStalePhoneMarking()) {
             picker.destroy();
             return false;
         }
@@ -866,10 +917,15 @@ export abstract class MarkedFieldBase<
 
     /** A superseded or invalid session cannot write a mark to the host. */
     protected async commitPicker(): Promise<boolean> {
+        if (this.discardStalePhoneMarking()) return false;
         const picker = this.picker;
         if (!picker) return false;
         const outcome = await picker.commit();
-        return this.picker === picker && outcome !== 'invalid';
+        return (
+            this.picker === picker &&
+            !this.discardStalePhoneMarking() &&
+            outcome !== 'invalid'
+        );
     }
 
     /** Carry the editor's facts into the next read of the same written mark. */
@@ -882,6 +938,7 @@ export abstract class MarkedFieldBase<
 
     protected destroyPicker(): void {
         this.pickerOpenSeq++;
+        this.phoneMarkingSource = undefined;
         this.picker?.destroy();
         this.picker = null;
         this.pickerMount?.remove();
@@ -943,6 +1000,7 @@ export abstract class MarkedFieldBase<
      * there the user is navigating away from work they mean to keep.
      */
     protected cancelPicker(): void {
+        if (this.discardStalePhoneMarking()) return;
         const snap = this._pickerCancelSnapshot;
         // Nothing from this editing session may be committed or reused.
         this._editorAssertions = null;
@@ -1164,6 +1222,7 @@ export abstract class MarkedFieldBase<
         },
         open?: (event: Event) => void,
         openAttentionOnDesktop = false,
+        remove?: () => void,
     ) {
         const attention = this.segmentAttention(segment);
         chip.className = !segment.valid
@@ -1173,6 +1232,17 @@ export abstract class MarkedFieldBase<
               : className;
         if (open) {
             chip.classList.add('ez-marked-field-tap-target');
+            const consumeLongPress = remove
+                ? bindMarkingLongPress(chip, () => {
+                      this.closeTouchActions?.();
+                      this.closeTouchActions = showMarkingActions(
+                          this.wrap,
+                          chip,
+                          open,
+                          remove,
+                      );
+                  })
+                : undefined;
             // On touch layouts the painted chip owns the tap. Let scrolling
             // cancel the click and keep the native editor from taking focus.
             chip.addEventListener('mousedown', (event) => {
@@ -1181,6 +1251,7 @@ export abstract class MarkedFieldBase<
                 else if (attention && openAttentionOnDesktop) open(event);
             });
             chip.addEventListener('click', (event) => {
+                if (consumeLongPress?.(event)) return;
                 if (
                     event.detail < 2 &&
                     window.matchMedia?.('(pointer: coarse)').matches
@@ -1208,6 +1279,25 @@ export abstract class MarkedFieldBase<
             () => ({ clearOf: this.wrap }),
         );
         return attention;
+    }
+
+    private closeTouchActions?: () => void;
+    private phoneEditOpening = false;
+
+    /** A held Backspace can repeat before the async editor has mounted. */
+    protected openFromPhoneEdit(
+        event: Event,
+        open: () => Promise<void>,
+    ): boolean {
+        if (!event.cancelable || event.defaultPrevented) return false;
+        event.preventDefault();
+        if (!this.phoneEditOpening && !this.picker) {
+            this.phoneEditOpening = true;
+            void open().finally(() => {
+                this.phoneEditOpening = false;
+            });
+        }
+        return true;
     }
 
     private hoveredSegment: HTMLElement | undefined;
@@ -1280,6 +1370,7 @@ export abstract class MarkedFieldBase<
      * @param teardown - The field's own teardown
      */
     protected destroyAfterDraft(teardown: () => void): void {
+        this.closeTouchActions?.();
         teardownAfterWrite(
             this,
             this.picker?.hasDraft() ? () => this.commitOpenEditor() : null,
