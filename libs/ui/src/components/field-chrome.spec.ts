@@ -12,7 +12,34 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { FIELD_CHROME_INLINE_SIZE, mountFieldChrome } from './field-chrome';
+import {
+    FIELD_CHROME_INLINE_SIZE,
+    mountFieldChrome,
+    observeFieldTheme,
+} from './field-chrome';
+
+it.each(['ancestor', 'shadow host'])(
+    'refreshes field snapshots when a theme is removed from a %s',
+    async (scope) => {
+        const ancestor = document.createElement('div');
+        const field = document.createElement('textarea');
+        const root =
+            scope === 'shadow host'
+                ? ancestor.attachShadow({ mode: 'open' })
+                : ancestor;
+        root.append(field);
+        ancestor.setAttribute('data-app-theme', 'evergreen');
+        const sync = vi.fn();
+        const observer = observeFieldTheme(field, sync);
+        try {
+            ancestor.removeAttribute('data-app-theme');
+            await Promise.resolve();
+            expect(sync).toHaveBeenCalledTimes(1);
+        } finally {
+            observer?.disconnect();
+        }
+    },
+);
 
 /** A ResizeObserver stand-in whose callbacks the test fires. */
 class FakeResizeObserver {

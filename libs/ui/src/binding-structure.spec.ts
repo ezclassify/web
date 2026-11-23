@@ -171,6 +171,26 @@ function deferred() {
 }
 
 describe('marking adapter calls', () => {
+    it('preserves the current native Tags value across runtime teardown and remount', async () => {
+        document.body.innerHTML = `
+            <form>
+                <input id="tags" name="tags" value="A" data-ezclassify-controller="tags">
+            </form>`;
+        const form = document.querySelector('form')!;
+        const context = createContext();
+        ui = new EzClassifyUI(context, { root: form });
+        await expect.poll(() => ui?.isReady).toBe(true);
+        await ui.store.publishRendered('tags', 'B');
+        expect(new FormData(form).get('tags')).toBe('B');
+
+        ui.destroy();
+        expect(new FormData(form).get('tags')).toBe('B');
+
+        ui = new EzClassifyUI(context, { root: form });
+        await expect.poll(() => ui?.isReady).toBe(true);
+        expect(ui.store.get('tags').rendered).toBe('B');
+    });
+
     it('processes each mounted standalone marking once without aborting its read', async () => {
         document.body.innerHTML = `
             <input id="a" type="hidden" data-ezclassify-marking value="A">

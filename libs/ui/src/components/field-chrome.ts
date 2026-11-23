@@ -358,22 +358,27 @@ export function observeFieldTheme(
             attributeFilter: ['data-color-scheme'],
         });
     }
-    for (
-        let ancestor: HTMLElement | null = host;
-        ancestor;
-        ancestor = ancestor.parentElement
-    ) {
-        observer.observe(ancestor, {
-            attributes: true,
-            attributeFilter: [
-                ...(ancestor !== host || observeHostStyle
-                    ? ['style', 'class']
-                    : []),
-                'data-theme',
-                'data-bs-theme',
-                'data-color-scheme',
-            ],
-        });
+    observer.observe(host, {
+        attributes: true,
+        attributeFilter: [
+            ...(observeHostStyle ? ['style', 'class'] : []),
+            'data-theme',
+            'data-bs-theme',
+            'data-color-scheme',
+        ],
+    });
+    // Host stylesheets can scope a theme to any ancestor attribute.
+    const ShadowRootOfHost = host.ownerDocument.defaultView?.ShadowRoot;
+    let ancestor: Element | null = host;
+    while (ancestor) {
+        const parent: HTMLElement | null = ancestor.parentElement;
+        const root: Node | null = parent ? null : ancestor.getRootNode();
+        ancestor =
+            parent ??
+            (ShadowRootOfHost && root instanceof ShadowRootOfHost
+                ? root.host
+                : null);
+        if (ancestor) observer.observe(ancestor, { attributes: true });
     }
     return observer;
 }

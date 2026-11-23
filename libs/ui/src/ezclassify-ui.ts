@@ -5883,8 +5883,9 @@ export class EzClassifyUI {
         // Remove mount containers and restore visibility of hidden controller elements.
         // createMountContainer inserts a [data-ezclassify-mount] sibling after each
         // interactive controller element and hides the original; destroy() must undo both.
-        // Also clear the native input value so the next EzClassifyUI doesn't seed itself
-        // from this scheme's selections when it reads the element during init().
+        // Clear mounted selection outputs so the next runtime does not seed
+        // itself from the previous scheme. Tags and DecisionFlow write back
+        // to native form fields whose values belong to the host.
         this.root
             .querySelectorAll<HTMLElement>('[data-ezclassify-mount]')
             .forEach((mount) => {
@@ -5894,10 +5895,10 @@ export class EzClassifyUI {
                     prev.style.display === 'none'
                 ) {
                     prev.style.display = '';
+                    const controller = prev.getAttribute(
+                        'data-ezclassify-controller',
+                    );
                     if (prev.tagName === 'FIELDSET') {
-                        const controller = prev.getAttribute(
-                            'data-ezclassify-controller',
-                        );
                         if (
                             controller === 'selector' ||
                             controller === 'checklist'
@@ -5911,8 +5912,8 @@ export class EzClassifyUI {
                         if (hidden) hidden.value = '';
                     } else if (
                         'value' in prev &&
-                        prev.getAttribute('data-ezclassify-controller') !==
-                            'decisionflow'
+                        controller !== 'decisionflow' &&
+                        controller !== 'tags'
                     ) {
                         (prev as HTMLInputElement).value = '';
                     }
