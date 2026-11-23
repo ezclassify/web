@@ -22,11 +22,6 @@
     align-items: center;
     gap: 0.25rem;
 }
-.ez-field-chrome .ez-status-mark--chrome {
-    justify-content: flex-end;
-    padding-inline-start: 0;
-    padding-inline-end: max(0px, calc((1.5rem - 1cap) / 2 - 0.125rem));
-}
 .ez-field-chrome .ez-status-mark__count {
     margin-inline-end: 0.0625rem;
 }
@@ -34,8 +29,6 @@
     font: inherit;
 }
 .ez-field-chrome .ez-field-action__glyph {
-    position: relative;
-    inset-inline-start: -0.125rem;
     inline-size: min(1em, 1lh, calc(1.5rem - 2px));
     block-size: min(1em, 1lh, calc(1.5rem - 2px));
     pointer-events: none;
@@ -159,7 +152,7 @@
         block-size: 2rem;
     }
     .ez-field-chrome .ez-status-mark--chrome {
-        padding-inline-end: max(0px, calc((2rem - 1cap) / 2 - 0.1875rem));
+        padding-inline: max(0px, calc((2rem - 1cap) / 2));
     }
     .ez-field-chrome .ez-status-mark--chrome::after {
         content: none;
@@ -168,7 +161,6 @@
         inline-size: 2rem;
     }
     .ez-field-chrome .ez-field-action__glyph {
-        inset-inline-start: -0.1875rem;
         inline-size: min(1em, 1lh, calc(2rem - 2px));
         block-size: min(1em, 1lh, calc(2rem - 2px));
     }
