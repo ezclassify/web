@@ -43,6 +43,8 @@ export const defaultLocale = {
 
     'tools.findings': 'Needs attention',
     'tools.errorCount': '{count} unresolved errors',
+    'tools.badgeOne': '1 item needs attention',
+    'tools.badgeMany': '{count} items need attention',
     'tools.quickFixes': 'Quick fixes',
     'tools.paragraph': 'Paragraph {n}',
 

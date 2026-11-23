@@ -727,12 +727,19 @@ function applyVisualState(mark: HTMLElement, state: MarkState): void {
         errors > 1
             ? ` ${t('tools.errorCount').replace('{count}', String(errors))}.`
             : '';
+    const badgeCount =
+        markOptions.get(mark)?.tools &&
+        badge > 0 &&
+        badge !== count &&
+        (errors < 2 || badge !== errors)
+            ? ` ${badge === 1 ? t('tools.badgeOne') : fill(t('tools.badgeMany'), { count: String(badge) })}.`
+            : '';
     mark.setAttribute(
         'aria-label',
         error !== undefined
-            ? `${ENHANCED_LABEL}. ${error}${errorCount}${fixed}`
+            ? `${ENHANCED_LABEL}. ${error}${errorCount}${fixed}${badgeCount}`
             : active
-              ? `${ENHANCED_LABEL}.${fixed}`
+              ? `${ENHANCED_LABEL}.${fixed}${badgeCount}`
               : ENHANCED_LABEL,
     );
 }

@@ -479,6 +479,9 @@ describe('field tools findings', () => {
         ]);
         expect(mark.classList).toContain('ez-status-mark--error');
         expect(badge?.textContent).toBe('3');
+        expect(mark.getAttribute('aria-label')).toContain(
+            '3 items need attention',
+        );
         mark.click();
         const popup = document.getElementById(
             mark.getAttribute('aria-describedby')!,
