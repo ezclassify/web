@@ -21,7 +21,7 @@ export function getControllerStyles(): string {
     }
     .ez-parent-validation-notice {
       color: var(--ez-color-error, #b91c1c);
-      font-size: calc(var(--ez-font-size, 1rem) * 0.75);
+      font-size: calc(var(--ez-font-size, 1em) * 0.75);
       padding: 0.25rem 0.5rem;
       margin-top: 0.125rem;
     }
@@ -47,7 +47,7 @@ export function getControllerStyles(): string {
       right: 0;
       background: var(--ez-color-success, #22c55e);
       color: #fff;
-      font-size: calc(var(--ez-font-size, 1rem) * 0.6875);
+      font-size: calc(var(--ez-font-size, 1em) * 0.6875);
       padding: 2px 0.5rem;
       border-radius: 4px;
       z-index: 10001;

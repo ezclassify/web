@@ -838,13 +838,14 @@ a concept was inferred.
 
 ### Fonts
 
-Set `--ez-font-family` on the form to change the font for controls and their
-pickers together. The controls follow the form's ordinary `font-size`.
-Set `--ez-font-size` to override that size for EzClassify alone.
-Primary values and choice labels use the same inherited size. Captions, help
-text, and other secondary labels use proportions of the same value.
-Use `rem` for the base so it follows the user's browser font setting.
-For a field-specific override, style its native control with ordinary CSS.
+Enhanced text uses the native field's typography. Pickers, buttons, and error
+messages use the surrounding form's font. Secondary labels and actions scale
+with the form's text size. The built-in themes leave font family and size to
+the application.
+
+Use ordinary CSS to style the form or a specific native field. Set
+`--ez-font-family` or `--ez-font-size` for an explicit EzClassify theme
+override. Use `rem` for the base so it follows the user's browser font setting.
 TagInput uses the same font and size for its chips and search text. Use
 `--ez-tag-input-font-size` to adjust both. Touch devices keep a minimum of
 16px for those labels to avoid zooming when the search field receives focus.

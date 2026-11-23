@@ -201,7 +201,7 @@
 .ez-status-mark__count {
     margin-inline-end: 0.125rem;
     font-family: var(--ez-font-family, inherit);
-    font-size: calc(var(--ez-font-size, 1rem) * 0.75);
+    font-size: calc(var(--ez-font-size, 1em) * 0.75);
     font-weight: 700;
     line-height: 1;
     font-variant-numeric: tabular-nums;

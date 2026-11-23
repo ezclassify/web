@@ -24,7 +24,6 @@ export const THEMES: Record<string, EzTheme> = {
             '--ez-color-surface': '#162040',
             '--ez-color-surface-hover': '#243b5e',
             '--ez-color-surface-active': '#2e4a72',
-            '--ez-font-family': '"Segoe UI", system-ui, sans-serif',
             '--ez-focus-ring-shadow': '0 0 0 3px rgba(253, 184, 39, 0.2)',
             '--ez-tag-bg-alpha': '50',
         },
@@ -67,7 +66,6 @@ export const THEMES: Record<string, EzTheme> = {
             '--ez-color-surface': '#f8fafc',
             '--ez-color-surface-hover': '#f0f4ff',
             '--ez-color-surface-active': '#e0e7ff',
-            '--ez-font-family': '"Inter", "Helvetica Neue", sans-serif',
             '--ez-focus-ring-shadow': '0 0 0 3px rgba(37, 99, 235, 0.1)',
         },
         dropdown: {
@@ -111,7 +109,6 @@ export const THEMES: Record<string, EzTheme> = {
             '--ez-color-surface-active': '#d1d5db',
             '--ez-border-radius': '2px',
             '--ez-border-width': '0 0 1px 0',
-            '--ez-font-family': '"system-ui", sans-serif',
             '--ez-focus-ring-shadow': '0 0 0 3px rgba(107, 114, 128, 0.1)',
         },
         dropdown: {
@@ -153,7 +150,6 @@ export const THEMES: Record<string, EzTheme> = {
             '--ez-color-surface': '#111827',
             '--ez-color-surface-hover': '#374151',
             '--ez-color-surface-active': '#3b5998',
-            '--ez-font-family': 'system-ui, sans-serif',
             '--ez-focus-ring-shadow': '0 0 0 3px rgba(96, 165, 250, 0.2)',
             '--ez-tag-bg-alpha': '50',
         },

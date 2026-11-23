@@ -83,9 +83,6 @@
     /* These theme-invariant border, spacing, and transition literals serve
        standalone .ez-input.ez-styled inputs from :root. Unlike the focus
        aliases, they do not require redeclaration in each theme scope. */
-    --ez-font-family: system-ui, sans-serif;
-    --ez-font-weight: 400;
-    --ez-line-height: 1.5;
     --ez-focus-ring-width: 2px;
     --ez-focus-ring-offset: calc(-1 * var(--ez-focus-ring-width));
     --ez-border-width: 1px;
@@ -279,13 +276,21 @@
     .marked-input-wrap,
     .marked-textarea-wrap
 ) {
-    font-family: var(--ez-font-family);
+    font-family: var(--ez-font-family, inherit);
     color: var(--ez-color-text, inherit);
 }
 
+:where(.ez-native-field),
+.ez-styled-inputs .ez-input,
+.ez-input.ez-styled {
+    font: inherit;
+    font-family: var(--ez-font-family, inherit);
+    font-size: var(--ez-font-size, inherit);
+    font-weight: var(--ez-font-weight, inherit);
+    line-height: var(--ez-line-height, inherit);
+}
+
 :where(.ez-native-field) {
-    font: var(--ez-font-weight) var(--ez-font-size, 1em) / var(--ez-line-height)
-        var(--ez-font-family);
     color: var(--ez-color-text, inherit);
     background: var(--ez-color-background);
     border: var(--ez-border-width) solid var(--ez-color-border);
@@ -296,10 +301,6 @@
 /* ── Opt-in input styling (.ez-styled-inputs or styleInputs: true) ── */
 .ez-styled-inputs .ez-input,
 .ez-input.ez-styled {
-    font-family: var(--ez-font-family);
-    font-size: var(--ez-font-size, 1em);
-    font-weight: var(--ez-font-weight);
-    line-height: var(--ez-line-height);
     color: var(--ez-color-text);
     background: var(--ez-color-background);
     border: var(--ez-border-width, 0.0625rem) solid var(--ez-color-border);
@@ -333,7 +334,7 @@
 
 /* Display */
 .ez-display {
-    font-family: var(--ez-font-family);
+    font-family: var(--ez-font-family, inherit);
     font-size: var(--ez-font-size, 1em);
     font-weight: 600;
     color: var(--ez-color-text);
@@ -342,8 +343,8 @@
 
 /* Validation */
 .ez-validation {
-    font-family: var(--ez-font-family);
-    font-size: calc(var(--ez-font-size, 1rem) * 0.875);
+    font-family: var(--ez-font-family, inherit);
+    font-size: calc(var(--ez-font-size, 1em) * 0.875);
     margin-top: var(--ez-spacing-xs, 0.25rem);
 }
 

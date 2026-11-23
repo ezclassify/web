@@ -48,8 +48,8 @@ const THEME_PROPERTIES = [
     '--ez-z-tooltip',
 ] as const;
 
-/** An EzClassify root: a host's themed region or a component's container. */
-const UI_ROOT = '.ez-root, [data-ezclassify]';
+/** The closest form, themed region, or component container owns typography. */
+const UI_FONT_SCOPE = 'form, .ez-root, [data-ezclassify]';
 
 /** Native controls whose own font a field's text layers mirror. */
 const FORM_CONTROL = 'input, textarea, select';
@@ -62,8 +62,8 @@ const CSS_WIDE_KEYWORD = /^(?:inherit|initial|unset|revert|revert-layer)$/;
 
 /**
  * The font family library chrome uses for `owner`: the host's
- * `--ez-font-family` when one is set, otherwise the page font around the
- * EzClassify root that holds `owner`.
+ * `--ez-font-family` when one is set, otherwise the font in the closest form or
+ * EzClassify scope that holds `owner`.
  *
  * A field's text layers mirror the native control's font on purpose, so the
  * marked text keeps the control's metrics. Chrome is not field text, and a
@@ -77,7 +77,7 @@ const CSS_WIDE_KEYWORD = /^(?:inherit|initial|unset|revert|revert-layer)$/;
  * @returns The CSS style of the surrounding UI
  */
 function uiFontStyle(owner: HTMLElement): CSSStyleDeclaration {
-    let surrounding = owner.closest<HTMLElement>(UI_ROOT) ?? owner;
+    let surrounding = owner.closest<HTMLElement>(UI_FONT_SCOPE) ?? owner;
     while (surrounding.matches(FORM_CONTROL) && surrounding.parentElement)
         surrounding = surrounding.parentElement;
     return window.getComputedStyle(surrounding);

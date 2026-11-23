@@ -11,7 +11,7 @@
  * proof the example sends exactly what the README promises.
  *
  * A second test loads the same form with the page's fields set in a monospace
- * face and checks that the library's chrome follows the form's font token while
+ * face and checks that the library's chrome follows the form's typography while
  * the field text keeps the native field's font.
  */
 
@@ -598,17 +598,23 @@ for (const viewport of [
 test.describe('README document form beside monospace fields', () => {
     test.use({ viewport: { width: 1280, height: 900 } });
 
-    test("uses the form's theme font for marking actions and pickers while preserving the field font", async ({
+    test("inherits the host's typography and honors explicit theme overrides", async ({
         page,
     }, info) => {
         const observed = observe(page);
-        // A host stylesheet that sets its fields in a monospace face. Adopted
-        // before the page loads, so the fields mirror it when they enhance.
+        // The app styles the form and native text fields before enhancement.
         await page.addInitScript(() => {
             const sheet = new CSSStyleSheet();
-            sheet.replaceSync(
-                'input, textarea { font-family: "Courier New", monospace; }',
-            );
+            sheet.replaceSync(`
+                form[data-ezclassify-whole="document"] {
+                    font-family: Georgia, serif;
+                    font-size: 20px;
+                }
+                input, textarea {
+                    font-family: "Courier New", monospace;
+                    font-size: 22px;
+                }
+            `);
             document.adoptedStyleSheets = [
                 ...document.adoptedStyleSheets,
                 sheet,
@@ -625,6 +631,9 @@ test.describe('README document form beside monospace fields', () => {
 
         const fieldFont = await family(body);
         expect(fieldFont).toContain('monospace');
+        await expect(body).toHaveCSS('font-size', '22px');
+        await expect(summary).toHaveCSS('font-family', fieldFont);
+        await expect(summary).toHaveCSS('font-size', '22px');
 
         // The field's own text keeps the control's face.
         expect(await family(page.locator('.marked-textarea-display'))).toBe(
@@ -634,32 +643,45 @@ test.describe('README document form beside monospace fields', () => {
             name: /^Add marking$/i,
         });
         await expect(markingAction).toBeVisible();
-        await expect(markingAction).toHaveCSS(
-            'font-family',
-            'system-ui, sans-serif',
-        );
-        const themeFont = 'Georgia, serif';
+        await expect(markingAction).toHaveCSS('font-family', 'Georgia, serif');
+        await expect(markingAction).toHaveCSS('font-size', '13.75px');
+        const composer = page.locator('.ez-composer:not([hidden])');
+        await summary.focus();
+        await page.keyboard.press('Alt+ArrowDown');
+        await expect(composer).toHaveCSS('font-family', 'Georgia, serif');
+        await expect(composer).toHaveCSS('font-size', '17.5px');
+        await page.keyboard.press('Escape');
+        await expect(composer).toHaveCount(0);
+        await settle(observed);
+
+        const themeFont = 'Arial, sans-serif';
         await page
             .locator('form[data-ezclassify-whole="document"]')
             .evaluate((form, font) => {
                 form.style.setProperty('--ez-font-family', font);
+                form.style.setProperty('--ez-font-size', '24px');
             }, themeFont);
         await expect(markingAction).toHaveCSS('font-family', themeFont);
+        await expect(markingAction).toHaveCSS('font-size', '16.5px');
         await expect(page.locator('.marked-textarea-display')).toHaveCSS(
             'font-family',
             fieldFont,
+        );
+        await expect(page.locator('.marked-textarea-display')).toHaveCSS(
+            'font-size',
+            '22px',
         );
 
         // The composer, portaled to the body, reads the form's theme font whether it
         // opens from the tag field or the text area's inline editor, in the
         // README path's order.
-        const composer = page.locator('.ez-composer:not([hidden])');
         observed.step = 'browse-summary';
         await summary.focus();
         await page.keyboard.press('Alt+ArrowDown');
         await expect(composer).toBeVisible();
         await settle(observed);
         await expect(composer).toHaveCSS('font-family', themeFont);
+        await expect(composer).toHaveCSS('font-size', '21px');
         await page.keyboard.press('Escape');
         await expect(composer).toHaveCount(0);
         await settle(observed);

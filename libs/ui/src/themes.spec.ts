@@ -44,6 +44,14 @@ describe('themes', () => {
                 expect(theme.input['--ez-color-border']).toBeDefined();
             }
         });
+
+        it('keeps the host typography when applying a built-in theme', () => {
+            for (const theme of Object.values(THEMES)) {
+                const css = applyTheme(theme);
+                expect(css).not.toContain('--ez-font-family:');
+                expect(css).not.toContain('--ez-font-size:');
+            }
+        });
     });
 
     describe('applyTheme', () => {

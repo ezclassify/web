@@ -80,6 +80,20 @@ describe('copyOverlayTheme', () => {
         );
     });
 
+    it('uses the nearer form typography inside a themed application root', () => {
+        page.classList.add('ez-root');
+        page.style.font = '16px Arial, sans-serif';
+        page.innerHTML =
+            '<form style="font: 20px Georgia, serif"><input></form>';
+        const anchor = page.querySelector('input')!;
+        anchor.style.font = MONOSPACE;
+
+        copyOverlayTheme(anchor, overlay);
+
+        expect(overlay.style.fontFamily).toBe('Georgia, serif');
+        expect(overlay.style.getPropertyValue('--ez-font-size')).toBe('20px');
+    });
+
     it("reads the owner's root when the source sits in field text beside it", () => {
         // A text area's root container is mounted beside its text layers, so
         // an inline editor inside the text has no root among its ancestors.
