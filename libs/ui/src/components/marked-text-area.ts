@@ -1359,7 +1359,11 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         }, MarkedTextArea.SYNC_DEBOUNCE_MS);
     }
 
-    private scanInFlight?: { text: string; settled: Promise<void> };
+    private scanInFlight?: {
+        text: string;
+        seq: number;
+        settled: Promise<void>;
+    };
 
     private syncFromTextarea(
         initializing = false,
@@ -1369,14 +1373,15 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         if (
             joinPendingScan &&
             this.scanInFlight?.text === text &&
+            this.scanInFlight.seq === this.scanSeq &&
             this.lastScannedText === text &&
             !this.scanFailed
         )
             return this.scanInFlight.settled;
         const previousScan = this.scanSeq;
-        const settled = this.scanTextarea(initializing);
-        if (this.scanSeq === previousScan) return settled;
-        this.scanInFlight = { text, settled };
+        const settled = this.scanTextarea(initializing, joinPendingScan);
+        if (this.scanSeq !== previousScan + 1) return settled;
+        this.scanInFlight = { text, seq: this.scanSeq, settled };
         const clear = () => {
             if (this.scanInFlight?.settled === settled)
                 this.scanInFlight = undefined;
@@ -1385,7 +1390,10 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         return settled;
     }
 
-    private async scanTextarea(initializing: boolean): Promise<void> {
+    private async scanTextarea(
+        initializing: boolean,
+        retryUnsegmented: boolean,
+    ): Promise<void> {
         // While the inline picker is open, the empty "()" template won't be
         // recognized by the engine scan, so the scan would clear the segment list
         // and call renderDisplay(), which tears down and re-mounts the pickerMount
@@ -1393,7 +1401,12 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         // picker owns its own state; the final sync runs when the picker closes.
         if (this.tornDown || this.picker) return;
         const text = this.textarea.value;
-        if (text === this.lastScannedText && !this.scanFailed) return;
+        if (
+            text === this.lastScannedText &&
+            !this.scanFailed &&
+            (!retryUnsegmented || text === this.lastSegmentedText)
+        )
+            return;
         const userInitiated = this.userEditPending;
         this.userEditPending = false;
         const previousScannedText = this.lastScannedText;

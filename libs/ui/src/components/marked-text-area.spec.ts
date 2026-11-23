@@ -1524,6 +1524,75 @@ it('protects the closing delimiter on a phone and removes only the selected mark
     }
 });
 
+it('retries a superseded scan before opening a protected phone marking', async () => {
+    vi.stubGlobal('innerWidth', 390);
+    vi.stubGlobal('matchMedia', () => ({ matches: true }));
+    const native = document.createElement('textarea');
+    const source = '(U) Body text here.';
+    const edited = '(U)Body text here.';
+    native.value = source;
+    const container = document.createElement('div');
+    root.append(native, container);
+    const field = new MarkedTextArea();
+    try {
+        const context = await createTestContext();
+        const scan = context.scheme.scan.bind(context.scheme);
+        let start!: () => void;
+        const started = new Promise<void>((resolve) => {
+            start = resolve;
+        });
+        let finish!: () => void;
+        const pending = new Promise<void>((resolve) => {
+            finish = resolve;
+        });
+        let editedReads = 0;
+        vi.spyOn(context.scheme, 'scan').mockImplementation(
+            async (text, options) => {
+                if (text === edited && ++editedReads === 1) {
+                    start();
+                    await pending;
+                }
+                return scan(source, options);
+            },
+        );
+        await field.init(container, context);
+        const editor = textareaEditor(native);
+        const type = (value: string) => {
+            editor.value = value;
+            editor.setSelectionRange(3, 3);
+            editor.dispatchEvent(new InputEvent('input', { bubbles: true }));
+        };
+        type(edited);
+        await started;
+        type(source);
+        finish();
+        await wait(0);
+        type(edited);
+        expect(
+            editor.dispatchEvent(
+                new InputEvent('beforeinput', {
+                    inputType: 'deleteContentBackward',
+                    bubbles: true,
+                    cancelable: true,
+                }),
+            ),
+        ).toBe(false);
+        await expect
+            .poll(
+                () =>
+                    document.querySelector<HTMLInputElement>(
+                        '.ez-composer[data-surface="sheet"]:not([hidden]) .ez-composer__sheet-input',
+                    )?.value,
+            )
+            .toBe('U');
+        expect(native.value).toBe(edited);
+        expect(editedReads).toBe(2);
+    } finally {
+        field.destroy();
+        vi.unstubAllGlobals();
+    }
+});
+
 it.each(['before', 'after'])(
     'keeps the restored native textarea free of a picker on mouse-up %s teardown',
     async (when) => {
