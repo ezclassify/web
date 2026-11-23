@@ -38,16 +38,6 @@ jobs:
       - uses: ezclassify/.github/actions/setup-node-npm@da1e243029be7e724f808cca11e385e6d79eee8b
         with:
           node-version: '22'
-          registry-url: 'https://npm.pkg.github.com'
-          scope: '@ezclassify'
-
-      - name: Configure package registry
-        run: |
-          cat > "$RUNNER_TEMP/ci-npmrc" << 'NPMRC'
-          @ezclassify:registry=https://npm.pkg.github.com
-          //npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
-          NPMRC
-          echo "NPM_CONFIG_USERCONFIG=$RUNNER_TEMP/ci-npmrc" >> "$GITHUB_ENV"
 
       - name: Test sources import no engine
         # Reads source text only and needs no install: no spec, fixture or test
@@ -75,8 +65,26 @@ jobs:
             exit 1
           fi
 
+      # The required build and tests use the untouched declared public ranges.
+      # The development mirror is available only under first-publication approval.
+      - name: Install the public registry closure
+        id: public
+        uses: ezclassify/.github/actions/public-npm-dependencies@d71909714a08e9a2c60e0d987ecffa03419f73e8
+        with:
+          first-publication-packages: ${{ github.repository == 'ezclassify/web' && vars.EZ_FIRST_PUBLICATION_PACKAGES || '' }}
+
+      - name: Configure the first-publication mirror
+        if: steps.public.outputs.lane == 'bootstrap'
+        run: |
+          cat > "$RUNNER_TEMP/ci-npmrc" << 'NPMRC'
+          @ezclassify:registry=https://npm.pkg.github.com
+          //npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
+          NPMRC
+          echo "NPM_CONFIG_USERCONFIG=$RUNNER_TEMP/ci-npmrc" >> "$GITHUB_ENV"
+
       - name: Resolve the qualified JavaScript SDK snapshot
         id: sdk
+        if: steps.public.outputs.lane == 'bootstrap'
         env:
           NODE_AUTH_TOKEN: ${{ github.token }}
         uses: ezclassify/.github/actions/check-pr-dependencies@d71909714a08e9a2c60e0d987ecffa03419f73e8
@@ -94,9 +102,8 @@ jobs:
           REST_CLIENT_SNAPSHOT: ${{ steps.sdk.outputs.version }}
         run: node scripts/ci-rest-client.mjs pin
 
-      - name: Install dependencies
-        # Generate a portable, date-bounded lock from empty state, then install
-        # exactly those bytes.
+      - name: Install the first-publication closure
+        if: steps.public.outputs.lane == 'bootstrap'
         env:
           NODE_AUTH_TOKEN: ${{ secrets.EZ_GHPKG_TOKEN || github.token }}
         uses: ezclassify/.github/actions/install-node-dependencies@da1e243029be7e724f808cca11e385e6d79eee8b
@@ -200,10 +207,15 @@ jobs:
       - uses: ezclassify/.github/actions/setup-node-npm@da1e243029be7e724f808cca11e385e6d79eee8b
         with:
           node-version: ${{ matrix.node-version }}
-          registry-url: 'https://npm.pkg.github.com'
-          scope: '@ezclassify'
 
-      - name: Configure package registry
+      - name: Install the public registry closure
+        id: public
+        uses: ezclassify/.github/actions/public-npm-dependencies@d71909714a08e9a2c60e0d987ecffa03419f73e8
+        with:
+          first-publication-packages: ${{ github.repository == 'ezclassify/web' && vars.EZ_FIRST_PUBLICATION_PACKAGES || '' }}
+
+      - name: Configure the first-publication mirror
+        if: steps.public.outputs.lane == 'bootstrap'
         run: |
           cat > "$RUNNER_TEMP/ci-npmrc" << 'NPMRC'
           @ezclassify:registry=https://npm.pkg.github.com
@@ -212,11 +224,13 @@ jobs:
           echo "NPM_CONFIG_USERCONFIG=$RUNNER_TEMP/ci-npmrc" >> "$GITHUB_ENV"
 
       - name: Pin the verified REST client
+        if: steps.public.outputs.lane == 'bootstrap' && needs.ci.outputs.sdk-version != ''
         env:
           REST_CLIENT_SNAPSHOT: ${{ needs.ci.outputs.sdk-version }}
         run: node scripts/ci-rest-client.mjs pin
 
-      - name: Install dependencies
+      - name: Install the first-publication closure
+        if: steps.public.outputs.lane == 'bootstrap'
         env:
           NODE_AUTH_TOKEN: ${{ secrets.EZ_GHPKG_TOKEN || github.token }}
         uses: ezclassify/.github/actions/install-node-dependencies@da1e243029be7e724f808cca11e385e6d79eee8b
@@ -225,6 +239,7 @@ jobs:
           relock-installs: 'false'
 
       - name: Verify the installed REST client snapshot
+        if: steps.public.outputs.lane == 'bootstrap' && needs.ci.outputs.sdk-version != ''
         env:
           REST_CLIENT_SNAPSHOT: ${{ needs.ci.outputs.sdk-version }}
         run: node scripts/ci-rest-client.mjs verify
