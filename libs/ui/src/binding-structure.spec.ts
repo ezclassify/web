@@ -14,6 +14,7 @@ import { EzClassifyUI } from './ezclassify-ui';
 import { mockRenderFormats } from './render-format-layout-mock';
 import { __resetMountRollupRegistry } from './mount-rollup-registry';
 import { BaseEzClassifyStore } from './store/base-ezclassify-store';
+import { VanillaEzClassifyStore } from './store/ezclassify-store';
 
 vi.mock('./styles.css?inline', () => ({ default: '' }));
 
@@ -159,6 +160,16 @@ afterEach(() => {
     vi.restoreAllMocks();
 });
 
+function deferred() {
+    let resolve!: () => void;
+    let reject!: (error: Error) => void;
+    const promise = new Promise<void>((done, failed) => {
+        resolve = () => done();
+        reject = failed;
+    });
+    return { promise, resolve, reject };
+}
+
 describe('marking adapter calls', () => {
     it('processes each mounted standalone marking once without aborting its read', async () => {
         document.body.innerHTML = `
@@ -188,6 +199,182 @@ describe('marking adapter calls', () => {
         expect(calls.every(([, options]) => !options?.signal?.aborted)).toBe(
             true,
         );
+    });
+
+    it.each(['marking', 'tags'])(
+        'keeps a newer native edit while the %s field’s mount read settles',
+        async (controller) => {
+            document.body.innerHTML = `<input id="a" value="A" data-ezclassify-controller="${controller}">`;
+            const input = document.querySelector<HTMLInputElement>('#a')!;
+            const context = createContext();
+            const process = vi.mocked(context.scheme.process);
+            const read = process.getMockImplementation()!;
+            const old = deferred();
+            const edited = deferred();
+            process.mockImplementation(((
+                ...args: Parameters<SchemeEngineAdapter['process']>
+            ) => {
+                const [value] = args;
+                const answer = read(...args);
+                if (value === 'A') return old.promise.then(() => answer);
+                if (value === 'B') return edited.promise.then(() => answer);
+                return answer;
+            }) as never);
+
+            ui = new EzClassifyUI(context);
+            await expect
+                .poll(() => process.mock.calls.some(([value]) => value === 'A'))
+                .toBe(true);
+            input.value = 'B';
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            await expect
+                .poll(
+                    () =>
+                        process.mock.calls.filter(([value]) => value === 'B')
+                            .length,
+                )
+                .toBe(1);
+            old.resolve();
+            await expect
+                .poll(
+                    () =>
+                        process.mock.calls.filter(([value]) => value === 'B')
+                            .length,
+                )
+                .toBe(2);
+            expect(input.value).toBe('B');
+            expect(ui.store.get('a').rendered).toBe('');
+
+            edited.resolve();
+            await expect.poll(() => ui?.isReady).toBe(true);
+            await expect.poll(() => ui?.store.get('a').rendered).toBe('B');
+            expect(input.value).toBe('B');
+        },
+    );
+
+    it.each(['succeeds', 'fails'])(
+        'reads native text assigned without an event when the mount read %s',
+        async (outcome) => {
+            document.body.innerHTML =
+                '<input id="a" value="A" data-ezclassify-controller="marking">';
+            const input = document.querySelector<HTMLInputElement>('#a')!;
+            const context = createContext();
+            const process = vi.mocked(context.scheme.process);
+            const read = process.getMockImplementation()!;
+            const old = deferred();
+            process.mockImplementationOnce(((
+                ...args: Parameters<SchemeEngineAdapter['process']>
+            ) => old.promise.then(() => read(...args))) as never);
+
+            ui = new EzClassifyUI(context);
+            await expect.poll(() => process.mock.calls[0]?.[0]).toBe('A');
+            input.value = 'B';
+            if (outcome === 'succeeds') old.resolve();
+            else old.reject(new Error('The initial read failed'));
+            await expect.poll(() => ui?.store.get('a').rendered).toBe('B');
+            expect(input.value).toBe('B');
+            expect(
+                process.mock.calls.filter(([value]) => value === 'B'),
+            ).toHaveLength(1);
+        },
+    );
+
+    it.each([
+        ['input', 'A'],
+        ['input', 'AA'],
+        ['textarea', 'A'],
+        ['textarea', 'AA'],
+    ])(
+        'keeps an uncommitted %s draft when the initial read renders %s',
+        async (tag, canonical) => {
+            document.body.innerHTML =
+                tag === 'input'
+                    ? '<input id="a" value="A" data-ezclassify-controller="marking">'
+                    : '<textarea id="a" data-ezclassify-controller="marking">A</textarea>';
+            const native = document.querySelector<HTMLInputElement>('#a')!;
+            const context = createContext();
+            const process = vi.mocked(context.scheme.process);
+            const read = process.getMockImplementation()!;
+            const old = deferred();
+            process.mockImplementationOnce(((
+                ...args: Parameters<SchemeEngineAdapter['process']>
+            ) =>
+                old.promise.then(() => ({
+                    ...read(...args),
+                    rendered: canonical,
+                }))) as never);
+
+            ui = new EzClassifyUI(context);
+            await expect.poll(() => process.mock.calls[0]?.[0]).toBe('A');
+            const editor = document.querySelector<HTMLTextAreaElement>(
+                'textarea.marking-field-host',
+            )!;
+            editor.focus();
+            editor.value = 'B';
+            editor.dispatchEvent(new Event('input', { bubbles: true }));
+            expect(native.value).toBe('B');
+            const reflected: string[] = [];
+            native.addEventListener('input', () =>
+                reflected.push(native.value),
+            );
+
+            old.resolve();
+            await expect.poll(() => ui?.isReady).toBe(true);
+            expect(ui.store.get('a').rendered).toBe(canonical);
+            expect(native.value).toBe('B');
+            expect(editor.value).toBe('B');
+            expect(reflected).toEqual([]);
+
+            for (let press = 0; press < 2; press++)
+                editor.dispatchEvent(
+                    new KeyboardEvent('keydown', {
+                        key: 'Escape',
+                        bubbles: true,
+                    }),
+                );
+            expect(editor.value).toBe(canonical);
+            expect(native.value).toBe(canonical);
+        },
+    );
+
+    it('applies native facet selections before later edits on injected stores', async () => {
+        document.body.innerHTML = `
+            <input id="a" type="hidden" data-ezclassify-marking value="A">
+            <select id="facet" data-ezclassify-controller="select"
+                    data-ezclassify-facet-of="a" data-ezclassify-category="level">
+                <option value="A" selected>A</option>
+                <option value="B">B</option>
+            </select>`;
+        document.querySelector<HTMLSelectElement>('#facet')!.value = 'B';
+        const context = createContext();
+        const store = new VanillaEzClassifyStore(context.scheme);
+        const gate = deferred();
+        const seed = store.seedRendered.bind(store);
+        vi.spyOn(store, 'seedRendered').mockImplementation(
+            async (id, value) => {
+                await gate.promise;
+                await seed(id, value);
+            },
+        );
+        const publish = vi.spyOn(store, 'publishAssertions');
+
+        try {
+            ui = new EzClassifyUI(context, { store });
+            await expect
+                .poll(() => publish.mock.calls[0]?.[1][0]?.conceptId)
+                .toBe('B');
+            await store.publishAssertions('a', read('A'), undefined, {
+                categories: ['level'],
+            });
+            gate.resolve();
+            await expect.poll(() => ui?.isReady).toBe(true);
+            expect(store.get('a').rendered).toBe('A');
+        } finally {
+            gate.resolve();
+            ui?.destroy();
+            ui = undefined;
+            store.destroy();
+        }
     });
 
     it('reads served text once when a native facet changes its initial selection', async () => {

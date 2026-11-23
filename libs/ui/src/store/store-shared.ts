@@ -21,6 +21,9 @@ import type {
 /** Adapter diagnostics kept for the UI without widening the store state. */
 export const storeWarnings = new WeakMap<EzClassifyState, Warning[]>();
 
+/** Identifies a native seed while it is synchronously notifying its fields. */
+export const reflectingNativeSeed = new WeakSet<EzClassifyState>();
+
 /**
  * Canonical empty `EzClassifyState`. Identity is not stable across calls; copy
  * if mutating.

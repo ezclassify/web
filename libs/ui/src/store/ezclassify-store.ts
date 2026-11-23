@@ -727,6 +727,8 @@ export interface EzClassifyStore extends Partial<MarkingEntriesStore> {
 
     /** @internal Recognize a native field that can consume the store's own rendering. */
     usesRenderedFormat?(id: string, formatId: string): boolean;
+    /** @internal Recheck native text before the store commits its mount read. */
+    seedRenderedFromHost?(id: string, readNative: () => string): Promise<void>;
     /** @internal Compose served text and initial native selections in one transaction. */
     seedRenderedWithFacets?(
         id: string,

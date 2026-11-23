@@ -101,6 +101,10 @@ export function isComponentContextAdapter(
 export interface ComponentInstance {
     /** @internal Let the store seed supply this field's initial judgment. */
     useStoreSeed?(): void;
+    /** @internal Native text the store can use as its served baseline. */
+    readStoreSeedText?(): string;
+    /** @internal Keep the native draft during reflection of its baseline. */
+    readonly preservesNativeDraft?: boolean;
     /** @internal Report a failed read when the field relies on its store seed. */
     showFailedStoreSeed?(error: unknown): void;
     /**

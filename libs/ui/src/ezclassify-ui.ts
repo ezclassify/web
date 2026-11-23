@@ -184,6 +184,7 @@ import {
     type PublishSource,
 } from './store/ezclassify-store';
 import {
+    BaseEzClassifyStore,
     isMarkingComposing,
     runWhenStoreIdle,
 } from './store/base-ezclassify-store';
@@ -1121,6 +1122,7 @@ export class EzClassifyUI {
         id: string,
         host: HTMLElement,
         mounted?: unknown,
+        watchNative = false,
     ): void {
         if (this.seededMarkings.has(id)) return;
         this.seededMarkings.add(id);
@@ -1133,7 +1135,13 @@ export class EzClassifyUI {
                 this.mounted.get(host) ??
                 this.autocompleters.get(host as HTMLInputElement);
             const component = mountedField();
-            return this.seedMarkingHost(id, host).catch((error) => {
+            const readNative = watchNative
+                ? () =>
+                      component?.readStoreSeedText?.() ??
+                      (host as HTMLInputElement).value ??
+                      ''
+                : undefined;
+            return this.seedMarkingHost(id, host, readNative).catch((error) => {
                 if (mountedField() === component)
                     component?.showFailedStoreSeed?.(error);
                 throw error;
@@ -1196,6 +1204,7 @@ export class EzClassifyUI {
     private async seedMarkingHost(
         id: string,
         host: HTMLElement,
+        readNative?: () => string,
     ): Promise<void> {
         const flow = this.decisionFlowForms.get(id);
         if (flow) {
@@ -1210,19 +1219,34 @@ export class EzClassifyUI {
         const rendered = (host as HTMLInputElement).value ?? '';
         const facets = this.nativeFacetSeeds.get(id);
         this.nativeFacetSeeds.delete(id);
-        if (!facets?.size) return this.store.seedRendered(id, rendered);
+        if (!facets?.size) {
+            if (readNative && this.store.seedRenderedFromHost)
+                return this.store.seedRenderedFromHost(id, readNative);
+            return this.store.seedRendered(id, rendered);
+        }
 
         const selected = [...facets.values()].flat();
         if (!rendered) return this.store.seedAssertions(id, selected);
 
         // The store composes the native edits over the served text, preserving
         // its other categories and any unread text.
-        if (this.store.seedRenderedWithFacets)
+        if (this.store.seedRenderedWithFacets && this.usesDefaultStoreSeed())
             return this.store.seedRenderedWithFacets(id, rendered, facets);
-        await this.store.seedRendered(id, rendered);
-        await this.store.publishAssertions(id, selected, undefined, {
-            categories: [...facets.keys()],
-        });
+        await Promise.all([
+            this.store.seedRendered(id, rendered),
+            this.store.publishAssertions(id, selected, undefined, {
+                categories: [...facets.keys()],
+            }),
+        ]);
+    }
+
+    private usesDefaultStoreSeed(): boolean {
+        // The built-in shortcuts must still honor a caller's custom seed.
+        return (
+            !(this.store instanceof BaseEzClassifyStore) ||
+            this.store.seedRendered ===
+                BaseEzClassifyStore.prototype.seedRendered
+        );
     }
 
     /** Capture the authored inputs before a picker replaces or disables them. */
@@ -3945,6 +3969,7 @@ export class EzClassifyUI {
                 controller !== 'marked-input' &&
                 controller !== 'text' &&
                 !(controller === 'select' && isNativeSingleSelect(el)) &&
+                !component?.preservesNativeDraft &&
                 nativeInput.value !== rendered
             ) {
                 this.settingValue = true;
@@ -4189,6 +4214,8 @@ export class EzClassifyUI {
         let storeSeedFormat: string | undefined;
         if (
             component.useStoreSeed &&
+            this.store.seedRenderedFromHost &&
+            this.usesDefaultStoreSeed() &&
             (controller === 'marking' || controller === 'tags') &&
             selfRenderedId &&
             !componentOpts.holdsPart &&
@@ -4784,7 +4811,12 @@ export class EzClassifyUI {
         // and subscription are ready. A MarkedTextArea's portion hosts are
         // seeded by the textarea that parsed them.
         if (selfRenderedId && !el.hasAttribute('data-marked-textarea-field'))
-            this.seedOnMount(selfRenderedId, el, initPromise);
+            this.seedOnMount(
+                selfRenderedId,
+                el,
+                initPromise,
+                storeSeedFormat !== undefined,
+            );
         if (controller === 'marked-textarea')
             this.seedPortionsOnMount(component as MarkedTextArea, initPromise);
     }

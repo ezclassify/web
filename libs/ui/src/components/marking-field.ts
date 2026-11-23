@@ -47,6 +47,7 @@ import {
 import markingFieldCss from './marking-field.css?inline';
 import { defaultSurfaceOf, writesSeveralLines } from '../format-resolver';
 import { inDeclarationOrder, listedScopesOf } from '../scopes';
+import { reflectingNativeSeed } from '../store/store-shared';
 
 /**
  * Enhances a native text input or textarea whose `.value` is the complete
@@ -59,6 +60,8 @@ export class MarkingField extends ComposerFieldBase {
     private editor: HTMLTextAreaElement | null = null;
     private releaseEditor: (() => void) | null = null;
     private forwarding = false;
+    private nativeEditText: string | undefined;
+    private _preservesNativeDraft = false;
     private syncEditorState: (() => void) | null = null;
     private display!: HTMLDivElement;
     /** The inline chrome: marking tools and clear. */
@@ -89,6 +92,39 @@ export class MarkingField extends ComposerFieldBase {
             host instanceof HTMLTextAreaElement
             ? host
             : super.nativeInputFor(container);
+    }
+
+    /** @internal */
+    override readStoreSeedText(): string {
+        const text = super.readStoreSeedText();
+        // The form value mirrors the composer's draft even before commit.
+        return this.isMirroredDraft(text) ? this._lastRendered : text;
+    }
+
+    private isMirroredDraft(text: string): boolean {
+        return (
+            this.controller?.isDirty() &&
+            this.controller.draftText === text &&
+            this.nativeEditText !== text
+        );
+    }
+
+    /** @internal */
+    get preservesNativeDraft(): boolean {
+        return this._preservesNativeDraft;
+    }
+
+    override applyStoreState(
+        state: Parameters<ComposerFieldBase['applyStoreState']>[0],
+    ): void {
+        this._preservesNativeDraft =
+            reflectingNativeSeed.has(state) &&
+            this.isMirroredDraft(super.readStoreSeedText());
+        try {
+            super.applyStoreState(state);
+        } finally {
+            this._preservesNativeDraft = false;
+        }
     }
 
     /** A marking field shows its marking as one string of text. */
@@ -255,6 +291,7 @@ export class MarkingField extends ComposerFieldBase {
                 singleLine: true,
                 placeholder: this.options.placeholder ?? host.placeholder,
                 onDraft: (text) => {
+                    this.nativeEditText = undefined;
                     if (this.editor) this.enhancedInput!.value = text;
                     if (this.hasFocus || this.controller.snapshot().invalid) {
                         this.syncHostHeight();
@@ -471,8 +508,10 @@ export class MarkingField extends ComposerFieldBase {
                 }
             });
             on(native, type, () => {
-                if (!this.forwarding && native.value !== this._lastRendered)
-                    void this.setValue(native.value);
+                if (this.forwarding || native.value === this._lastRendered)
+                    return;
+                this.nativeEditText = native.value;
+                void this.setValue(native.value);
             });
         }
         on(

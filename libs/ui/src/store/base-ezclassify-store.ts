@@ -73,6 +73,7 @@ import {
     EMPTY_FACET_STATE,
     SOLE_BUCKET,
     facetStateEqual,
+    reflectingNativeSeed,
     storeWarnings,
     type BucketKey,
 } from './store-shared';
@@ -476,6 +477,7 @@ interface Trigger {
     source?: PublishSource;
     rendered?: string;
     assertions?: Assertion[];
+    readNative?: () => string;
 }
 
 /** The sequence and abort signal one composition travels with. */
@@ -992,6 +994,15 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
         return this.recompose(id);
     }
 
+    /** @internal Seed a native field, checking that its served text still holds. */
+    seedRenderedFromHost(id: string, readNative: () => string): Promise<void> {
+        if (this.destroyed) return Promise.reject(this.destroyedError());
+        const unplaced = this.unplacedError(id);
+        if (unplaced) return Promise.reject(unplaced);
+        this.layersOf(id).baseline = { text: readNative() };
+        return this.recompose(id, { readNative });
+    }
+
     /**
      * Compose the served text and native selections in the same seed.
      *
@@ -1154,21 +1165,30 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
                 state = read.settle(answer);
             }
             if (!this.isNewest(id, publish.sequence)) return;
+            const restart = this.restartChangedNativeSeed(id, trigger, publish);
+            if (restart) return restart;
             this.keepRepairs(id, state);
             // Settled before its commit asks for the rollups it contributes to.
             this.endPublish(id, publish);
-            this.commit(
-                id,
-                state,
-                trigger.source,
-                this.differsFromAsked(state, trigger),
-            );
+            if (trigger.readNative) reflectingNativeSeed.add(state);
+            try {
+                this.commit(
+                    id,
+                    state,
+                    trigger.source,
+                    this.differsFromAsked(state, trigger),
+                );
+            } finally {
+                if (trigger.readNative) reflectingNativeSeed.delete(state);
+            }
         } catch (error) {
             // Superseded or torn down: this composition's own signal is
             // aborted, so the store has already decided to throw its answer
             // away. Settling is the contract (see beginPublish); rethrowing
             // would surface a cancellation nobody asked for.
             if (publish.signal.aborted) return;
+            const restart = this.restartChangedNativeSeed(id, trigger, publish);
+            if (restart) return restart;
             failed = true;
             if (!this.committedMarkings.has(id)) this.failedMarkings.add(id);
             throw error;
@@ -1187,6 +1207,34 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
                 this.rerunHeldRollups();
             }
         }
+    }
+
+    /**
+     * A native host can change while its initial read is on the wire. Read the
+     * current text without committing the superseded answer. Explicit store
+     * edits already have their own publish ticket and take precedence.
+     */
+    private restartChangedNativeSeed(
+        id: string,
+        { readNative }: Trigger,
+        publish: PublishTicket,
+    ): Promise<void> | undefined {
+        if (!readNative || !this.isNewest(id, publish.sequence)) return;
+        const layers = this.layersOf(id);
+        const { baseline, edits } = layers;
+        if (
+            !baseline ||
+            !('text' in baseline) ||
+            edits.rendered ||
+            edits.aggregate ||
+            edits.categories.size > 0
+        )
+            return;
+        const text = readNative();
+        if (text === baseline.text) return;
+        this.endPublish(id, publish);
+        layers.baseline = { text };
+        return this.recompose(id, { readNative });
     }
 
     /**

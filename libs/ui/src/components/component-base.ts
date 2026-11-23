@@ -633,9 +633,14 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
     }
 
     /** @internal */
+    readStoreSeedText(): string {
+        return this.enhancedInput?.value ?? this._lastRendered;
+    }
+
+    /** @internal */
     showFailedStoreSeed(error: unknown): void {
         if (!this.readInitialValueFromStore || this._destroyed) return;
-        this.failedRead = this._lastRendered;
+        this.failedRead = this.readStoreSeedText();
         this.showReadFailure(error);
     }
 

@@ -221,13 +221,13 @@ describe.each(FIELDS)('$name holds author-stated conflicts', (field) => {
         root.innerHTML = field.markup('LOW//C');
         const engine = await createEngine();
         const store = new VanillaEzClassifyStore(engine);
-        const originalSeed = store.seedRendered.bind(store);
+        const originalSeed = store.seedRenderedFromHost.bind(store);
         let release!: () => void;
         const gate = new Promise<void>((resolve) => {
             release = resolve;
         });
         const seed = vi
-            .spyOn(store, 'seedRendered')
+            .spyOn(store, 'seedRenderedFromHost')
             .mockImplementation(async (...args) => {
                 await gate;
                 await originalSeed(...args);
