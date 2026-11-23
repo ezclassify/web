@@ -19,6 +19,11 @@ import { VanillaEzClassifyStore } from './store/ezclassify-store';
 
 vi.mock('./styles.css?inline', () => ({ default: '' }));
 
+/** A latency fixture can hold one call while answering its peers synchronously. */
+type TestAdapterCall<Call extends (...args: never[]) => unknown> = (
+    ...args: Parameters<Call>
+) => ReturnType<Call>;
+
 const concepts = [
     {
         id: 'A',
@@ -515,7 +520,11 @@ describe('marking adapter calls', () => {
             <input id="second" type="hidden" data-ezclassify-marking value="B">
             <div id="banner" data-ezclassify-controller="banner" data-ezclassify-aggregate></div>`;
         const context = createContext();
-        const process = vi.mocked(context.scheme.process);
+        const process = vi.mocked(
+            context.scheme.process as TestAdapterCall<
+                SchemeEngineAdapter['process']
+            >,
+        );
         const run = process.getMockImplementation()!;
         const gate = deferred();
         process.mockImplementation((input, options) =>
@@ -564,7 +573,11 @@ describe('marking adapter calls', () => {
                 { ...meta.formats![0]!, id: 'alternate' },
             ],
         });
-        const render = vi.mocked(context.scheme.render);
+        const render = vi.mocked(
+            context.scheme.render as TestAdapterCall<
+                SchemeEngineAdapter['render']
+            >,
+        );
         const runRender = (assertions: Assertion[]) => ({
             rendered: spell(assertions),
             assessment: EMPTY_RENDER_ASSESSMENT,
@@ -578,7 +591,11 @@ describe('marking adapter calls', () => {
 
         const read = deferred();
         const write = deferred();
-        const process = vi.mocked(context.scheme.process);
+        const process = vi.mocked(
+            context.scheme.process as TestAdapterCall<
+                SchemeEngineAdapter['process']
+            >,
+        );
         const runProcess = process.getMockImplementation()!;
         process.mockImplementationOnce((...args) =>
             read.promise.then(() => runProcess(...args)),
