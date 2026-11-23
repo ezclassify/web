@@ -711,7 +711,10 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         this.toolsButton?.addEventListener('keydown', this.onBrandDown, true);
 
         this.boundInput = () => this.onTextareaInput();
-        this.boundKeydown = (e) => this.onKeydown(e);
+        this.boundKeydown = (e) => {
+            this.touchingText = false;
+            this.onKeydown(e);
+        };
         this.boundDocKeydown = (e) => this.onDocKeydown(e);
         this.boundDocClick = (e) => this.onDocClick(e);
         this.boundSelectionChange = () => this.onSelectionChange();
@@ -744,6 +747,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
             }
         });
         this.listenToTextarea('blur', () => {
+            this.touchingText = false;
             if (this.textarea.selectionStart === this.textarea.selectionEnd)
                 this._lastCaret = this.textarea.selectionStart;
             this.hasFocus = false;
@@ -759,8 +763,23 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         // click. The release decides (see MarkedFieldBase.pressing): a drag or
         // a double-click is a text selection and opens nothing.
         this.watchPresses();
+        // A phone can move the caret before dispatching compatibility mouse
+        // events. Let the touch click open the sheet after native selection.
+        this.listenToTextarea('pointerdown', (event) => {
+            this.touchingText =
+                event.pointerType === 'touch' && event.isPrimary;
+        });
+        this.listenToTextarea('pointercancel', () => {
+            this.touchingText = false;
+        });
+        this.listenToTextarea('click', (event) => {
+            if (!this.touchingText) return;
+            this.touchingText = false;
+            if (event.detail === 1) this.openFromClick();
+        });
         this.listenToTextarea('mouseup', (event) => {
-            if (event.button !== 0 || event.detail > 1) return;
+            if (this.touchingText || event.button !== 0 || event.detail > 1)
+                return;
             requestAnimationFrame(() => this.openFromClick());
         });
         this.listenToTextarea('scroll', () => {
@@ -2205,6 +2224,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
      * handler's own render. Skip the repaint when nothing it draws changed.
      */
     private _lastPaintKey = '';
+    private touchingText = false;
 
     private paintKey(): string {
         return [
@@ -2255,6 +2275,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                 !hasSelection &&
                 segmentsFresh &&
                 !this.pressing &&
+                !this.touchingText &&
                 (this.picker ||
                     (this.applyingEntry === null &&
                         this.renderingEntrySeq === null))

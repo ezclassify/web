@@ -239,6 +239,7 @@
 }
 .ez-marking-tools__close {
     display: inline-flex;
+    flex: none;
     align-items: center;
     justify-content: center;
     min-width: max(2.75rem, calc(2.75em / 1.5));
@@ -260,6 +261,17 @@
 @media (pointer: coarse) {
     .ez-marking-tools__tab {
         min-height: max(2.75rem, 2.75em);
+    }
+}
+@media (pointer: coarse) and (width < 768px) {
+    .ez-marking-tools__tabs {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        scrollbar-width: none;
+    }
+    .ez-marking-tools__tab {
+        flex: none;
+        white-space: nowrap;
     }
 }
 /* One brand-logo mark per enhanced field: 3 bars + a sparkle, always drawn in
