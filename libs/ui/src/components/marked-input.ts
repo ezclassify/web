@@ -1191,9 +1191,16 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
         };
 
         const mark = this.getMarkString();
-        this.setPhoneRemoveAction(
-            mark && !this.picker && this.canChangeMarking(v)
-                ? () => this.removeMarking(v, mark.length)
+        this.setPhoneAddAction(
+            !mark && !this.picker && this.canChangeMarking(v)
+                ? () => {
+                      if (
+                          !this.picker &&
+                          this.canChangeMarking(v) &&
+                          !this.getMarkString()
+                      )
+                          void this.openPicker();
+                  }
                 : undefined,
         );
         // The open editor's marking takes presses above the native host (see
@@ -1372,7 +1379,7 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
         };
 
         const mark = this.getMarkString();
-        if (mark && usesPhoneMarkingActions(this.input))
+        if (usesPhoneMarkingActions(this.input))
             this.holdPhoneMarkingSource(source, this.nativeInput);
         const inner = mark ? this.extractInner(mark) : '';
         this._pickerFreeText = this.getFreeText();

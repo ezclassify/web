@@ -118,66 +118,12 @@ export function removeMarkingText(
     return value.slice(0, start) + value.slice(after);
 }
 
-/** The gesture stays on the painted marking so prose keeps its native menu. */
-export function bindMarkingLongPress(
-    chip: HTMLElement,
-    open: () => void,
-): (event: MouseEvent) => boolean {
-    let press: { id: number; x: number; y: number; timer: number } | undefined;
-    let opened = false;
-    const view = chip.ownerDocument.defaultView!;
-    const stop = () => {
-        if (press) view.clearTimeout(press.timer);
-        press = undefined;
-    };
-    chip.addEventListener('pointerdown', (event) => {
-        stop();
-        opened = false;
-        if (
-            event.pointerType !== 'touch' ||
-            !event.isPrimary ||
-            !usesPhoneMarkingActions(chip)
-        )
-            return;
-        const { pointerId: id, clientX: x, clientY: y } = event;
-        press = {
-            id,
-            x,
-            y,
-            timer: view.setTimeout(() => {
-                if (!chip.isConnected) return;
-                opened = true;
-                open();
-            }, 500),
-        };
-    });
-    chip.addEventListener('pointermove', ({ pointerId, clientX, clientY }) => {
-        if (
-            press?.id === pointerId &&
-            Math.hypot(clientX - press.x, clientY - press.y) > 10
-        )
-            stop();
-    });
-    chip.addEventListener('pointerup', stop);
-    chip.addEventListener('pointercancel', stop);
-    chip.addEventListener('lostpointercapture', stop);
-    chip.addEventListener('contextmenu', (event) => {
-        if (press || opened) event.preventDefault();
-    });
-    return (event) => {
-        if (!opened) return false;
-        event.preventDefault();
-        event.stopPropagation();
-        opened = false;
-        return true;
-    };
-}
-
 export function showMarkingActions(
     owner: HTMLElement,
     chip: HTMLElement,
     edit: (event: MouseEvent) => void,
     remove: () => void,
+    focus: boolean,
 ): () => void {
     const { ownerDocument: doc } = owner;
     const view = doc.defaultView!;
@@ -189,6 +135,7 @@ export function showMarkingActions(
     const listeners = new AbortController();
     const close = () => {
         listeners.abort();
+        chip.setAttribute('aria-expanded', 'false');
         popup.remove();
     };
     for (const [label, action] of [
@@ -204,6 +151,7 @@ export function showMarkingActions(
         });
         popup.append(button);
     }
+    chip.setAttribute('aria-expanded', 'true');
     owner.append(popup);
     const { width, height } = popup.getBoundingClientRect();
     const viewport = view.visualViewport;
@@ -227,11 +175,14 @@ export function showMarkingActions(
         (event) => {
             if (event.key !== 'Escape') return;
             event.preventDefault();
+            const returnToChip = popup.contains(doc.activeElement);
             close();
+            if (returnToChip) chip.focus({ preventScroll: true });
         },
         { signal },
     );
     view.addEventListener('resize', close, { signal });
     doc.addEventListener('scroll', close, { capture: true, signal });
+    if (focus) popup.querySelector('button')?.focus({ preventScroll: true });
     return close;
 }

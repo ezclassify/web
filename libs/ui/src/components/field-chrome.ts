@@ -113,7 +113,7 @@ export function mountFieldChrome(
         const controls = [
             ...(leadingSelect ? [leadingSelect] : []),
             ...element.querySelectorAll<HTMLButtonElement>(
-                'button.ez-status-mark, button.ez-clear-button',
+                'button.ez-marked-field-add, button.ez-status-mark, button.ez-clear-button',
             ),
         ].filter((control) => {
             if (

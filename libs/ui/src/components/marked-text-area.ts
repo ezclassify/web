@@ -769,7 +769,6 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
             this.touchingText = false;
             if (this.textarea.selectionStart === this.textarea.selectionEnd) {
                 this._lastCaret = this.textarea.selectionStart;
-                this.rememberFooterCaret();
             }
             this.hasFocus = false;
             this.display.style.borderColor = capturedStyles.borderColor;
@@ -892,21 +891,12 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         return capturedStyles;
     }
 
-    /** Work on the caret's paragraph on phones. Desktop keeps its shortcut. */
+    /** The desktop action invokes its documented text-editor shortcut. */
     protected triggerAddMarking(): void {
-        const text = this.textarea.value;
-        if (this.picker || !this.canChangeMarking(text)) return;
-        const phone = usesPhoneMarkingActions(this.textarea);
-        if (phone && text !== this.lastSegmentedText) return;
-        const caret = phone ? this.textarea.selectionStart : text.length;
-        const marking = phone ? this.footerParagraphMark(caret) : undefined;
-        if (marking) {
-            this.openPaintedSegment(text, marking);
-            return;
-        }
-        if (phone && !this.scanComplete) return;
+        if (this.picker) return;
         this.textarea.focus();
-        this.textarea.setSelectionRange(caret, caret);
+        const end = this.textarea.value.length;
+        this.textarea.setSelectionRange(end, end);
         this.textarea.dispatchEvent(
             new KeyboardEvent('keydown', {
                 key: 'Enter',
@@ -2377,7 +2367,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         const selEnd = this.hasFocus ? this.textarea.selectionEnd : -1;
         const hasSelection = selStart !== selEnd && selStart >= 0;
         const phone = usesPhoneMarkingActions(this.textarea);
-        this.updateParagraphActions(text, phone);
+        this.updatePhoneAddAction();
 
         // Repainting the marking chips can dismiss their old hover, but the
         // tools dialog is anchored to the persistent button outside the display.
@@ -2816,6 +2806,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         end: number,
         openList = true,
         caret?: number,
+        provisional?: { original: string; proposed: string },
     ): Promise<void> {
         if (this.tornDown || !this.wrap.isConnected) return;
         this.destroyPicker();
@@ -2844,8 +2835,11 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         const seg = this.segments.find(
             (s) => s.start === start && s.end === end,
         );
-        if (!draft && seg && usesPhoneMarkingActions(this.textarea))
-            this.holdPhoneMarkingSource(v, this.nativeTextarea);
+        if (
+            (provisional || (!draft && seg)) &&
+            usesPhoneMarkingActions(this.textarea)
+        )
+            this.holdPhoneMarkingSource(v, this.nativeTextarea, provisional);
         const existingAssertions = seg?.assertions;
         // A mark the scan read opens on the text the scan found inside its
         // wrapper. Only text the scan did not read is unwrapped here.
@@ -3330,55 +3324,44 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         );
     }
 
-    private footerCaret?: { text: string; offset: number };
-
-    private rememberFooterCaret(): void {
-        this.footerCaret = {
-            text: this.textarea.value,
-            offset: this.textarea.selectionStart,
-        };
-    }
-
-    private footerParagraphMark(caret: number): MarkedSegment | undefined {
+    private canAddOnPhone(text: string, caret: number): boolean {
+        if (
+            !usesPhoneMarkingActions(this.textarea) ||
+            this.picker ||
+            !this.scanComplete ||
+            text !== this.lastSegmentedText ||
+            !this.canChangeMarking(text) ||
+            caret !== this.textarea.selectionEnd
+        )
+            return false;
         const start = this.lineStartAt(caret);
-        const next = this.textarea.value.indexOf('\n', caret);
-        const end = next < 0 ? this.textarea.value.length : next;
-        return (
-            this.segments.find(
-                (mark) => mark.start <= caret && caret <= mark.end,
-            ) ??
-            this.segments.find(
-                (mark) => mark.start >= start && mark.start < end,
-            )
+        const newline = text.indexOf('\n', caret);
+        const end = newline < 0 ? text.length : newline;
+        return !this.segments.some(
+            (mark) => mark.start < end && mark.end > start,
         );
     }
 
-    private updateParagraphActions(text: string, phone: boolean): void {
-        if (!phone) {
-            this.setFooterMarkingAction(false, false);
-            this.setPhoneRemoveAction();
-            return;
-        }
-        const fresh = text === this.lastSegmentedText;
+    private updatePhoneAddAction(): void {
+        const text = this.textarea.value;
         const caret = this.textarea.selectionStart;
-        const mark = fresh ? this.footerParagraphMark(caret) : undefined;
-        const canAct =
-            fresh &&
-            (!!mark || this.scanComplete) &&
-            !this.picker &&
-            this.canChangeMarking(text);
-        this.setFooterMarkingAction(fresh ? !!mark : undefined, !canAct);
-        const selected =
-            caret === this.textarea.selectionEnd &&
-            (this.hasFocus ||
-                (this.footerCaret?.text === text &&
-                    this.footerCaret.offset === caret));
-        const span = mark ? { start: mark.start, end: mark.end } : undefined;
-        this.setPhoneRemoveAction(
-            canAct && selected && span
-                ? () => this.removeMarking(text, span)
+        this.setPhoneAddAction(
+            this.canAddOnPhone(text, caret)
+                ? () => {
+                      if (
+                          this.canAddOnPhone(text, caret) &&
+                          this.textarea.selectionStart === caret
+                      )
+                          this.addMarkingAt(caret);
+                  }
                 : undefined,
         );
+    }
+
+    private addMarkingAt(caret: number): void {
+        this.textarea.setSelectionRange(caret, caret);
+        this.capturePickerCancelState();
+        this.insertMarkingDraft(caret, '');
     }
 
     private openPaintedSegment(text: string, segment: MarkedSegment): void {
@@ -3387,7 +3370,6 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         const index = this.segments.indexOf(segment);
         if (index < 0) return;
         this.textarea.setSelectionRange(segment.start, segment.start);
-        this.rememberFooterCaret();
         this.activeSegmentIndex = index;
         void this.openPicker(segment.start, segment.end);
     }
@@ -3609,55 +3591,71 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                     void this.openPicker(lastOpen, markingEnd);
                 }
             } else {
-                const insert = this.template.replace('{marking}', draft);
-                this._pickerDraft = draft || undefined;
-                // A new part mark leads the paragraph it marks, so insert it
-                // at the start of the caret's line rather than mid-line. When the line already begins with a
-                // marking, start a new marked line after it instead of
-                // splitting the current line mid-word.
-                const { insertAt, prefix } = this.newMarkedLineInsertion(caret);
-                const inserted = prefix + insert;
-                this.setHostValue(
-                    v.slice(0, insertAt) + inserted + v.slice(insertAt),
-                );
-                this.lastScannedText = '';
-                const markStart = insertAt + prefix.length;
-                const markingEnd = markStart + insert.trimEnd().length;
-                // Shift segments at/after the insertion point so their offsets
-                // keep matching the patched text.
-                for (let i = 0; i < this.segments.length; i++) {
-                    if (this.segments[i].start >= insertAt) {
-                        this.segments[i] = {
-                            ...this.segments[i],
-                            start: this.segments[i].start + inserted.length,
-                            end: this.segments[i].end + inserted.length,
-                        };
-                    }
-                }
-                // Create a temporary segment for the new empty marking so the
-                // inline editor can mount. Don't sync first, the empty ()
-                // would be removed by repair before the editor opens.
-                this.segments.push({
-                    start: markStart,
-                    end: markingEnd,
-                    marking: insert.trimEnd(),
-                    assertions: [],
-                    rendered: '',
-                    text: '',
-                    valid: true,
-                    errors: [],
-                    validationErrors: [],
-                    repaired: false,
-                });
-                // Keep segments ordered by start: renderDisplay walks them as
-                // an ascending sequence.
-                this.segments.sort((a, b) => a.start - b.start);
-                this.activeSegmentIndex = this.segments.findIndex(
-                    (s) => s.start === markStart && s.end === markingEnd,
-                );
-                void this.openPicker(markStart, markingEnd);
+                this.insertMarkingDraft(caret, draft);
             }
         }
+    }
+
+    private insertMarkingDraft(caret: number, draft: string): void {
+        const v = this.textarea.value;
+        const insert = this.template.replace('{marking}', draft);
+        // A new part mark leads the paragraph it marks, so insert it
+        // at the start of the caret's line rather than mid-line. When the line already begins with a
+        // marking, start a new marked line after it instead of
+        // splitting the current line mid-word.
+        const { insertAt, prefix } = this.newMarkedLineInsertion(caret);
+        const inserted = prefix + insert;
+        const proposed = v.slice(0, insertAt) + inserted + v.slice(insertAt);
+        const provisional = usesPhoneMarkingActions(this.textarea)
+            ? { original: v, proposed }
+            : undefined;
+        if (provisional)
+            this.holdPhoneMarkingSource(v, this.nativeTextarea, provisional);
+        this.writePhoneMarkingValue(proposed);
+        if (this.discardStalePhoneMarking()) return;
+        this._pickerDraft = draft || undefined;
+        this.lastScannedText = '';
+        const markStart = insertAt + prefix.length;
+        const markingEnd = markStart + insert.trimEnd().length;
+        // Shift segments at/after the insertion point so their offsets
+        // keep matching the patched text.
+        for (let i = 0; i < this.segments.length; i++) {
+            if (this.segments[i].start >= insertAt) {
+                this.segments[i] = {
+                    ...this.segments[i],
+                    start: this.segments[i].start + inserted.length,
+                    end: this.segments[i].end + inserted.length,
+                };
+            }
+        }
+        // Create a temporary segment for the new empty marking so the
+        // inline editor can mount. Don't sync first, the empty ()
+        // would be removed by repair before the editor opens.
+        this.segments.push({
+            start: markStart,
+            end: markingEnd,
+            marking: insert.trimEnd(),
+            assertions: [],
+            rendered: '',
+            text: '',
+            valid: true,
+            errors: [],
+            validationErrors: [],
+            repaired: false,
+        });
+        // Keep segments ordered by start: renderDisplay walks them as
+        // an ascending sequence.
+        this.segments.sort((a, b) => a.start - b.start);
+        this.activeSegmentIndex = this.segments.findIndex(
+            (s) => s.start === markStart && s.end === markingEnd,
+        );
+        void this.openPicker(
+            markStart,
+            markingEnd,
+            true,
+            undefined,
+            provisional,
+        );
     }
 
     /**
@@ -3674,12 +3672,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
     protected restoreCaretAfterEscape(target: number | null): void {
         const caretAfter = target ?? this.textarea.selectionStart;
         this.textarea.setSelectionRange(caretAfter, caretAfter);
-        if (this.footerCaret?.text === this.textarea.value)
-            this.rememberFooterCaret();
-        this.updateParagraphActions(
-            this.textarea.value,
-            usesPhoneMarkingActions(this.textarea),
-        );
+        this.updatePhoneAddAction();
     }
 
     /** The textarea also restores the caret on the capture-phase Escape path. */
@@ -3706,8 +3699,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
      */
     private leaveCaretAt(pos: number): void {
         this.textarea.setSelectionRange(pos, pos);
-        if (this.footerCaret?.text === this.textarea.value)
-            this.rememberFooterCaret();
+        this.updatePhoneAddAction();
         const active = this.textarea.ownerDocument.activeElement;
         // The permanent field box or a newer outside control can already own
         // focus when an asynchronous sheet commit finishes.

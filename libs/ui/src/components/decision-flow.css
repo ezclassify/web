@@ -414,8 +414,8 @@
     /* A dot is a 24px square target with its disc inside, edge to edge
        with the next, so a two-scope flow fits one line beside the chrome on
        a phone, even while the status mark shows its count of unreviewed
-       changes. Its margin centers it on the chrome's 44px line; only the
-       square takes a tap. The dots and the chrome keep a smaller gap here:
+       changes. The header centers the dots beside the chrome on one or more
+       lines. The dots and the chrome keep a smaller gap here:
        the last disc already sits inside its square's own space. */
     .ez-decision-flow {
         --ez-decision-flow-dot-width: 1.5rem;
@@ -426,7 +426,6 @@
     }
     .ez-decision-flow__step-dot {
         height: 1.5rem;
-        margin-block: 0.625rem;
     }
     .ez-decision-flow__option.ez-decision-flow__value-name {
         min-height: 1.5rem;

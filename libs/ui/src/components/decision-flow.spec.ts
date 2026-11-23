@@ -5403,6 +5403,7 @@ describe('DecisionFlow dots on a touch screen', () => {
         const dot = rule(coarse, '.ez-decision-flow__step-dot');
         expect(rem(flow, '--ez-decision-flow-dot-width') * 16).toBe(24);
         expect(rem(dot, 'height') * 16).toBe(24);
+        expect(dot).not.toMatch(/margin-block/);
         expect(
             rule(css, '.ez-decision-flow__step-dot').includes(
                 'width: var(--ez-decision-flow-dot-width)',

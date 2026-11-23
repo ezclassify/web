@@ -85,7 +85,6 @@ import type { FavoritesPanelHost } from './favorites-panel';
 import { markingTarget } from './marking-target';
 import { hideTooltip } from './tooltip-manager';
 import {
-    bindMarkingLongPress,
     showMarkingActions,
     usesPhoneMarkingActions,
 } from './marking-touch-actions';
@@ -580,11 +579,8 @@ export abstract class MarkedFieldBase<
     protected appendFooter(): void {
         const footer = document.createElement('div');
         footer.className = `ez-marked-field-footer ${this.classNames.footer}`;
-        const actions = document.createElement('div');
-        actions.className = 'ez-marked-field-actions';
-
-        // One direct action and Tab stop: its desktop keycap documents the
-        // shortcut; coarse pointers keep the same plain action button.
+        // The desktop action doubles as a visible shortcut reminder. Phones
+        // use the interactive marking or inline Add action.
         const touchAdd = document.createElement('button');
         touchAdd.type = 'button';
         touchAdd.className = this.classNames.touchAdd;
@@ -594,9 +590,7 @@ export abstract class MarkedFieldBase<
         keycap.className = 'ez-marked-field-shortcut';
         keycap.setAttribute('aria-hidden', 'true');
         keycap.textContent = shortcut;
-        const actionLabel = document.createTextNode(` ${label}`);
-        touchAdd.append(keycap, actionLabel);
-        this.footerAction = { button: touchAdd, label: actionLabel };
+        touchAdd.append(keycap, document.createTextNode(` ${label}`));
         touchAdd.setAttribute('aria-label', label);
         touchAdd.title = `${label} (${shortcut})`;
         touchAdd.setAttribute(
@@ -607,26 +601,7 @@ export abstract class MarkedFieldBase<
             e.preventDefault();
             this.triggerAddMarking();
         });
-        const remove = document.createElement('button');
-        remove.type = 'button';
-        remove.className = 'ez-marked-field-remove';
-        remove.textContent = t('mark.removeMarking');
-        remove.hidden = true;
-        let pressed: (() => void) | undefined;
-        remove.addEventListener('pointerdown', () => {
-            pressed = this.removeFromFooter;
-        });
-        remove.addEventListener('pointercancel', () => {
-            pressed = undefined;
-        });
-        remove.addEventListener('click', (event) => {
-            const action = event.detail ? pressed : this.removeFromFooter;
-            pressed = undefined;
-            if (usesPhoneMarkingActions(remove)) action?.();
-        });
-        this.footerRemove = remove;
-        actions.append(touchAdd, remove);
-        footer.append(actions);
+        footer.appendChild(touchAdd);
 
         this.wrap.appendChild(footer);
 
@@ -636,6 +611,27 @@ export abstract class MarkedFieldBase<
             root: this.container,
             align: this.chromeAlign,
         });
+        const add = document.createElement('button');
+        add.type = 'button';
+        add.className = 'ez-marked-field-add';
+        add.setAttribute('aria-label', t('hint.addMarking'));
+        add.hidden = true;
+        let pressed: (() => void) | undefined;
+        // Keep the paragraph caret and action while a touch activates chrome.
+        add.addEventListener('pointerdown', (event) => {
+            event.preventDefault();
+            pressed = this.phoneAddAction;
+        });
+        add.addEventListener('pointercancel', () => {
+            pressed = undefined;
+        });
+        add.addEventListener('click', (event) => {
+            const action = event.detail ? pressed : this.phoneAddAction;
+            pressed = undefined;
+            if (usesPhoneMarkingActions(add)) action?.();
+        });
+        this.phoneAddButton = add;
+        this.chrome.element.append(add);
         this.clearControl = this.createFieldClear({
             label: t('aria.clearText'),
             host: this.host,
@@ -712,17 +708,23 @@ export abstract class MarkedFieldBase<
     private phoneMarkingSource?: {
         expected: string;
         native: HTMLInputElement | HTMLTextAreaElement;
+        draft?: { original: string; proposed: string };
     };
 
     protected holdPhoneMarkingSource(
         expected: string,
         native: HTMLInputElement | HTMLTextAreaElement,
+        draft?: { original: string; proposed: string },
     ): void {
-        this.phoneMarkingSource = { expected, native };
+        this.phoneMarkingSource = { expected, native, draft };
     }
 
     protected writePhoneMarkingValue(value: string): void {
-        if (this.phoneMarkingSource) this.phoneMarkingSource.expected = value;
+        const source = this.phoneMarkingSource;
+        if (source) {
+            source.expected = value;
+            if (source.draft?.proposed !== value) source.draft = undefined;
+        }
         this.setHostValue(value);
     }
 
@@ -730,16 +732,18 @@ export abstract class MarkedFieldBase<
     protected discardStalePhoneMarking(): boolean {
         const source = this.phoneMarkingSource;
         if (!source) return false;
-        const native = source.native.value;
-        if (
-            source.expected === native &&
-            source.expected === this.host.value &&
-            !source.native.matches(':disabled, [readonly]')
-        )
-            return false;
+        const matches =
+            source.expected === source.native.value &&
+            source.expected === this.host.value;
+        const locked = source.native.matches(':disabled, [readonly]');
+        if (matches && !locked) return false;
+        // Roll back a placeholder only while both editors still hold our
+        // exact provisional write. This ends the edit even if the host unlocks.
+        if (matches && locked && source.draft?.proposed === source.expected)
+            this.writePhoneMarkingValue(source.draft.original);
         this.finishClose();
         this._editorAssertions = null;
-        this.host.value = native;
+        this.host.value = source.native.value;
         this.afterCancel(false);
         this.afterClose();
         return true;
@@ -971,25 +975,30 @@ export abstract class MarkedFieldBase<
     }
 
     /**
-     * Keep the display layer hidden from assistive technology everywhere except
-     * the path to the inline editor. The display mirrors the host's text for
-     * sighted users and is `aria-hidden` for that reason; an editor mounted
-     * inside it would be hidden too, leaving a focused combobox with no name
-     * and nothing announced. While an editor is mounted, the layer itself is
-     * exposed and every sibling along the editor's ancestor chain is hidden
-     * instead. Call at the end of every display render.
+     * Expose controls in the visual mirror without reading the text twice. The
+     * native textarea owns the text alternative. Only the inline editor and
+     * phone marking actions need to be visible to assistive technology.
      */
     protected exposePickerInDisplay(): void {
         const mount = this.pickerMount;
-        if (!mount || !this.display.contains(mount)) {
+        const exposed = new Set<Element>(
+            this.display.querySelectorAll('[data-ez-phone-mark-action]'),
+        );
+        if (mount && this.display.contains(mount)) exposed.add(mount);
+        if (!exposed.size) {
             this.display.setAttribute('aria-hidden', 'true');
             return;
         }
         this.display.removeAttribute('aria-hidden');
         const hideAround = (parent: Node): void => {
             for (const child of [...parent.childNodes]) {
-                if (child === mount) continue;
-                if (child.contains(mount)) {
+                if (child instanceof Element && exposed.has(child)) continue;
+                if (
+                    child instanceof Element &&
+                    child.querySelector('[data-ez-phone-mark-action]')
+                ) {
+                    hideAround(child);
+                } else if (mount && child.contains(mount)) {
                     hideAround(child);
                 } else if (child.nodeType === Node.TEXT_NODE) {
                     const span = document.createElement('span');
@@ -1257,18 +1266,12 @@ export abstract class MarkedFieldBase<
               : className;
         if (open) {
             chip.classList.add('ez-marked-field-tap-target');
-            const consumeLongPress = remove
-                ? bindMarkingLongPress(chip, () => {
-                      hideTooltip(this.container);
-                      this.closeTouchActions?.();
-                      this.closeTouchActions = showMarkingActions(
-                          this.wrap,
-                          chip,
-                          open,
-                          remove,
-                      );
-                  })
-                : undefined;
+            if (remove && usesPhoneMarkingActions(chip)) {
+                chip.dataset.ezPhoneMarkAction = '';
+                chip.setAttribute('role', 'button');
+                chip.setAttribute('aria-expanded', 'false');
+                chip.tabIndex = 0;
+            }
             // On touch layouts the painted chip owns the tap. Let scrolling
             // cancel the click and keep the native editor from taking focus.
             chip.addEventListener('mousedown', (event) => {
@@ -1277,21 +1280,32 @@ export abstract class MarkedFieldBase<
                 else if (attention && openAttentionOnDesktop) open(event);
             });
             chip.addEventListener('click', (event) => {
-                if (consumeLongPress?.(event)) return;
-                if (
-                    event.detail < 2 &&
-                    window.matchMedia?.('(pointer: coarse)').matches
-                )
+                if (event.detail >= 2) return;
+                if (remove && usesPhoneMarkingActions(chip)) {
+                    this.openPhoneMarkingActions(
+                        chip,
+                        open,
+                        remove,
+                        event.detail === 0,
+                    );
+                } else if (window.matchMedia?.('(pointer: coarse)').matches) {
                     open(event);
+                }
+            });
+            chip.addEventListener('keydown', (event) => {
+                if (event.key !== 'Enter' && event.key !== ' ') return;
+                if (remove && usesPhoneMarkingActions(chip)) {
+                    event.preventDefault();
+                    this.openPhoneMarkingActions(chip, open, remove, true);
+                } else if (attention && openAttentionOnDesktop) {
+                    open(event);
+                }
             });
         }
         if (attention && open && openAttentionOnDesktop) {
             chip.tabIndex = 0;
             chip.setAttribute('role', 'button');
             chip.setAttribute('aria-label', attention.label);
-            chip.addEventListener('keydown', (event) => {
-                if (event.key === 'Enter' || event.key === ' ') open(event);
-            });
         }
         if (!attention || !this.shouldShowTooltip()) return attention;
         chip.dataset.ezSegmentTooltip = '';
@@ -1311,32 +1325,31 @@ export abstract class MarkedFieldBase<
     }
 
     private closeTouchActions?: () => void;
-    private footerAction?: { button: HTMLButtonElement; label: Text };
-    private footerRemove?: HTMLButtonElement;
-    private removeFromFooter?: () => void;
-
-    protected setPhoneRemoveAction(remove?: () => void): void {
-        this.removeFromFooter = remove;
-        if (this.footerRemove) this.footerRemove.hidden = !remove;
-    }
-
-    protected setFooterMarkingAction(
-        editing: boolean | undefined,
-        disabled: boolean,
+    private openPhoneMarkingActions(
+        chip: HTMLElement,
+        edit: (event: Event) => void,
+        remove: () => void,
+        focus: boolean,
     ): void {
-        if (!this.footerAction) return;
-        const { button, label } = this.footerAction;
-        button.disabled = disabled;
-        if (editing === undefined) return;
-        const text = t(editing ? 'mark.editMarking' : this.markingActionKey);
-        if (button.getAttribute('aria-label') !== text) {
-            label.data = ` ${text}`;
-            button.setAttribute('aria-label', text);
-            button.title = editing
-                ? text
-                : `${text} (${isMacPlatform() ? '⌘+Enter' : 'Ctrl+Enter'})`;
-        }
+        hideTooltip(this.container);
+        this.closeTouchActions?.();
+        this.closeTouchActions = showMarkingActions(
+            this.wrap,
+            chip,
+            edit,
+            remove,
+            focus,
+        );
     }
+
+    private phoneAddButton?: HTMLButtonElement;
+    private phoneAddAction?: () => void;
+
+    protected setPhoneAddAction(add?: () => void): void {
+        this.phoneAddAction = add;
+        if (this.phoneAddButton) this.phoneAddButton.hidden = !add;
+    }
+
     private phoneEditOpening = false;
 
     /** A held Backspace can repeat before the async editor has mounted. */

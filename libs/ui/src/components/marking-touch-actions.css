@@ -1,37 +1,42 @@
-.ez-marked-field-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5em;
-}
-
-.ez-marked-field-remove {
+/* Phone actions use the same trailing chrome and reserve as the host field. */
+.ez-marked-field-add {
     display: none;
 }
 
 @media (pointer: coarse) and (width < 768px) {
+    .ez-marked-field-footer > .marked-input-touch-add,
+    .ez-marked-field-footer > .marked-textarea-touch-add,
+    .ez-marked-field-footer:not(:has(.ez-validation-errors:not([hidden]))) {
+        display: none;
+    }
+
     .ez-marked-field-tap-target {
         -webkit-touch-callout: none;
     }
 
-    .ez-marked-field-remove:not([hidden]) {
-        position: relative;
-        z-index: 3;
-        display: inline-flex;
-        align-items: center;
-        min-height: 2.75rem;
-        padding: 0.25rem 0.625rem;
-        border: 0.0625rem solid var(--ez-color-border, #d1d5db);
-        border-radius: 0.375rem;
+    .ez-marked-field-add:not([hidden]) {
+        display: inline-grid;
+        place-content: center;
+        inline-size: 2em;
+        min-block-size: 2.75rem;
+        border: none;
+        border-radius: var(--ez-border-radius, 0.25rem);
         background: transparent;
-        color: var(--ez-color-error, #b91c1c);
+        color: var(--ez-color-primary, currentColor);
         font: inherit;
-        font-size: 0.75em;
+        font-size: 0.875em;
+        padding: 0;
+        touch-action: manipulation;
         cursor: pointer;
     }
 
-    .ez-marked-field-remove:focus-visible {
-        outline: 0.125rem solid var(--ez-color-primary, #fdb827);
-        outline-offset: 0.125rem;
+    .ez-marked-field-add::before {
+        content: '[+]';
+    }
+
+    .ez-marked-field-add:focus-visible {
+        outline: 2px solid var(--ez-color-border-focus, currentColor);
+        outline-offset: -2px;
     }
 }
 

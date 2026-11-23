@@ -1228,7 +1228,7 @@ describe('MarkedInput', () => {
         expect(inputEl.selectionEnd).toBe(markEnd);
     });
 
-    it('opens the phone picker when the painted marking is tapped without focusing the native editor', async () => {
+    it('opens phone marking actions when the painted marking is tapped without focusing the native editor', async () => {
         vi.stubGlobal('innerWidth', 390);
         vi.stubGlobal('matchMedia', () => ({ matches: true }));
         try {
@@ -1245,6 +1245,9 @@ describe('MarkedInput', () => {
             expect(document.activeElement).not.toBe(editor);
             root.querySelector<HTMLElement>('.marked-input-chip')!.click();
             expect(document.activeElement).not.toBe(editor);
+            root.querySelector<HTMLButtonElement>(
+                '.ez-marking-touch-actions button',
+            )!.click();
             await expect
                 .poll(
                     () =>
@@ -1337,26 +1340,9 @@ describe('MarkedInput', () => {
             const chip = () =>
                 root.querySelector<HTMLElement>('.marked-input-chip');
             await expect.poll(chip).not.toBeNull();
-            chip()!.dispatchEvent(
-                Object.assign(
-                    new MouseEvent('pointerdown', { bubbles: true }),
-                    {
-                        pointerType: 'touch',
-                        pointerId: 1,
-                        isPrimary: true,
-                    },
-                ),
-            );
             const actions = () =>
                 root.querySelector<HTMLElement>('.ez-marking-touch-actions');
-            await expect.poll(actions).not.toBeNull();
-            chip()!.dispatchEvent(
-                new MouseEvent('click', {
-                    bubbles: true,
-                    cancelable: true,
-                    detail: 1,
-                }),
-            );
+            chip()!.click();
             expect(actions()).not.toBeNull();
             actions()!.querySelector<HTMLButtonElement>('button')!.click();
             const native = root.querySelector<HTMLInputElement>('#field')!;
@@ -1387,13 +1373,13 @@ describe('MarkedInput', () => {
                 .querySelector<HTMLButtonElement>('.ez-composer__sheet-cancel')!
                 .click();
             await expect.poll(sheet).toBeNull();
-            const remove = root.querySelector<HTMLButtonElement>(
-                '.ez-marked-field-actions .ez-marked-field-remove',
-            )!;
-            expect(remove.hidden).toBe(false);
-            remove.click();
+            chip()!.click();
+            actions()!.querySelectorAll<HTMLButtonElement>('button')[1].click();
             expect(native.value).toBe('Text');
             expect(sheet()).toBeNull();
+            expect(
+                root.querySelector('.ez-marked-field-add')?.textContent,
+            ).toBe('');
         } finally {
             vi.unstubAllGlobals();
         }
