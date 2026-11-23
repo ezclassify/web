@@ -16,6 +16,10 @@
 .ez-favorites-panel__embedded .proto-dropdown-item__desc {
     font-size: calc(1em * 0.75);
 }
+/* A named favorite still shows the saved marking at the tools text size. */
+.ez-marking-tools .ez-favorites-panel__embedded .proto-dropdown-item__desc {
+    font-size: inherit;
+}
 .ez-favorites-panel__embedded button.proto-dropdown-item:focus-visible {
     outline: 2px solid var(--ez-color-primary, #fdb827);
     outline-offset: -2px;

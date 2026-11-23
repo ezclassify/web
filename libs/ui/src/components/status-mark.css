@@ -33,6 +33,11 @@
     background: transparent;
     cursor: pointer;
 }
+/* Keep the tools text compact relative to the surrounding form. */
+.ez-marking-tools__tab,
+.ez-marking-tools__section {
+    font-size: calc(1em * 0.75);
+}
 .ez-marking-tools__tab {
     display: inline-flex;
     align-items: center;
@@ -48,7 +53,7 @@
     font-weight: 600;
 }
 .ez-marking-tools__count {
-    font-size: calc(1em * 0.6875);
+    font-size: calc(1em * 11 / 12);
     font-weight: 500;
     font-variant-numeric: tabular-nums;
     color: var(--ez-color-muted, #6b7280);
