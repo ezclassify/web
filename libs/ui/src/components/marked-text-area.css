@@ -94,6 +94,26 @@
     }
 }
 
+@media (pointer: coarse) and (width < 768px) {
+    .marked-textarea-wrap:has(> .ez-marked-field-add:not([hidden])) {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+    }
+    .marked-textarea-display,
+    .marked-textarea-wrap > .ez-marked-field-add {
+        grid-area: 1 / 1;
+    }
+    .marked-textarea-wrap > .ez-marked-field-add:not([hidden]) {
+        place-self: end;
+        box-sizing: border-box;
+        inline-size: 2rem;
+        min-block-size: 2rem;
+        margin: 0 0.25rem 0.25rem;
+        padding-inline-end: 0.375rem;
+        z-index: 4;
+    }
+}
+
 /* Textarea: captures input but is fully invisible. It covers the whole wrap,
    footer included, so its own outline (the browser's, or a host's textarea
    focus rule) would draw a second ring around both: the display layer's ring

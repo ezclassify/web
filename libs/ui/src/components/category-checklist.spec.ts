@@ -461,6 +461,11 @@ describe('CategoryChecklist', () => {
         expect(document.activeElement).toBe(childB);
         press(childB, 'ArrowUp');
         expect(document.activeElement).toBe(rootB);
+        childA.parentElement!.getBoundingClientRect = () =>
+            new DOMRect(0, 64, 100, 32);
+        childA.focus();
+        press(childA, 'ArrowRight');
+        expect(document.activeElement).toBe(childB);
         expect(checklist.getAssertions()).toEqual([]);
     });
 

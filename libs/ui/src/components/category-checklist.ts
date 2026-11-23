@@ -376,6 +376,30 @@ export class CategoryChecklist extends ComponentBase {
         else target?.focus();
     }
 
+    private lowestChoiceAboveToRight(
+        items: HTMLElement[],
+        current: HTMLElement,
+    ): HTMLElement | null {
+        const { left, top } = current.getBoundingClientRect();
+        let next: HTMLElement | null = null;
+        let columnLeft = Infinity;
+        let choiceTop = -Infinity;
+        for (const item of items) {
+            if (item.parentElement === current.parentElement) continue;
+            const rect = item.getBoundingClientRect();
+            if (rect.left <= left || rect.top >= top) continue;
+            if (
+                rect.left < columnLeft ||
+                (rect.left === columnLeft && rect.top > choiceTop)
+            ) {
+                next = item;
+                columnLeft = rect.left;
+                choiceTop = rect.top;
+            }
+        }
+        return next;
+    }
+
     protected render(): void {
         // Update preview
         if (this.options.showPreview) {
@@ -561,16 +585,16 @@ export class CategoryChecklist extends ComponentBase {
         }
         const items = this.choiceItems();
         const item = checkbox.parentElement!;
-        if (
-            this.actionsInline &&
-            (event.key === 'ArrowLeft' || event.key === 'ArrowRight')
-        ) {
+        if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+            const neighbors = this.actionsInline
+                ? [...items, ...this.headerActions()]
+                : items;
+            const next = focusGridNeighbor(neighbors, item, event.key);
             this.focusChoiceOrAction(
-                focusGridNeighbor(
-                    [...items, ...this.headerActions()],
-                    item,
-                    event.key,
-                ),
+                next ??
+                    (event.key === 'ArrowRight'
+                        ? this.lowestChoiceAboveToRight(items, item)
+                        : null),
             );
             return;
         }

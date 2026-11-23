@@ -666,6 +666,8 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
 
         // Keyboard hint + touch "Add marking" footer, and the inline chrome.
         this.appendFooter();
+        const add = this.chrome.element.querySelector('.ez-marked-field-add');
+        if (add) this.wrap.insertBefore(add, this.chrome.element);
 
         this.scanNotice = document.createElement('div');
         this.scanNotice.className = 'marked-textarea-scan-notice';

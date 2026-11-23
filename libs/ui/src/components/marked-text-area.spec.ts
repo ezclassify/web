@@ -1556,7 +1556,7 @@ it('adds only on unmarked phone paragraphs and removes the marking that was tapp
         );
         await field.init(container, context);
         const add = root.querySelector<HTMLButtonElement>(
-            '.ez-field-chrome .ez-marked-field-add',
+            '.marked-textarea-wrap > .ez-marked-field-add',
         )!;
         const editor = textareaEditor(native);
         editor.focus();
