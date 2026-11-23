@@ -769,18 +769,14 @@ export class DecisionFlow extends ComponentBase {
                 ),
             );
         }
-        this.flowEl.addEventListener('focusin', this.requestOptions);
         // Focus inside the flow opens its step; leaving closes it. A way to a
-        // missing step opens the flow at that step when it is pressed, not
-        // when a press focuses it, which would rebuild it out from under the
-        // press.
+        // missing step opens the flow and refreshes options on activation.
+        // Refreshing on focus would replace the link before activation.
         this.flowEl.addEventListener('focusin', (event) => {
             const target = event.target as Element;
-            if (
-                !this.suiteChrome?.element.contains(target) &&
-                !target.closest?.('.ez-decision-flow__missing')
-            )
-                this.setOpen(true);
+            if (target.closest('.ez-decision-flow__missing')) return;
+            this.requestOptions();
+            if (!this.suiteChrome?.element.contains(target)) this.setOpen(true);
         });
         this.flowEl.addEventListener('focusout', this.focusOut);
         this.flowEl.addEventListener(
@@ -947,23 +943,38 @@ export class DecisionFlow extends ComponentBase {
         this.ruleFixesInput = this.proofInputKey();
         this.allErrors = errors.map((error) => error.message);
         this.errorsByCategory = new Map();
-        // An error belongs to the category it names, or to the categories
-        // of the concepts it asks for (a rule that wants one of a step's
-        // choices), so the step it asks about reads as required.
-        // Every step counts, not only those showing: a judgment can land
-        // before the engine offers the step it asks about.
-        const categoryOf = new Map<string, string>();
-        for (const step of this._allSteps)
-            for (const concept of step.concepts)
-                categoryOf.set(concept.id, step.categoryId);
-        for (const error of errors) {
-            const categories = new Set<string>();
-            if (error.categoryId) categories.add(error.categoryId);
-            for (const conceptId of error.affectedConcepts ?? []) {
-                const categoryId = categoryOf.get(conceptId);
-                if (categoryId) categories.add(categoryId);
+        // A finding can land before the engine offers the step it names.
+        // A bare concept ID identifies a step only when it is unambiguous.
+        const categoryOf = new Map<string, string | null>();
+        for (const step of this._allSteps) {
+            for (const { id } of step.concepts) {
+                const existing = categoryOf.get(id);
+                categoryOf.set(
+                    id,
+                    existing === undefined || existing === step.categoryId
+                        ? step.categoryId
+                        : null,
+                );
             }
+        }
+        for (const error of errors) {
+            // Coverage compares the whole to its parts. Report the finding
+            // as written without turning an optional step into a requirement.
+            if (
+                error.constraintId.startsWith('_part-coverage:') ||
+                error.constraintId.startsWith('_part-excess:') ||
+                error.constraintId === '_exceeds_whole'
+            )
+                continue;
+            const categories = error.categoryId
+                ? [error.categoryId]
+                : new Set(
+                      (error.affectedConcepts ?? []).map((id) =>
+                          categoryOf.get(id),
+                      ),
+                  );
             for (const categoryId of categories) {
+                if (!categoryId) continue;
                 const list = this.errorsByCategory.get(categoryId) ?? [];
                 list.push(error.message);
                 this.errorsByCategory.set(categoryId, list);
@@ -1845,7 +1856,7 @@ export class DecisionFlow extends ComponentBase {
      * Open or close the current step under the header. Opening adds the step at
      * the bottom and moves nothing above it.
      */
-    private setOpen(open: boolean): void {
+    private setOpen(open: boolean, destination?: StepDef): void {
         if (this.open === open || !this.stepEl) return;
         const steps = this.steps;
         const shown = steps.map((step) => step.categoryId).join(' ');
@@ -1859,6 +1870,10 @@ export class DecisionFlow extends ComponentBase {
         // on its caption.
         this.openingBeforeOptions = open && this.offeredCategories === null;
         if (open) {
+            if (destination) {
+                this.goToStep(this.steps.indexOf(destination));
+                return;
+            }
             this.chooseOpeningStep(steps);
             this.furthestStep = Math.max(this.furthestStep, this.currentStep);
         } else {
@@ -3002,17 +3017,17 @@ export class DecisionFlow extends ComponentBase {
      * yet.
      */
     private problemsOf(scope: string | undefined): HTMLElement | null {
-        const due = this.steps
-            .map((step, index) => ({ step, index }))
-            .filter(({ step }) => this.stepState(step) === 'missing');
+        const due = this.steps.filter(
+            (step) => this.stepState(step) === 'missing',
+        );
         const missing = due.filter(
-            ({ step }) => !this.multiScope || step.scope === scope,
+            (step) => !this.multiScope || step.scope === scope,
         );
         // A message that asks for a missing step is said by naming the step,
         // under the value of the scope the step belongs to.
         const said = new Set(
             due.flatMap(
-                ({ step }) => this.errorsByCategory.get(step.categoryId) ?? [],
+                (step) => this.errorsByCategory.get(step.categoryId) ?? [],
             ),
         );
         const others = this.errorsIn(scope).filter((m) => !said.has(m));
@@ -3024,7 +3039,7 @@ export class DecisionFlow extends ComponentBase {
             const line = document.createElement('div');
             line.className = 'ez-decision-flow__missing';
             line.append('Missing: ');
-            missing.forEach(({ step, index }, i) => {
+            missing.forEach((step, i) => {
                 if (i > 0) line.append(', ');
                 const go = document.createElement('button');
                 go.type = 'button';
@@ -3032,9 +3047,8 @@ export class DecisionFlow extends ComponentBase {
                 go.textContent = step.label;
                 go.addEventListener('click', () => {
                     if (this._destroyed) return;
-                    this.dotFocus = index;
-                    this.setOpen(true);
-                    this.goToStep(index);
+                    if (this.open) this.goToStep(this.steps.indexOf(step));
+                    else this.setOpen(true, step);
                 });
                 line.appendChild(go);
             });
