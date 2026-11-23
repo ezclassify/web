@@ -125,7 +125,8 @@
     background: var(--ez-color-surface-hover, #f3f4f6);
 }
 .ez-context-ref__close:focus-visible {
-    outline: 0.125rem solid var(--ez-color-primary, #fdb827);
+    outline: 0.125rem solid
+        var(--ez-color-primary, var(--_ez-default-color-primary, #fdb827));
     outline-offset: -0.125rem;
 }
 .ez-context-ref__close[hidden] {
@@ -179,11 +180,15 @@
         --ez-context-ref-tab-active-bg,
         var(--ez-color-background, var(--_ez-default-color-background, #fff))
     );
-    border-bottom-color: var(--ez-color-primary, #fdb827);
+    border-bottom-color: var(
+        --ez-color-primary,
+        var(--_ez-default-color-primary, #fdb827)
+    );
     font-weight: 600;
 }
 .ez-context-ref__tab:focus-visible {
-    outline: 2px solid var(--ez-color-primary, #fdb827);
+    outline: 2px solid
+        var(--ez-color-primary, var(--_ez-default-color-primary, #fdb827));
     outline-offset: -2px;
 }
 .ez-context-ref__tab-icon {
@@ -251,7 +256,7 @@
         );
     background: var(
         --ez-context-ref-handle-bg,
-        var(--ez-color-primary, #fdb827)
+        var(--ez-color-primary, var(--_ez-default-color-primary, #fdb827))
     );
     color: var(
         --ez-context-ref-handle-text,
@@ -265,7 +270,8 @@
     box-shadow: var(--ez-context-ref-shadow, 0 4px 24px rgba(0, 0, 0, 0.18));
 }
 .ez-context-ref__handle:focus-visible {
-    outline: 2px solid var(--ez-color-primary, #fdb827);
+    outline: 2px solid
+        var(--ez-color-primary, var(--_ez-default-color-primary, #fdb827));
     outline-offset: 2px;
 }
 

@@ -84,8 +84,12 @@
 }
 
 .ez-crosswalk-handbook__search-input:focus-visible {
-    border-color: var(--ez-color-primary, #fdb827);
-    box-shadow: 0 0 0 1px var(--ez-color-primary, #fdb827);
+    border-color: var(
+        --ez-color-primary,
+        var(--_ez-default-color-primary, #fdb827)
+    );
+    box-shadow: 0 0 0 1px
+        var(--ez-color-primary, var(--_ez-default-color-primary, #fdb827));
 }
 
 .ez-crosswalk-handbook__section-title {

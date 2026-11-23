@@ -95,7 +95,7 @@ describe('styles', () => {
                 expect(block).not.toContain('--ez-color-border-focus:');
             }
             expect(css).toMatch(
-                /border-color: var\(\s*--ez-color-border-focus,\s*var\(--ez-color-primary, #fdb827\)\s*\)/,
+                /border-color: var\(\s*--ez-color-border-focus,\s*var\(--ez-color-primary, var\(--_ez-default-color-primary, #fdb827\)\)\s*\)/,
             );
         });
 

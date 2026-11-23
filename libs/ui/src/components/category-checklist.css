@@ -84,7 +84,10 @@
 }
 .category-checklist-search:focus-visible {
     outline: var(--ez-focus-ring-width, 2px) solid
-        var(--ez-color-border-focus, var(--ez-color-primary, #fdb827));
+        var(
+            --ez-color-border-focus,
+            var(--ez-color-primary, var(--_ez-default-color-primary, #fdb827))
+        );
     outline-offset: var(--ez-focus-ring-offset, -2px);
 }
 .category-checklist-search:focus:not(:focus-visible) {
@@ -221,17 +224,27 @@
     height: 0.875rem;
 }
 .category-checklist-checkbox:checked + .category-checklist-box {
-    background: var(--ez-color-primary, #fdb827);
-    border-color: var(--ez-color-primary, #fdb827);
+    background: var(
+        --ez-color-primary,
+        var(--_ez-default-color-primary, #fdb827)
+    );
+    border-color: var(
+        --ez-color-primary,
+        var(--_ez-default-color-primary, #fdb827)
+    );
     color: var(--ez-color-primary-contrast, #1c1c1c);
 }
 .category-checklist-item:hover
     .category-checklist-checkbox:not(:checked)
     + .category-checklist-box {
-    border-color: var(--ez-color-primary, #fdb827);
+    border-color: var(
+        --ez-color-primary,
+        var(--_ez-default-color-primary, #fdb827)
+    );
 }
 .category-checklist-checkbox:focus-visible + .category-checklist-box {
-    outline: 2px solid var(--ez-color-primary, #fdb827);
+    outline: 2px solid
+        var(--ez-color-primary, var(--_ez-default-color-primary, #fdb827));
     outline-offset: 2px;
 }
 

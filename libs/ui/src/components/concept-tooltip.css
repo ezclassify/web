@@ -196,7 +196,8 @@
     background: var(--ez-color-hover, rgba(0, 0, 0, 0.05));
 }
 .ez-status-list__undo:focus-visible {
-    outline: 2px solid var(--ez-color-primary, #fdb827);
+    outline: 2px solid
+        var(--ez-color-primary, var(--_ez-default-color-primary, #fdb827));
     outline-offset: -2px;
 }
 .ez-status-list__undo-description {

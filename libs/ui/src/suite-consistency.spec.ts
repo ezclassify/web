@@ -147,7 +147,7 @@ describe('the EzClassify suite', () => {
 
     it('draws a shared, token-driven focus ring', () => {
         const ring =
-            /outline:\s*var\(--ez-focus-ring-width, 2px\) solid\s+var\(--ez-color-border-focus, var\(--ez-color-primary, #fdb827\)\);\s*outline-offset:\s*var\(--ez-focus-ring-offset, -2px\)/;
+            /outline:\s*var\(--ez-focus-ring-width, 2px\) solid\s+var\(\s*--ez-color-border-focus,\s*var\(\s*--ez-color-primary,\s*var\(--_ez-default-color-primary, #fdb827\)\s*\)\s*\);\s*outline-offset:\s*var\(--ez-focus-ring-offset, -2px\)/;
         expect(
             rule(
                 css('field-chrome.css'),

@@ -12,7 +12,11 @@
     and (color: color(from red xyz-d65 max(0, sign(0.179 - y)) y z)) {
     [data-ez-themed-category] {
         --ez-theme-category-seed: oklch(
-            from var(--ez-color-primary, #fdb827)
+            from
+                var(
+                    --ez-color-primary,
+                    var(--_ez-default-color-primary, #fdb827)
+                )
                 clamp(
                     0.5,
                     calc(0.72 + var(--ez-category-hue-offset) / 27),
@@ -60,7 +64,7 @@
     background: var(--ez-color-surface-active, rgba(253, 184, 39, 0.25));
     background: color-mix(
         in oklab,
-        var(--ez-color-primary, #fdb827) 24%,
+        var(--ez-color-primary, var(--_ez-default-color-primary, #fdb827)) 24%,
         var(--ez-color-background, var(--_ez-default-color-background, #fff))
     );
 }
@@ -177,7 +181,8 @@
    already uses. */
 .proto-tag:focus-visible,
 .proto-tag.active {
-    outline: 2px solid var(--ez-color-primary, #fdb827);
+    outline: 2px solid
+        var(--ez-color-primary, var(--_ez-default-color-primary, #fdb827));
     outline-offset: 1px;
 }
 .proto-tag:focus:not(:focus-visible) {
@@ -216,7 +221,8 @@
     background: color-mix(in srgb, currentColor 30%, transparent);
 }
 .proto-tag-remove:focus-visible {
-    outline: 2px solid var(--ez-color-primary, #fdb827);
+    outline: 2px solid
+        var(--ez-color-primary, var(--_ez-default-color-primary, #fdb827));
     outline-offset: 1px;
     opacity: 1;
 }
@@ -505,7 +511,8 @@
     height: 100%;
 }
 .ez-clear-button:focus-visible {
-    outline: 2px solid var(--ez-color-primary, #2563eb);
+    outline: 2px solid
+        var(--ez-color-primary, var(--_ez-default-color-primary, #2563eb));
     outline-offset: 2px;
 }
 .ez-clear-button:disabled,

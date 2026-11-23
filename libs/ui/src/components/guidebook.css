@@ -50,7 +50,7 @@
 }
 
 .ez-guidebook__search-input:focus-visible {
-    outline: 2px solid var(--ez-color-primary);
+    outline: 2px solid var(--ez-color-primary, var(--_ez-default-color-primary));
     outline-offset: 1px;
 }
 
@@ -103,7 +103,7 @@
 }
 
 .ez-guidebook__guide-header:focus-visible {
-    outline: 2px solid var(--ez-color-primary);
+    outline: 2px solid var(--ez-color-primary, var(--_ez-default-color-primary));
     outline-offset: -2px;
 }
 
@@ -184,7 +184,7 @@
 }
 
 .ez-guidebook__category-header:focus-visible {
-    outline: 2px solid var(--ez-color-primary);
+    outline: 2px solid var(--ez-color-primary, var(--_ez-default-color-primary));
     outline-offset: -2px;
 }
 
@@ -212,7 +212,7 @@
 }
 
 .ez-guidebook__entry:focus-visible {
-    outline: 2px solid var(--ez-color-primary);
+    outline: 2px solid var(--ez-color-primary, var(--_ez-default-color-primary));
     outline-offset: -2px;
 }
 
@@ -354,12 +354,15 @@
 }
 
 .ez-guidebook__tab[aria-selected='true'] {
-    color: var(--ez-color-primary);
-    border-bottom-color: var(--ez-color-primary);
+    color: var(--ez-color-primary, var(--_ez-default-color-primary));
+    border-bottom-color: var(
+        --ez-color-primary,
+        var(--_ez-default-color-primary)
+    );
     font-weight: 600;
 }
 
 .ez-guidebook__tab:focus-visible {
-    outline: 2px solid var(--ez-color-primary);
+    outline: 2px solid var(--ez-color-primary, var(--_ez-default-color-primary));
     outline-offset: -2px;
 }

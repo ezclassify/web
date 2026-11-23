@@ -42,7 +42,10 @@
     min-height: 2.75rem;
 }
 .select-card:hover {
-    border-color: var(--ez-color-primary, #fdb827);
+    border-color: var(
+        --ez-color-primary,
+        var(--_ez-default-color-primary, #fdb827)
+    );
     box-shadow: var(--ez-select-hover-shadow, 0 1px 4px rgba(0, 0, 0, 0.08));
 }
 
@@ -111,14 +114,22 @@
 .select-card[aria-checked='true'] {
     border-color: var(
         --ez-select-active-border,
-        var(--ez-color-primary, #3b82f6)
+        var(--ez-color-primary, var(--_ez-default-color-primary, #3b82f6))
     );
     background: var(
         --ez-select-active-bg,
-        color-mix(in srgb, var(--ez-color-primary, #3b82f6) 6%, transparent)
+        color-mix(
+            in srgb,
+            var(--ez-color-primary, var(--_ez-default-color-primary, #3b82f6))
+                6%,
+            transparent
+        )
     );
     box-shadow: 0 0 0 1px
-        var(--ez-select-active-border, var(--ez-color-primary, #3b82f6));
+        var(
+            --ez-select-active-border,
+            var(--ez-color-primary, var(--_ez-default-color-primary, #3b82f6))
+        );
 }
 
 /* ── Color-mapped cards (colorMap): unselected ──── */
@@ -246,7 +257,8 @@
 
 /* ── Focus ────────────────────────────────────────── */
 .select-card:focus-visible {
-    outline: 2px solid var(--ez-color-primary, #fdb827);
+    outline: 2px solid
+        var(--ez-color-primary, var(--_ez-default-color-primary, #fdb827));
     outline-offset: 2px;
 }
 .select-card:focus:not(:focus-visible) {

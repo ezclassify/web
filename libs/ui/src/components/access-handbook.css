@@ -67,7 +67,8 @@
 }
 
 .ez-access-handbook__search-input:focus-visible {
-    outline: 2px solid var(--ez-color-primary, #3b82f6);
+    outline: 2px solid
+        var(--ez-color-primary, var(--_ez-default-color-primary, #3b82f6));
     outline-offset: 1px;
 }
 
@@ -113,7 +114,8 @@
 }
 
 .ez-access-handbook__group-header:focus-visible {
-    outline: 2px solid var(--ez-color-primary, #3b82f6);
+    outline: 2px solid
+        var(--ez-color-primary, var(--_ez-default-color-primary, #3b82f6));
     outline-offset: -2px;
 }
 
@@ -155,7 +157,8 @@
 }
 
 .ez-access-handbook__entry:focus-visible {
-    outline: 2px solid var(--ez-color-primary, #3b82f6);
+    outline: 2px solid
+        var(--ez-color-primary, var(--_ez-default-color-primary, #3b82f6));
     outline-offset: -2px;
 }
 

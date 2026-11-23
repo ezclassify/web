@@ -386,7 +386,15 @@ export function mirrorHostFrame(
             }
             frame.style[property] = styles[property];
         }
-        if (opts.paintOnly) return;
+        if (opts.paintOnly) {
+            frame.style.setProperty(
+                '--_ez-native-color-primary',
+                explicitPalette || styles.accentColor === 'auto'
+                    ? ''
+                    : styles.accentColor,
+            );
+            return;
+        }
         for (const property of [
             'boxSizing',
             'marginTop',

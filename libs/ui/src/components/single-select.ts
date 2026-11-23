@@ -726,7 +726,7 @@ export class SingleSelect extends ComponentBase {
                     '--ez-indicator-bg',
                     colors?.border ??
                         colors?.background ??
-                        'var(--ez-color-primary, ' + categoryColor + ')',
+                        `var(--ez-color-primary, var(--_ez-default-color-primary, ${categoryColor}))`,
                 );
                 indicator.classList.add('select-card-indicator--active');
             }

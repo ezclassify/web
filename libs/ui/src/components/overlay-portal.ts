@@ -15,7 +15,6 @@ const THEME_PROPERTIES = [
     '--ez-focus-ring-width',
     '--ez-focus-ring-offset',
     '--ez-color-muted',
-    '--ez-color-primary',
     '--ez-color-primary-contrast',
     '--ez-color-success',
     '--ez-color-warning',
@@ -45,6 +44,7 @@ const FRAME_THEME_PROPERTIES = [
     'color-background',
     'color-border',
     'color-text',
+    'color-primary',
     'border-radius',
     'border-width',
 ] as const;

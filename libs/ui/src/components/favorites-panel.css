@@ -23,7 +23,8 @@
     font-size: inherit;
 }
 .ez-favorites-panel__embedded button.proto-dropdown-item:focus-visible {
-    outline: 2px solid var(--ez-color-primary, #fdb827);
+    outline: 2px solid
+        var(--ez-color-primary, var(--_ez-default-color-primary, #fdb827));
     outline-offset: -2px;
 }
 .ez-favorites-panel__embedded button.proto-dropdown-item:hover {
@@ -58,7 +59,8 @@
     cursor: pointer;
 }
 .ez-favorites-panel__settings-action:focus-visible {
-    outline: 2px solid var(--ez-color-primary, #fdb827);
+    outline: 2px solid
+        var(--ez-color-primary, var(--_ez-default-color-primary, #fdb827));
     outline-offset: -2px;
 }
 .ez-favorites-panel__settings--choice {
@@ -92,7 +94,10 @@
 }
 .ez-favorites-panel__storage-actions
     .ez-favorites-panel__settings-action--primary {
-    background: var(--ez-color-primary, #fdb827);
+    background: var(
+        --ez-color-primary,
+        var(--_ez-default-color-primary, #fdb827)
+    );
     color: var(--ez-color-primary-contrast, #111827);
     border-color: transparent;
 }
@@ -156,7 +161,8 @@
     background: var(--ez-dropdown-item-hover, #f3f4f6);
 }
 .ez-favorites-panel__remove:focus-visible {
-    outline: 2px solid var(--ez-color-primary, #fdb827);
+    outline: 2px solid
+        var(--ez-color-primary, var(--_ez-default-color-primary, #fdb827));
     outline-offset: -2px;
 }
 .ez-favorites-panel__pinned .proto-dropdown-item__label {

@@ -123,7 +123,13 @@
 }
 .ez-composer__sheet-button:focus-visible {
     outline: var(--ez-focus-ring-width, 2px) solid
-        var(--ez-color-border-focus, var(--ez-color-primary, currentColor));
+        var(
+            --ez-color-border-focus,
+            var(
+                --ez-color-primary,
+                var(--_ez-default-color-primary, currentColor)
+            )
+        );
     outline-offset: -0.25rem;
 }
 /* Cancel's text lines up with the input's text below it and Done's drawn
@@ -146,7 +152,10 @@
             )
         )
     );
-    background-color: var(--ez-color-primary, currentColor);
+    background-color: var(
+        --ez-color-primary,
+        var(--_ez-default-color-primary, currentColor)
+    );
 }
 /* Done while the draft cannot be stored: still pressable (a press shows
    why), drawn as not ready. */
@@ -211,7 +220,13 @@
 }
 .ez-composer__sheet-input:focus {
     outline: var(--ez-focus-ring-width, 2px) solid
-        var(--ez-color-border-focus, var(--ez-color-primary, currentColor));
+        var(
+            --ez-color-border-focus,
+            var(
+                --ez-color-primary,
+                var(--_ez-default-color-primary, currentColor)
+            )
+        );
     outline-offset: var(--ez-focus-ring-offset, -2px);
 }
 
@@ -420,7 +435,8 @@
     letter-spacing: normal;
     text-transform: none;
     color: inherit;
-    border-block-start: 2px solid var(--ez-color-primary, currentColor);
+    border-block-start: 2px solid
+        var(--ez-color-primary, var(--_ez-default-color-primary, currentColor));
 }
 /* A field across scopes names a category's scope before it. */
 .ez-composer__group-scope {
@@ -700,7 +716,10 @@
 }
 .ez-composer__category-arrow:focus-visible {
     outline: 0.125rem solid
-        var(--ez-color-border-focus, var(--ez-color-primary, #fdb827));
+        var(
+            --ez-color-border-focus,
+            var(--ez-color-primary, var(--_ez-default-color-primary, #fdb827))
+        );
     outline-offset: -0.125rem;
 }
 @media (pointer: coarse) {

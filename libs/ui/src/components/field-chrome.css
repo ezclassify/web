@@ -70,8 +70,14 @@
 }
 .ez-field-action__checkbox:is(:checked, :indeterminate)
     + .ez-field-action__glyph--toggle {
-    background: var(--ez-color-primary, #fdb827);
-    border-color: var(--ez-color-primary, #fdb827);
+    background: var(
+        --ez-color-primary,
+        var(--_ez-default-color-primary, #fdb827)
+    );
+    border-color: var(
+        --ez-color-primary,
+        var(--_ez-default-color-primary, #fdb827)
+    );
     color: var(--ez-color-primary-contrast, #1c1c1c);
 }
 .ez-field-action__glyph--toggle path:last-child,
@@ -86,7 +92,8 @@
     display: inline;
 }
 .ez-field-action__checkbox:focus-visible + .ez-field-action__glyph--toggle {
-    outline: 2px solid var(--ez-color-primary, #fdb827);
+    outline: 2px solid
+        var(--ez-color-primary, var(--_ez-default-color-primary, #fdb827));
     outline-offset: 2px;
 }
 .ez-field-action__checkbox:disabled + .ez-field-action__glyph--toggle {
@@ -216,7 +223,10 @@
    control's own ring instead: clearing is a form action, not editing. */
 .ez-field-frame:focus-within:not(:has(.ez-field-chrome :focus)) {
     outline: var(--ez-focus-ring-width, 2px) solid
-        var(--ez-color-border-focus, var(--ez-color-primary, #fdb827));
+        var(
+            --ez-color-border-focus,
+            var(--ez-color-primary, var(--_ez-default-color-primary, #fdb827))
+        );
     outline-offset: var(--ez-focus-ring-offset, -2px);
 }
 /* A control whose host is locked reads as a disabled input. */

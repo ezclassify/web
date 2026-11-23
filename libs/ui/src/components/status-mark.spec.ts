@@ -1742,7 +1742,7 @@ describe('status mark tone', () => {
         const dark = paletteBlock("[data-color-scheme='dark'],");
         expect(dark).toMatch(/--ez-status-mark-color:\s*#9ca3af;/);
         expect(dark).toMatch(
-            /--ez-status-mark-strong-color:\s*var\(--ez-color-primary, #fdb827\);/,
+            /--ez-status-mark-strong-color:\s*var\(\s*--ez-color-primary,\s*var\(--_ez-default-color-primary, #fdb827\)\s*\);/,
         );
     });
 });

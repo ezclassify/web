@@ -84,16 +84,29 @@
 }
 /* Answered: filled with the accent. */
 .ez-decision-flow__step-dot[data-state='answered']::before {
-    border-color: var(--ez-color-primary, #fdb827);
-    background: var(--ez-color-primary, #fdb827);
+    --_ez-progress-accent: var(
+        --ez-color-primary,
+        var(
+            --_ez-native-color-primary,
+            var(--_ez-default-color-primary, #fdb827)
+        )
+    );
+    border-color: var(--_ez-progress-accent);
+    background: var(--_ez-progress-accent);
 }
 /* Derived answers share the inferred option's dashed edge and light tint. */
 .ez-decision-flow__step-dot[data-state='answered'][data-inferred]::before {
     border-style: dashed;
     background: color-mix(
         in srgb,
-        var(--ez-color-primary, #fdb827) 18%,
-        var(--ez-color-background, var(--_ez-default-color-background, #fff))
+        var(--_ez-progress-accent) 18%,
+        var(
+            --ez-color-background,
+            var(
+                --_ez-native-color-background,
+                var(--_ez-default-color-background, #fff)
+            )
+        )
     );
 }
 /* Missing an answer the engine asks for: the error color. */
@@ -126,7 +139,8 @@
     outline: none;
 }
 .ez-decision-flow__step-dot:focus-visible::before {
-    outline: 2px solid var(--ez-color-primary, #fdb827);
+    outline: 2px solid
+        var(--ez-color-primary, var(--_ez-default-color-primary, #fdb827));
     outline-offset: 2px;
 }
 
@@ -248,7 +262,8 @@
     cursor: default;
 }
 .ez-decision-flow__nav-btn:focus-visible {
-    outline: 2px solid var(--ez-color-primary, #fdb827);
+    outline: 2px solid
+        var(--ez-color-primary, var(--_ez-default-color-primary, #fdb827));
     outline-offset: 0;
 }
 
@@ -281,7 +296,8 @@
     box-sizing: border-box;
 }
 .ez-decision-flow__text-field:focus {
-    outline: 2px solid var(--ez-color-primary, #fdb827);
+    outline: 2px solid
+        var(--ez-color-primary, var(--_ez-default-color-primary, #fdb827));
     outline-offset: -2px;
 }
 
@@ -297,7 +313,8 @@
     flex-direction: column;
     gap: 0.125rem;
     padding: 0.25rem 0.5rem;
-    border: 1px solid var(--ez-color-primary, #fdb827);
+    border: 1px solid
+        var(--ez-color-primary, var(--_ez-default-color-primary, #fdb827));
     border-radius: var(
         --ez-border-radius,
         var(--_ez-default-border-radius, 0.25rem)
@@ -308,7 +325,8 @@
     );
 }
 .ez-decision-flow__value-box:focus-within {
-    outline: 2px solid var(--ez-color-primary, #fdb827);
+    outline: 2px solid
+        var(--ez-color-primary, var(--_ez-default-color-primary, #fdb827));
     outline-offset: -2px;
 }
 .ez-decision-flow__text-field-wrap > .ez-decision-flow__value-box {
@@ -439,7 +457,8 @@
     cursor: pointer;
 }
 .ez-decision-flow__missing-step:focus-visible {
-    outline: 2px solid var(--ez-color-primary, #fdb827);
+    outline: 2px solid
+        var(--ez-color-primary, var(--_ez-default-color-primary, #fdb827));
     outline-offset: 1px;
 }
 

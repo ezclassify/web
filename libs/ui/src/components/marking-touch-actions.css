@@ -25,7 +25,10 @@
             var(--_ez-default-border-radius, 0.25rem)
         );
         background: transparent;
-        color: var(--ez-color-primary, currentColor);
+        color: var(
+            --ez-color-primary,
+            var(--_ez-default-color-primary, currentColor)
+        );
         font: inherit;
         font-size: 0.875em;
         padding: 0;
@@ -77,6 +80,7 @@
 }
 
 .ez-marking-touch-actions button:focus-visible {
-    outline: 2px solid var(--ez-color-primary, #fdb827);
+    outline: 2px solid
+        var(--ez-color-primary, var(--_ez-default-color-primary, #fdb827));
     outline-offset: -3px;
 }

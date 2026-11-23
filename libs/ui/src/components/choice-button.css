@@ -28,20 +28,32 @@
     );
 }
 .ez-choice-button:hover {
-    border-color: var(--ez-category-accent, var(--ez-color-primary, #fdb827));
+    border-color: var(
+        --ez-category-accent,
+        var(--ez-color-primary, var(--_ez-default-color-primary, #fdb827))
+    );
 }
 .ez-choice-button:focus-visible {
     outline: 0.125rem solid
-        var(--ez-category-accent, var(--ez-color-primary, #fdb827));
+        var(
+            --ez-category-accent,
+            var(--ez-color-primary, var(--_ez-default-color-primary, #fdb827))
+        );
     outline-offset: 0.125rem;
 }
 .ez-choice-button:focus:not(:focus-visible) {
     outline: none;
 }
 .ez-choice-button:is([aria-checked='true'], [aria-pressed='true']) {
-    background: var(--ez-category-accent, var(--ez-color-primary, #fdb827));
+    background: var(
+        --ez-category-accent,
+        var(--ez-color-primary, var(--_ez-default-color-primary, #fdb827))
+    );
     color: var(--ez-color-primary-contrast, #1c1c1c);
-    border-color: var(--ez-category-accent, var(--ez-color-primary, #fdb827));
+    border-color: var(
+        --ez-category-accent,
+        var(--ez-color-primary, var(--_ez-default-color-primary, #fdb827))
+    );
 }
 .ez-choice-button[role='checkbox'][aria-checked='true']::before {
     content: '\2713\FE0E';
@@ -95,10 +107,20 @@
 .ez-choice-button.ez-choice-button--inferred {
     font-style: italic;
     border-style: dashed;
-    border-color: var(--ez-category-accent, var(--ez-color-primary, #fdb827));
+    border-color: var(
+        --ez-category-accent,
+        var(--ez-color-primary, var(--_ez-default-color-primary, #fdb827))
+    );
     --ez-contrast-fill: color-mix(
         in srgb,
-        var(--ez-category-accent, var(--ez-color-primary, #fdb827)) 18%,
+        var(
+                --ez-category-accent,
+                var(
+                    --ez-color-primary,
+                    var(--_ez-default-color-primary, #fdb827)
+                )
+            )
+            18%,
         var(--ez-color-background, var(--_ez-default-color-background, #fff))
     );
 }
