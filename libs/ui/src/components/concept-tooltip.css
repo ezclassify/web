@@ -171,7 +171,7 @@
 }
 /* These sizes start from the compact tools text inside the section. */
 .ez-marking-tools .ez-tooltip__header {
-    font-size: calc(1em * 13 / 12);
+    font-size: calc(1em * 0.8125 / 0.85);
 }
 .ez-marking-tools
     :is(
@@ -179,5 +179,5 @@
         .ez-status-list__rule,
         .ez-status-list__undo-description
     ) {
-    font-size: calc(1em * 11 / 12);
+    font-size: calc(1em * 0.6875 / 0.85);
 }

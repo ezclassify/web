@@ -36,7 +36,7 @@
 /* Keep the tools text compact relative to the surrounding form. */
 .ez-marking-tools__tab,
 .ez-marking-tools__section {
-    font-size: calc(1em * 0.75);
+    font-size: calc(1em * 0.85);
 }
 .ez-marking-tools__tab {
     display: inline-flex;
@@ -53,7 +53,7 @@
     font-weight: 600;
 }
 .ez-marking-tools__count {
-    font-size: calc(1em * 11 / 12);
+    font-size: calc(1em * 0.6875 / 0.85);
     font-weight: 500;
     font-variant-numeric: tabular-nums;
     color: var(--ez-color-muted, #6b7280);
