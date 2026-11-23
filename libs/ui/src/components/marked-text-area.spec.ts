@@ -1428,6 +1428,47 @@ describe('MarkedTextArea favorites', () => {
     });
 });
 
+it('waits for a touch click before opening the paragraph marking in a phone sheet', async () => {
+    vi.stubGlobal('innerWidth', 390);
+    vi.stubGlobal('matchMedia', () => ({ matches: true }));
+    const native = document.createElement('textarea');
+    native.value = '(U) Body text here.';
+    const container = document.createElement('div');
+    root.append(native, container);
+    const field = new MarkedTextArea();
+    try {
+        await field.init(container, await createTestContext());
+        const editor = textareaEditor(native);
+        editor.dispatchEvent(
+            Object.assign(new Event('pointerdown', { bubbles: true }), {
+                pointerType: 'touch',
+                isPrimary: true,
+            }),
+        );
+        editor.focus();
+        editor.setSelectionRange(2, 2);
+        document.dispatchEvent(new Event('selectionchange'));
+        // Let a selection-first browser finish its caret work before it
+        // dispatches click. Focus should still be on the touched area.
+        await wait(80);
+        expect(document.activeElement).toBe(editor);
+        editor.dispatchEvent(
+            new MouseEvent('click', { bubbles: true, detail: 1 }),
+        );
+        await expect
+            .poll(() =>
+                document.querySelector(
+                    '.ez-composer[data-surface="sheet"]:not([hidden])',
+                ),
+            )
+            .not.toBeNull();
+        expect(native.value).toBe('(U) Body text here.');
+    } finally {
+        field.destroy();
+        vi.unstubAllGlobals();
+    }
+});
+
 it.each(['before', 'after'])(
     'keeps the restored native textarea free of a picker on mouse-up %s teardown',
     async (when) => {

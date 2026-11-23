@@ -2515,6 +2515,122 @@ describe('MarkedInput: standalone self-publish to the page aggregate', () => {
     });
 });
 
+it.each([
+    'current',
+    'changed marking',
+    'changed context',
+    'stale read',
+    'silent native write',
+])(
+    'applies only a current marking fix from the phone editor (%s)',
+    async (state) => {
+        const adapter = await createTestEngine();
+        let heldRead: Promise<void> | undefined;
+        const engine = new Proxy(adapter, {
+            get(target, key) {
+                const member = Reflect.get(target, key, target);
+                if (typeof member !== 'function') return member;
+                if (key !== 'process') return member.bind(target);
+                return async (...args: Parameters<typeof adapter.process>) => {
+                    const held = args[0] === 'U' ? heldRead : undefined;
+                    if (held) heldRead = undefined;
+                    const result = await target.process(...args);
+                    if (held) await held;
+                    if (args[0] !== 'U') return result;
+                    return {
+                        ...result,
+                        errors: [
+                            { constraintId: 'needs-s', message: 'Use S here.' },
+                        ],
+                        proposedFixes: [
+                            {
+                                message: 'Replace U with S',
+                                rendered: 'S',
+                                keeps: [],
+                                adds: [{ categoryId: 'level', conceptId: 'S' }],
+                                removes: [
+                                    { categoryId: 'level', conceptId: 'U' },
+                                ],
+                            },
+                        ],
+                    };
+                };
+            },
+        });
+        vi.stubGlobal('innerWidth', 390);
+        vi.stubGlobal('matchMedia', () => ({ matches: true }));
+        const container = document.createElement('div');
+        const native = document.createElement('input');
+        native.value = '(U) Quarterly report';
+        container.append(native);
+        root.append(container);
+        const field = new MarkedInput();
+        let resolveRead: (() => void) | undefined;
+        try {
+            await field.init(container, asContext(engine), {
+                resolveContext: () => undefined,
+            });
+            if (state === 'stale read') {
+                heldRead = new Promise((resolve) => {
+                    resolveRead = resolve;
+                });
+                field.setValue('(U) Edited report');
+            }
+            container
+                .querySelector<HTMLButtonElement>('.marked-input-touch-add')!
+                .click();
+            const sheet = '.ez-composer[data-surface="sheet"]:not([hidden])';
+            await expect
+                .poll(() => document.querySelector(sheet))
+                .not.toBeNull();
+            document
+                .querySelector<HTMLButtonElement>(`${sheet} .ez-status-mark`)!
+                .click();
+            const fix = document.querySelector<HTMLButtonElement>(
+                '.ez-validation-errors__fix',
+            )!;
+            expect(fix).not.toBeNull();
+            if (state === 'silent native write') {
+                native.value = '(X) Updated report';
+                fix.click();
+                expect(native.value).toBe('(X) Updated report');
+                return;
+            }
+            if (state === 'changed marking' || state === 'stale read') {
+                field.setValue('(X) Updated report');
+                if (resolveRead) {
+                    resolveRead();
+                    await wait();
+                }
+                fix.click();
+                expect(native.value).toBe('(X) Updated report');
+                return;
+            }
+            if (state === 'changed context') {
+                field.refreshWhole();
+                expect(
+                    document.querySelector('.ez-validation-errors__fix'),
+                ).toBeNull();
+                fix.click();
+                expect(native.value).toBe('(U) Quarterly report');
+                return;
+            }
+            fix.click();
+            await expect.poll(() => native.value).toBe('(S) Quarterly report');
+            expect(document.querySelector(sheet)).toBeNull();
+            await expect
+                .poll(() =>
+                    field.getAssertions().map(({ conceptId }) => conceptId),
+                )
+                .toEqual(['S']);
+        } finally {
+            resolveRead?.();
+            field.destroy();
+            vi.unstubAllGlobals();
+        }
+    },
+);
+
 describe('MarkedInput favorites', () => {
     /** Mount MarkedInput directly (see createTestContext's doc comment). */
     async function mountDirect(

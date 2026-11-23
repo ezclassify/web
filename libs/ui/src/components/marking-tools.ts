@@ -47,6 +47,10 @@ export function focusMarkingTools(mark: HTMLElement): void {
     const popup = doc.getElementById(
         mark.getAttribute('aria-describedby') ?? '',
     );
+    const tab = popup?.querySelector<HTMLElement>(
+        '[role="tab"][aria-selected="true"]',
+    );
+    if (tab) revealTab(tab);
     const target = popup?.querySelector<HTMLElement>(
         '.ez-marking-tools__target',
     );
@@ -54,9 +58,6 @@ export function focusMarkingTools(mark: HTMLElement): void {
         target.focus({ preventScroll: true });
         return;
     }
-    const tab = popup?.querySelector<HTMLElement>(
-        '[role="tab"][aria-selected="true"]',
-    );
     const panel = doc.getElementById(tab?.getAttribute('aria-controls') ?? '');
     const hasError = panel?.querySelector(
         '.ez-validation-errors__item:not(.ez-validation-errors__item--warning)',
@@ -67,6 +68,19 @@ export function focusMarkingTools(mark: HTMLElement): void {
           )
         : null;
     (fix ?? tab)?.focus({ preventScroll: true });
+}
+
+/** Move only the tab strip, keeping the popup and page in place. */
+function revealTab(tab: HTMLElement): void {
+    const strip = tab.parentElement;
+    if (!strip || strip.scrollWidth <= strip.clientWidth) return;
+    const bounds = strip.getBoundingClientRect();
+    const position = tab.getBoundingClientRect();
+    const offset =
+        position.left < bounds.left
+            ? position.left - bounds.left
+            : Math.max(0, position.right - bounds.right);
+    strip.scrollLeft += offset;
 }
 
 /** Markings offered by a field that contains several independent entries. */
@@ -362,6 +376,7 @@ export function buildMarkingTools(content: MarkingToolsContent): HTMLElement {
         // Keep outgoing focus in the visible tools domain until the next
         // target owns it. Hiding a focused panel first can commit a held draft.
         if (focus || leavingPanel) tabs[index].focus({ preventScroll: true });
+        revealTab(tabs[index]);
         panels.forEach((panel, i) => {
             panel.hidden = i !== index;
         });

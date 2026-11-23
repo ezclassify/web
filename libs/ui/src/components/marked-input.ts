@@ -543,6 +543,7 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
         // the same call syncFromInput uses for saved picker assertions. External
         // store pushes must update the displayed marking and its validity together.
         const mySeq = ++this.scanSeq;
+        const contextRevision = this.reportContextRevision;
         const apply = (result: {
             rendered: string;
             errors: ValidationError[];
@@ -554,7 +555,7 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
             // The engine could not write these facts, so its text is the
             // refusal marker: the host keeps its value and the field says why.
             if (renderViewRefused(result)) {
-                this.showRefusal(result);
+                this.showRefusal(result, contextRevision);
                 this.renderDisplay();
                 return;
             }
@@ -563,24 +564,20 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
             const partErrors = result.errors ?? [];
             this.valid = partErrors.length === 0;
             this.errors = partErrors.map((e) => e.message);
-            this.showRuleErrors(
-                partErrors,
-                result.proposedFixes ?? [],
-                result.warnings,
-            );
-            if (r) {
-                // One wrapper, so the part can be found again in the body text.
-                const marking = this.wrapRendered(r);
-                // External state reflection: write silently (notify=false);
-                // the change originated outside this field.
-                this.setHostValue(
-                    this.joinMarkingAndText(marking, freeText),
-                    false,
-                );
-            } else {
-                this.setHostValue(freeText, false);
-            }
+            const value = r
+                ? this.joinMarkingAndText(this.wrapRendered(r), freeText)
+                : freeText;
+            // The change originated outside this field.
+            this.setHostValue(value, false);
             this.updateMarkEnd();
+            // Keep the native-write refusal if the format crosses lines.
+            if (!breaksLine(value))
+                this.showRuleErrors(
+                    partErrors,
+                    result.proposedFixes ?? [],
+                    result.warnings,
+                    contextRevision,
+                );
             this.renderDisplay();
             // Don't call emitChange() here. setAssertions is called by the store
             // subscription (wireMarkedInputStore) to reflect external state; not a
@@ -619,7 +616,7 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
      */
     refreshParts(): void {
         if (!this.options.resolveParts || this.destroyed) return;
-        if (this.picker) this.picker.refreshContext();
+        if (this.picker) this.refreshPickerContext();
         else void this.syncFromInput();
     }
 
@@ -629,8 +626,18 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
      */
     refreshWhole(): void {
         if (!this.options.resolveContext || this.destroyed) return;
-        if (this.picker) this.picker.refreshContext();
+        if (this.picker) this.refreshPickerContext();
         else void this.syncFromInput({ wholeChanged: true });
+    }
+
+    private reportContextRevision = 0;
+
+    private refreshPickerContext(): void {
+        // The open editor rechecks its reading. The field's committed
+        // remedies describe the earlier context until its next field read.
+        ++this.reportContextRevision;
+        this.setFieldFindings([]);
+        this.picker?.refreshContext();
     }
 
     /** See `ComponentInstance.coversParts`. */
@@ -714,20 +721,27 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
         errors: readonly ValidationError[],
         proposedFixes: readonly Fix[],
         warnings: readonly Warning[] = [],
+        contextRevision = this.reportContextRevision,
     ): void {
-        this.showReport(ruleErrorsFrom(errors, proposedFixes, warnings));
+        this.showReport(
+            ruleErrorsFrom(errors, proposedFixes, warnings),
+            contextRevision,
+        );
     }
 
     /**
      * Mark the field invalid and say why the engine could not write its
      * marking, after the engine's errors for it.
      */
-    private showRefusal(write: {
-        errors: readonly ValidationError[];
-        proposedFixes?: readonly Fix[];
-        warnings?: readonly Warning[];
-        assessment?: RenderAssessment;
-    }): void {
+    private showRefusal(
+        write: {
+            errors: readonly ValidationError[];
+            proposedFixes?: readonly Fix[];
+            warnings?: readonly Warning[];
+            assessment?: RenderAssessment;
+        },
+        contextRevision = this.reportContextRevision,
+    ): void {
         const report = ruleErrorsFrom(
             write.errors ?? [],
             write.proposedFixes ?? [],
@@ -739,7 +753,7 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
         ];
         this.valid = false;
         this.errors = messages;
-        this.showReport({ ...report, messages });
+        this.showReport({ ...report, messages }, contextRevision);
     }
 
     /**
@@ -760,14 +774,27 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
      * Show a report under the field: the rule errors, warnings and fixes of a
      * read, or why the read failed.
      */
-    private showReport(ruleErrors: RuleErrorReport): void {
+    private showReport(
+        ruleErrors: RuleErrorReport,
+        contextRevision = this.reportContextRevision,
+    ): void {
+        if (contextRevision !== this.reportContextRevision) return;
         this.warnings = ruleErrors.warnings;
+        const source = this.getMarkString();
+        const revision = this.scanSeq;
         this.updateFieldReport(
             this.container.ownerDocument,
             ruleErrors,
             (element) => placeUnderField(element, this.input, this.container),
             (pointerType) => returnToField(this.input, this.wrap, pointerType),
-            (fix) => void this.applyRuleFix(fix),
+            (fix) => {
+                if (
+                    revision === this.scanSeq &&
+                    contextRevision === this.reportContextRevision &&
+                    source === this.getMarkString()
+                )
+                    void this.applyRuleFix(fix);
+            },
         );
     }
 
@@ -777,11 +804,12 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
      * Runtime can derive any rule-added values again.
      */
     private async applyRuleFix(fix: Fix): Promise<void> {
-        // The list reports the committed mark; while the picker is open the
-        // editor owns a newer one, and the picker's own commit wins.
+        // A clean sheet borrows the field's tools and still shows the committed
+        // report. A dirty editor owns a newer marking than that report.
         if (
-            this.picker ||
+            this.picker?.isDirty() ||
             this.destroyed ||
+            this.nativeInput.value !== this.input.value ||
             this.input.matches(':disabled') ||
             this.input.readOnly
         )
@@ -792,6 +820,8 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
             this.refuseLineBreak();
             return;
         }
+        if (this.picker) this.finishClose();
+        this.updateMarkEnd();
         const marking = this.wrapRendered(fix.rendered);
         this._editorAssertions = {
             marking: marking.trimEnd(),
@@ -893,6 +923,7 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
         }
 
         const mySeq = ++this.scanSeq;
+        const contextRevision = this.reportContextRevision;
         const inner = this.extractInner(mark);
 
         let result: {
@@ -932,12 +963,14 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
         } catch (error) {
             // The engine raised instead of reading the mark. Leave the
             // assertions and rendered value as they were and say why.
-            if (mySeq === this.scanSeq)
+            if (mySeq === this.scanSeq && mark === this.getMarkString())
                 this.showReport(readFailureReport(error));
             return;
         }
 
-        if (mySeq !== this.scanSeq) return;
+        // A host can replace the marking while the picker holds the field.
+        // In that case it cannot start a newer scan to supersede this one.
+        if (mySeq !== this.scanSeq || mark !== this.getMarkString()) return;
 
         // A refused write is the engine's marker, so the field keeps the text
         // it holds. What the engine read from the mark is still what the
@@ -963,7 +996,7 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
         // publishing the downgraded form.
         const partErrors = result.errors ?? [];
         if (refused) {
-            this.showRefusal(result);
+            this.showRefusal(result, contextRevision);
         } else {
             this.valid = partErrors.length === 0;
             this.errors = partErrors.map((e) => e.message);
@@ -971,6 +1004,7 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
                 partErrors,
                 result.proposedFixes ?? [],
                 result.warnings,
+                contextRevision,
             );
         }
         // Fail closed on unrecognized tokens: a typo inside the mark (e.g.
