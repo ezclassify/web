@@ -55,7 +55,10 @@ export function mirrorHostAccent(
     const accent = styles.accentColor;
     const native = accent && accent !== 'auto' ? accent : '';
     const primary = '--_ez-default-color-primary';
-    const contrast = globalThis.CSS?.supports('color', contrastingAccent('red'))
+    const contrast = globalThis.CSS?.supports?.(
+        'color',
+        contrastingAccent('red'),
+    )
         ? contrastingAccent(`var(--ez-color-primary, var(${primary}))`)
         : '';
     for (const [property, value] of [

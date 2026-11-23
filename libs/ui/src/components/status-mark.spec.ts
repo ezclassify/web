@@ -551,7 +551,7 @@ describe('the unseen count', () => {
             '',
         );
         const rule = css.match(/\.ez-status-mark__count\s*\{([^}]*)\}/)?.[1];
-        expect(rule).toMatch(/margin-inline-end:/);
+        expect(rule).toMatch(/margin-inline-end:\s*0;/);
         expect(rule).not.toMatch(/margin-inline-start:/);
         // Nothing resizes the mark while it is hovered or focused.
         expect(css).not.toMatch(

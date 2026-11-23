@@ -22,9 +22,6 @@
     align-items: center;
     gap: 0.25rem;
 }
-.ez-field-chrome .ez-status-mark__count {
-    margin-inline-end: 0.0625rem;
-}
 .ez-field-chrome .ez-field-action {
     font: inherit;
 }

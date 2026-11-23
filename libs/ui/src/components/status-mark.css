@@ -423,12 +423,13 @@
     display: none;
 }
 .ez-status-mark__count {
-    margin-inline-end: 0.125rem;
+    margin-inline-end: 0;
     font-family: inherit;
-    font-size: calc(1em * 0.75);
+    font-size: 0.8125em;
     font-weight: 700;
-    line-height: 1;
-    font-variant-numeric: tabular-nums;
+    line-height: 1cap;
+    text-box: trim-both cap alphabetic;
+    font-variant-numeric: lining-nums tabular-nums;
 }
 .ez-status-mark--unseen,
 .ez-status-mark--error {
@@ -458,12 +459,9 @@
     }
 }
 
-/* The number follows the field's text size on touch screens. Standalone
-   status marks also get a 44px hit area through their centered pseudo-element. */
+/* Standalone status marks get a 44px touch area through their centered
+   pseudo-element. */
 @media (pointer: coarse) {
-    .ez-status-mark__count {
-        font-size: 0.875em;
-    }
     .ez-status-mark::after {
         content: '';
         position: absolute;

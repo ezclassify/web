@@ -14,9 +14,25 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
     FIELD_CHROME_INLINE_SIZE,
+    mirrorHostAccent,
     mountFieldChrome,
     observeFieldTheme,
 } from './field-chrome';
+
+it('mirrors the accent when the host has no CSS.supports method', () => {
+    const frame = document.createElement('div');
+    const field = document.createElement('input');
+    field.style.accentColor = 'green';
+    vi.stubGlobal('CSS', {});
+    try {
+        mirrorHostAccent(frame, field.style);
+        expect(
+            frame.style.getPropertyValue('--_ez-default-color-primary'),
+        ).toBe('green');
+    } finally {
+        vi.unstubAllGlobals();
+    }
+});
 
 it.each(['ancestor', 'shadow host'])(
     'refreshes field snapshots when a theme is removed from a %s',
