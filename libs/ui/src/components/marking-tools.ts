@@ -87,6 +87,8 @@ export interface MarkingToolsContent {
     attention?: HTMLElement;
     preferAttention?: boolean;
     targets?: MarkingToolsTargets;
+    /** Field-wide notice kept separate from the selected marking's findings. */
+    fieldNotice?: string;
     /** Applied changes and available undo. */
     corrections: HTMLElement;
     /** Host favorites and scheme presets, when either is available. */
@@ -272,6 +274,12 @@ export function buildMarkingTools(content: MarkingToolsContent): HTMLElement {
     close.textContent = '×';
     close.addEventListener('click', content.onClose);
     header.appendChild(close);
+    if (content.fieldNotice !== undefined) {
+        const notice = document.createElement('div');
+        notice.className = 'ez-marking-tools__field-notice';
+        notice.textContent = content.fieldNotice;
+        header.appendChild(notice);
+    }
     tools.appendChild(header);
 
     const sections = [

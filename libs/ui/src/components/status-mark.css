@@ -156,6 +156,15 @@
     border-bottom: 1px solid var(--ez-color-border, #d1d5db);
     margin-bottom: 0.625em;
 }
+.ez-marking-tools__header:has(.ez-marking-tools__field-notice) {
+    flex-wrap: wrap;
+}
+.ez-marking-tools__field-notice {
+    flex-basis: 100%;
+    padding-block-end: 0.625em;
+    font-size: calc(1em * 0.85);
+    color: var(--ez-color-error, #b91c1c);
+}
 .ez-marking-tools__section:not([hidden]) {
     min-height: 0;
     overflow-y: auto;

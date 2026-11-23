@@ -1033,10 +1033,15 @@ export function ensureStatusMark(
             const attention = hasAttention(mark)
                 ? attentionContent(mark)
                 : undefined;
-            const preferAttention = hasAttention(mark, target);
             const showCorrections =
                 markDraftFixes.has(mark) ||
                 linesOf(mark, true, target).length > 0;
+            const preferAttention =
+                (target === undefined && error !== undefined) ||
+                panelFindings(mark, target).some(
+                    ({ report }) => report.messages.length > 0,
+                ) ||
+                (!showCorrections && hasAttention(mark, target));
             const acknowledgeCorrections = () => {
                 markContentSnapshot.set(mark, correctionSnapshot(mark));
                 acknowledgeMark(mark);
@@ -1050,6 +1055,7 @@ export function ensureStatusMark(
             const tools = buildMarkingTools({
                 attention,
                 preferAttention,
+                fieldNotice: target === undefined ? undefined : error,
                 targets: targets && {
                     ...targets,
                     select: (value) => {
