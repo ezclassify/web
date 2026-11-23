@@ -295,7 +295,7 @@
             var(--ez-spacing-md, 0.75rem) + 0.75em
     ) !important;
 }
-.select-dropdown-field--native::after {
+.select-dropdown-field::after {
     content: '';
     position: absolute;
     inset-inline-end: calc(
@@ -310,13 +310,18 @@
     transform: translateY(-75%) rotate(45deg);
     pointer-events: none;
 }
+.select-dropdown-field:has(> select:open)::after {
+    transform: translateY(-25%) rotate(225deg);
+}
 .select-dropdown {
+    appearance: none;
     flex: 1;
     min-width: 0;
     width: 0;
     align-self: stretch;
     box-sizing: border-box;
     padding: 0;
+    padding-inline-end: calc(var(--ez-spacing-md, 0.75rem) + 0.75em);
     border: 0;
     background: transparent;
     color: inherit;
@@ -340,7 +345,6 @@
         padding-inline-end: var(--ez-field-chrome-inline-size, 0px) !important;
     }
     .select-dropdown {
-        appearance: none;
         padding-inline-end: 2rem;
         font-size: max(1em, 16px);
     }
@@ -350,11 +354,11 @@
         content: '';
         position: absolute;
         inset-inline-end: calc(
-            var(--ez-field-chrome-inline-size, 0px) + 0.25rem
+            var(--ez-field-chrome-inline-size, 0px) + (2rem - min(1em, 1lh)) / 2
         );
         top: 50%;
-        inline-size: 1.5rem;
-        block-size: 1.5rem;
+        inline-size: min(1em, 1lh);
+        block-size: min(1em, 1lh);
         border: 0;
         background: currentColor;
         clip-path: polygon(
@@ -367,6 +371,9 @@
         );
         transform: translateY(-50%);
         pointer-events: none;
+    }
+    .select-dropdown-field:has(> select:open)::after {
+        transform: translateY(-50%) rotate(180deg);
     }
 }
 .select-dropdown-supplement:empty {

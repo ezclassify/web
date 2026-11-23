@@ -13,7 +13,10 @@
  * grouped under the scope's label when they fall in more than one.
  */
 
-import { suspendNativeChoiceFallback } from '../native-control-host';
+import {
+    suspendNativeChoiceFallback,
+    useAuthoredChoiceLabel,
+} from '../native-control-host';
 import { ComponentBase, type ComponentOptions } from './component-base';
 import { createAnnouncer, announce } from './component-utils';
 import type {
@@ -631,12 +634,17 @@ export class CategorySelector extends ComponentBase {
         // first line also carries the suite's chrome at its trailing end.
         const head = document.createElement('div');
         head.className = 'category-selector-head';
-        const label = document.createElement('div');
-        label.className = 'category-selector-label';
-        label.textContent = row.category.label;
-        label.id = `category-label-${row.category.id}`;
-        rowEl.setAttribute('aria-labelledby', label.id);
-        head.appendChild(label);
+        if (
+            this.categoryRows.length !== 1 ||
+            !useAuthoredChoiceLabel(rowEl, this.container)
+        ) {
+            const label = document.createElement('div');
+            label.className = 'category-selector-label';
+            label.textContent = row.category.label;
+            label.id = `category-label-${row.category.id}`;
+            rowEl.setAttribute('aria-labelledby', label.id);
+            head.appendChild(label);
+        }
         rowEl.appendChild(head);
 
         // Options container

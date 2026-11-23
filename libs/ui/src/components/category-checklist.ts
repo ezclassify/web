@@ -10,7 +10,10 @@
  * room it is given (it scrolls), or while it holds a filter.
  */
 
-import { suspendNativeChoiceFallback } from '../native-control-host';
+import {
+    suspendNativeChoiceFallback,
+    useAuthoredChoiceLabel,
+} from '../native-control-host';
 import { ComponentBase, type ComponentOptions } from './component-base';
 import { createAnnouncer, announce } from './component-utils';
 import type { ConceptView, Suggestion } from '@ezclassify/types';
@@ -175,11 +178,6 @@ export class CategoryChecklist extends ComponentBase {
         this.headerEl.className = 'category-checklist-header';
         this.headerEl.addEventListener('keydown', this.onHeaderKeydown, true);
 
-        const name = document.createElement('span');
-        name.className = 'category-checklist-name';
-        name.textContent = category.label;
-        this.headerEl.appendChild(name);
-
         const controls = document.createElement('div');
         controls.className = 'category-checklist-controls';
 
@@ -241,6 +239,12 @@ export class CategoryChecklist extends ComponentBase {
         this.listEl.setAttribute('role', 'group');
         this.listEl.tabIndex = -1;
         this.listEl.setAttribute('aria-label', category.label);
+        if (!useAuthoredChoiceLabel(this.listEl, this.container)) {
+            const name = document.createElement('span');
+            name.className = 'category-checklist-name';
+            name.textContent = category.label;
+            this.headerEl.prepend(name);
+        }
         frame.appendChild(this.listEl);
         if (this.searchMode !== 'never') frame.appendChild(this.searchInput);
         frame.appendChild(this.headerEl);

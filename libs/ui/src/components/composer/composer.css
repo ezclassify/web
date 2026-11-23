@@ -78,10 +78,6 @@
 .ez-composer__sheet-tools > button::after {
     inset: 0;
 }
-.ez-composer__sheet-tools svg {
-    width: 1.25rem;
-    height: 1.25rem;
-}
 .ez-composer__sheet-label {
     min-width: 0;
     overflow: hidden;

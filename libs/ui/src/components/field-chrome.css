@@ -81,11 +81,11 @@
     }
     .ez-field-chrome .ez-clear-button {
         inline-size: 2rem;
+        font: inherit;
     }
-    .ez-field-chrome .ez-status-mark--chrome svg,
     .ez-field-chrome .ez-clear-button__icon {
-        inline-size: 1.5rem;
-        block-size: 1.5rem;
+        inline-size: min(1em, 1lh);
+        block-size: min(1em, 1lh);
     }
 }
 

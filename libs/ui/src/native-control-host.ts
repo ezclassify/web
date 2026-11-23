@@ -16,6 +16,19 @@ export function markGeneratedChoiceValue(input: HTMLInputElement): void {
     generatedChoices.add(input);
 }
 
+/** Use the host's explicit group name when it supplies its own label. */
+export function useAuthoredChoiceLabel(
+    group: HTMLElement,
+    container: HTMLElement,
+): boolean {
+    const host = getMountHost(container) ?? container;
+    const labelledBy = host.getAttribute('aria-labelledby')?.trim();
+    const label = host.getAttribute('aria-label')?.trim();
+    if (labelledBy) group.setAttribute('aria-labelledby', labelledBy);
+    if (label) group.setAttribute('aria-label', label);
+    return !!(labelledBy || label);
+}
+
 /** Keep the authored fallback out of native form submission while enhanced. */
 export function suspendNativeChoiceFallback(
     container: HTMLElement,
