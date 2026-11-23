@@ -2,7 +2,7 @@
 
 .ezc-guide-helper {
     font-family: inherit;
-    color: var(--ez-color-text, inherit);
+    color: var(--ez-color-text, var(--_ez-default-color-text, inherit));
     line-height: 1.5;
 }
 
@@ -22,10 +22,10 @@
     min-height: 4rem;
     padding: 0.375rem 0.5rem;
     font-size: calc(1em * 0.875);
-    border: 1px solid var(--ez-color-border);
+    border: 1px solid var(--ez-color-border, var(--_ez-default-color-border));
     border-radius: 0.25rem;
-    background: var(--ez-color-background);
-    color: var(--ez-color-text, inherit);
+    background: var(--ez-color-background, var(--_ez-default-color-background));
+    color: var(--ez-color-text, var(--_ez-default-color-text, inherit));
     resize: vertical;
     font-family: inherit;
 }
@@ -39,10 +39,10 @@
     margin-top: 0.375rem;
     padding: 0.3125rem 0.75rem;
     font-size: calc(1em * 0.8125);
-    border: 1px solid var(--ez-color-border);
+    border: 1px solid var(--ez-color-border, var(--_ez-default-color-border));
     border-radius: 0.25rem;
-    background: var(--ez-color-background);
-    color: var(--ez-color-text, inherit);
+    background: var(--ez-color-background, var(--_ez-default-color-background));
+    color: var(--ez-color-text, var(--_ez-default-color-text, inherit));
     cursor: pointer;
 }
 
@@ -70,10 +70,10 @@
     width: 100%;
     padding: 0.375rem 0.5rem;
     font-size: calc(1em * 0.875);
-    border: 1px solid var(--ez-color-border);
+    border: 1px solid var(--ez-color-border, var(--_ez-default-color-border));
     border-radius: 0.25rem;
-    background: var(--ez-color-background);
-    color: var(--ez-color-text, inherit);
+    background: var(--ez-color-background, var(--_ez-default-color-background));
+    color: var(--ez-color-text, var(--_ez-default-color-text, inherit));
 }
 
 .ezc-guide-search-input:focus-visible {
@@ -126,7 +126,8 @@
      The bold + uppercase + letter-spacing treatment already distinguishes this
      label without relying on color. */
     color: var(--ez-color-muted);
-    border-top: 1px solid var(--ez-color-border);
+    border-top: 1px solid
+        var(--ez-color-border, var(--_ez-default-color-border));
     margin: 0;
 }
 
@@ -156,7 +157,8 @@
 
 .ezc-guide-rule {
     padding: 0.375rem 1rem;
-    border-bottom: 1px solid var(--ez-color-border);
+    border-bottom: 1px solid
+        var(--ez-color-border, var(--_ez-default-color-border));
 }
 
 .ezc-guide-rule--nominated {
@@ -170,7 +172,7 @@
     padding: 0.5rem 0.75rem;
     border-radius: 0.25rem;
     background: var(--ez-color-surface-hover);
-    color: var(--ez-color-text);
+    color: var(--ez-color-text, var(--_ez-default-color-text));
     font-size: calc(1em * 0.875);
 }
 
@@ -229,7 +231,10 @@
     padding: 0.0625rem 0.375rem;
     border-radius: 0.1875rem;
     background: var(--ezc-guide-outcome-bg, var(--ez-color-surface-active));
-    color: var(--ezc-guide-outcome-fg, var(--ez-color-text));
+    color: var(
+        --ezc-guide-outcome-fg,
+        var(--ez-color-text, var(--_ez-default-color-text))
+    );
     margin-left: auto;
 }
 
@@ -259,7 +264,7 @@
     padding: 0.0625rem 0.375rem;
     border-radius: 0.1875rem;
     background: var(--ez-color-muted);
-    color: var(--ez-color-background);
+    color: var(--ez-color-background, var(--_ez-default-color-background));
 }
 
 @media (forced-colors: active) {
@@ -272,8 +277,10 @@
     padding: 1rem;
     margin-top: 1rem;
     background: var(--ez-color-surface);
-    border-top: 2px solid var(--ez-color-border);
-    border-bottom: 1px solid var(--ez-color-border);
+    border-top: 2px solid
+        var(--ez-color-border, var(--_ez-default-color-border));
+    border-bottom: 1px solid
+        var(--ez-color-border, var(--_ez-default-color-border));
 }
 
 .ezc-guide-breakdown:empty {
@@ -296,16 +303,17 @@
     list-style: none;
     padding: 0;
     margin: 0;
-    border: 1px solid var(--ez-color-border);
+    border: 1px solid var(--ez-color-border, var(--_ez-default-color-border));
     border-radius: 0.375rem;
-    background: var(--ez-color-background);
+    background: var(--ez-color-background, var(--_ez-default-color-background));
     overflow: hidden;
 }
 
 .ezc-guide-breakdown-item {
     padding: 0.25rem 0.5rem;
     font-size: calc(1em * 0.8125);
-    border-bottom: 1px solid var(--ez-color-border);
+    border-bottom: 1px solid
+        var(--ez-color-border, var(--_ez-default-color-border));
 }
 
 .ezc-guide-breakdown-item:last-child {
@@ -337,7 +345,7 @@
     border-radius: 0.125rem;
     background: var(--ez-color-surface);
     color: var(--ez-color-muted);
-    border: 1px solid var(--ez-color-border);
+    border: 1px solid var(--ez-color-border, var(--_ez-default-color-border));
 }
 
 .ezc-guide-breakdown-outcome {
@@ -350,7 +358,10 @@
     padding: 0.0625rem 0.375rem;
     border-radius: 0.1875rem;
     background: var(--ezc-guide-outcome-bg, var(--ez-color-surface-active));
-    color: var(--ezc-guide-outcome-fg, var(--ez-color-text));
+    color: var(
+        --ezc-guide-outcome-fg,
+        var(--ez-color-text, var(--_ez-default-color-text))
+    );
 }
 
 .ezc-guide-breakdown-rationale {
@@ -368,7 +379,8 @@
     column-gap: 0.75rem;
     row-gap: 0.25rem;
     padding: 0.875rem 1rem;
-    border-top: 2px solid var(--ez-color-border);
+    border-top: 2px solid
+        var(--ez-color-border, var(--_ez-default-color-border));
     background: var(--ez-color-surface-active, var(--ez-color-surface));
     font-size: calc(1em * 0.875);
 }
@@ -381,7 +393,7 @@
     letter-spacing: 0.06em;
     /* Use text color instead of muted: the surface-active background (#e8f0fe)
      reduces muted contrast below WCAG 4.5:1 at 12px. */
-    color: var(--ez-color-text, inherit);
+    color: var(--ez-color-text, var(--_ez-default-color-text, inherit));
 }
 
 .ezc-guide-result-value {
@@ -390,7 +402,7 @@
     overflow-wrap: anywhere;
     font-size: 1em;
     font-weight: 700;
-    color: var(--ez-color-text);
+    color: var(--ez-color-text, var(--_ez-default-color-text));
 }
 
 .ezc-guide-copy-btn {
@@ -398,10 +410,10 @@
     grid-row: 1 / span 2;
     padding: 0.25rem 0.625rem;
     font-size: calc(1em * 0.8125);
-    border: 1px solid var(--ez-color-border);
+    border: 1px solid var(--ez-color-border, var(--_ez-default-color-border));
     border-radius: 0.25rem;
-    background: var(--ez-color-background);
-    color: var(--ez-color-text, inherit);
+    background: var(--ez-color-background, var(--_ez-default-color-background));
+    color: var(--ez-color-text, var(--_ez-default-color-text, inherit));
     cursor: pointer;
 }
 

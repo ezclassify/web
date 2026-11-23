@@ -79,9 +79,13 @@
 
 /* ── Empty state ─────────────────────────────────── */
 .status-banner--empty {
-    background: var(--ez-color-background, #f3f4f6);
+    background: var(
+        --ez-color-background,
+        var(--_ez-default-color-background, #f3f4f6)
+    );
     color: var(--ez-color-muted, #6b7280);
-    border: 1px dashed var(--ez-color-border, #d1d5db);
+    border: 1px dashed
+        var(--ez-color-border, var(--_ez-default-color-border, #d1d5db));
 }
 
 /* ── Over-boundary alert ─────────────────────────── */

@@ -313,7 +313,8 @@ export function mountNativeFieldDefaults(host: HTMLElement): () => void {
  * @param host - The element the control was mounted for
  * @param opts - The control's container (watched for a `data-color-scheme`
  *   palette), whether the host asked for the library's styling, and whether an
- *   explicit palette (a theme option) should keep the token colors
+ *   explicit palette (a theme option) should keep the token colors. Composite
+ *   controls keep their own layout and mirror only the appearance.
  * @returns A function that stops following the host
  */
 export function mirrorHostFrame(
@@ -323,34 +324,71 @@ export function mirrorHostFrame(
         container: HTMLElement;
         styleInputs?: boolean;
         explicitPalette?: () => boolean;
+        paintOnly?: boolean;
     },
 ): () => void {
     if (
-        !(host instanceof HTMLInputElement) ||
-        host.type === 'hidden' ||
+        !(
+            host instanceof HTMLInputElement ||
+            host instanceof HTMLTextAreaElement ||
+            host instanceof HTMLFieldSetElement
+        ) ||
+        (host instanceof HTMLInputElement && host.type === 'hidden') ||
+        (!opts.paintOnly && !(host instanceof HTMLInputElement)) ||
         opts.styleInputs
     )
         return () => {};
-    const releaseDefaults = mountNativeFieldDefaults(host);
+    const releaseDefaults = !opts.paintOnly
+        ? mountNativeFieldDefaults(host)
+        : undefined;
     const sync = () => {
         const styles = window.getComputedStyle(host);
         // The frame's own stylesheet floor, read before the host's values are
         // written over it: the suite's single-line height.
-        frame.style.minHeight = '';
-        const floor = window.getComputedStyle(frame).minHeight;
+        if (!opts.paintOnly) frame.style.minHeight = '';
+        const floor = opts.paintOnly
+            ? ''
+            : window.getComputedStyle(frame).minHeight;
         const explicitPalette =
             !!opts.explicitPalette?.() ||
             opts.container.hasAttribute('data-color-scheme');
+        for (const [property, token] of [
+            ['backgroundColor', 'color-background'],
+            ['color', 'color-text'],
+            ['borderColor', 'color-border'],
+            ['borderWidth', 'border-width'],
+            ['borderRadius', 'border-radius'],
+        ] as const) {
+            const value =
+                explicitPalette && token.startsWith('color-')
+                    ? ''
+                    : styles[property];
+            if (opts.paintOnly)
+                frame.style.setProperty(`--_ez-native-${token}`, value);
+            else frame.style[property] = value;
+        }
+        for (const [property, cssName] of [
+            ['borderStyle', 'border-style'],
+            ['font', 'font'],
+            ['lineHeight', 'line-height'],
+        ] as const) {
+            if (opts.paintOnly) {
+                // A borderless host already supplies zero width. Keep the
+                // default style so a later width override can draw an edge.
+                const borderless =
+                    property === 'borderStyle' &&
+                    /^(none|hidden)$/.test(styles.borderStyle);
+                frame.style.setProperty(
+                    `--_ez-native-${cssName}`,
+                    borderless ? '' : styles[property],
+                );
+                continue;
+            }
+            frame.style[property] = styles[property];
+        }
+        if (opts.paintOnly) return;
         for (const property of [
             'boxSizing',
-            'backgroundColor',
-            'color',
-            'font',
-            'lineHeight',
-            'borderWidth',
-            'borderStyle',
-            'borderColor',
-            'borderRadius',
             'marginTop',
             'marginBottom',
             'minHeight',
@@ -358,11 +396,7 @@ export function mirrorHostFrame(
             'paddingBottom',
             'paddingLeft',
         ] as const) {
-            frame.style[property] =
-                explicitPalette &&
-                ['backgroundColor', 'color', 'borderColor'].includes(property)
-                    ? ''
-                    : styles[property];
+            frame.style[property] = styles[property];
         }
         // The floor is the frame's outer height; a content-box frame measures
         // min-height inside the host padding and border it just took on.
@@ -385,7 +419,7 @@ export function mirrorHostFrame(
     const observer = observeFieldTheme(host, sync, opts.container, true);
     return () => {
         observer?.disconnect();
-        releaseDefaults();
+        releaseDefaults?.();
     };
 }
 

@@ -20,7 +20,10 @@
         inline-size: 2em;
         min-block-size: 2.75rem;
         border: none;
-        border-radius: var(--ez-border-radius, 0.25rem);
+        border-radius: var(
+            --ez-border-radius,
+            var(--_ez-default-border-radius, 0.25rem)
+        );
         background: transparent;
         color: var(--ez-color-primary, currentColor);
         font: inherit;
@@ -46,10 +49,14 @@
     display: flex;
     max-width: calc(100vw - 1rem);
     overflow: hidden;
-    border: 1px solid var(--ez-color-border, #d1d5db);
-    border-radius: var(--ez-border-radius, 0.5rem);
+    border: 1px solid
+        var(--ez-color-border, var(--_ez-default-color-border, #d1d5db));
+    border-radius: var(
+        --ez-border-radius,
+        var(--_ez-default-border-radius, 0.5rem)
+    );
     background: var(--ez-color-surface, #fff);
-    color: var(--ez-color-text, #1a1a2e);
+    color: var(--ez-color-text, var(--_ez-default-color-text, #1a1a2e));
     box-shadow: var(--ez-dropdown-shadow, 0 4px 12px rgb(0 0 0 / 18%));
     font: inherit;
 }
@@ -65,7 +72,8 @@
 }
 
 .ez-marking-touch-actions button + button {
-    border-inline-start: 1px solid var(--ez-color-border, #d1d5db);
+    border-inline-start: 1px solid
+        var(--ez-color-border, var(--_ez-default-color-border, #d1d5db));
 }
 
 .ez-marking-touch-actions button:focus-visible {

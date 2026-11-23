@@ -134,7 +134,8 @@
     width: 0;
     margin-left: -0.0625rem;
     margin-right: -0.0625rem;
-    border-left: 0.125rem solid var(--ez-color-text, currentColor);
+    border-left: 0.125rem solid
+        var(--ez-color-text, var(--_ez-default-color-text, currentColor));
     animation: marked-input-blink 1s step-end infinite;
     pointer-events: none;
 }
@@ -183,7 +184,8 @@
     font-size: calc(1em * 0.75);
     line-height: 1.5;
     background: var(--ez-color-surface, #f3f4f6);
-    border: 0.0625rem solid var(--ez-color-border, #d1d5db);
+    border: 0.0625rem solid
+        var(--ez-color-border, var(--_ez-default-color-border, #d1d5db));
     border-radius: 0.25rem;
     white-space: nowrap;
 }
@@ -193,7 +195,7 @@
     }
 }
 .marked-input-touch-add:hover {
-    color: var(--ez-color-text, #374151);
+    color: var(--ez-color-text, var(--_ez-default-color-text, #374151));
 }
 .marked-input-touch-add:focus-visible {
     outline: 0.125rem solid var(--ez-color-primary, #fdb827);
@@ -204,7 +206,8 @@
         padding: 0.25rem 0.625rem;
         font-size: calc(1em * 0.75);
         color: var(--ez-color-primary, #fdb827);
-        border: 0.0625rem solid var(--ez-color-border, #d1d5db);
+        border: 0.0625rem solid
+            var(--ez-color-border, var(--_ez-default-color-border, #d1d5db));
         border-radius: 0.375rem;
     }
 }

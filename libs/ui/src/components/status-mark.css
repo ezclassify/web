@@ -23,7 +23,8 @@
     display: block;
     margin-block-start: 0.625em;
     padding-block-start: 0.625em;
-    border-block-start: 1px solid var(--ez-color-border, #d1d5db);
+    border-block-start: 1px solid
+        var(--ez-color-border, var(--_ez-default-color-border, #d1d5db));
 }
 .ez-marking-tools
     [data-tools-panel='attention']
@@ -42,7 +43,10 @@
     background: transparent;
     border: 0;
     border-radius: 0;
-    color: var(--ez-tooltip-body-color, var(--ez-color-text, #333));
+    color: var(
+        --ez-tooltip-body-color,
+        var(--ez-color-text, var(--_ez-default-color-text, #333))
+    );
     font-weight: 500;
     text-align: start;
     white-space: normal;
@@ -87,9 +91,16 @@
     inline-size: 100%;
     min-height: 2.75em;
     padding: 0.375em 0.625em;
-    border: 1px solid var(--ez-color-border, #d1d5db);
-    border-radius: var(--ez-border-radius, 0.25em);
-    background: var(--ez-dropdown-background, var(--ez-color-background, #fff));
+    border: 1px solid
+        var(--ez-color-border, var(--_ez-default-color-border, #d1d5db));
+    border-radius: var(
+        --ez-border-radius,
+        var(--_ez-default-border-radius, 0.25em)
+    );
+    background: var(
+        --ez-dropdown-background,
+        var(--ez-color-background, var(--_ez-default-color-background, #fff))
+    );
     color: inherit;
     font: inherit;
     text-align: start;
@@ -124,9 +135,16 @@
     inset: 0;
     z-index: 1;
     overflow: auto;
-    background: var(--ez-dropdown-background, var(--ez-color-background, #fff));
-    border: 1px solid var(--ez-color-border, #d1d5db);
-    border-radius: var(--ez-border-radius, 0.25em);
+    background: var(
+        --ez-dropdown-background,
+        var(--ez-color-background, var(--_ez-default-color-background, #fff))
+    );
+    border: 1px solid
+        var(--ez-color-border, var(--_ez-default-color-border, #d1d5db));
+    border-radius: var(
+        --ez-border-radius,
+        var(--_ez-default-border-radius, 0.25em)
+    );
 }
 .ez-marking-tools__target-options [role='option'] {
     padding: 0.5em 0.625em;
@@ -153,7 +171,8 @@
     display: flex;
     align-items: center;
     gap: 0.75em;
-    border-bottom: 1px solid var(--ez-color-border, #d1d5db);
+    border-bottom: 1px solid
+        var(--ez-color-border, var(--_ez-default-color-border, #d1d5db));
     margin-bottom: 0.625em;
 }
 .ez-marking-tools__header:has(.ez-marking-tools__field-notice) {

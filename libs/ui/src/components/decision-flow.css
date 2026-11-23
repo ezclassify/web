@@ -20,7 +20,9 @@
     min-height: 1.5rem;
 }
 .ez-decision-flow__header > .ez-field-chrome--inline {
-    margin-inline-end: calc(-0.25rem - var(--ez-border-width, 1px));
+    margin-inline-end: calc(
+        -0.25rem - var(--ez-border-width, var(--_ez-default-border-width, 1px))
+    );
 }
 .ez-decision-flow__header-main {
     flex: 1 1 auto;
@@ -91,7 +93,7 @@
     background: color-mix(
         in srgb,
         var(--ez-color-primary, #fdb827) 18%,
-        var(--ez-color-background, #fff)
+        var(--ez-color-background, var(--_ez-default-color-background, #fff))
     );
 }
 /* Missing an answer the engine asks for: the error color. */
@@ -107,8 +109,12 @@
 /* The current step: a ring around its disc. */
 .ez-decision-flow__step-dot[data-current]::before {
     box-shadow:
-        0 0 0 2px var(--ez-color-background, #fff),
-        0 0 0 3.5px var(--ez-color-text, #374151);
+        0 0 0 2px
+            var(
+                --ez-color-background,
+                var(--_ez-default-color-background, #fff)
+            ),
+        0 0 0 3.5px var(--ez-color-text, var(--_ez-default-color-text, #374151));
 }
 /* Hover, focus or a touch preview grows the dot; its label shows below. */
 .ez-decision-flow__step-dot:hover::before,
@@ -129,7 +135,7 @@
     grid-column: 1 / -1;
     font-size: 1em;
     font-weight: 600;
-    color: var(--ez-color-text, inherit);
+    color: var(--ez-color-text, var(--_ez-default-color-text, inherit));
 }
 
 /* A dot's label, laid over the flow without moving it. */
@@ -138,10 +144,17 @@
     z-index: 5;
     max-width: min(20rem, calc(100vw - 1rem));
     padding: 0.25rem 0.5rem;
-    border: 1px solid var(--ez-color-border, #d1d5db);
-    border-radius: var(--ez-border-radius, 0.25rem);
-    background: var(--ez-color-background, #fff);
-    color: var(--ez-color-text, inherit);
+    border: 1px solid
+        var(--ez-color-border, var(--_ez-default-color-border, #d1d5db));
+    border-radius: var(
+        --ez-border-radius,
+        var(--_ez-default-border-radius, 0.25rem)
+    );
+    background: var(
+        --ez-color-background,
+        var(--_ez-default-color-background, #fff)
+    );
+    color: var(--ez-color-text, var(--_ez-default-color-text, inherit));
     font-size: calc(1em * 0.75);
     line-height: 1.4;
     pointer-events: none;
@@ -202,9 +215,12 @@
     min-height: 2rem;
     padding: 0;
     border: 1px solid transparent;
-    border-radius: var(--ez-border-radius, 0.25rem);
+    border-radius: var(
+        --ez-border-radius,
+        var(--_ez-default-border-radius, 0.25rem)
+    );
     background: transparent;
-    color: var(--ez-color-text, inherit);
+    color: var(--ez-color-text, var(--_ez-default-color-text, inherit));
     font: inherit;
     font-size: calc(1em * 1.25);
     line-height: 1;
@@ -222,7 +238,10 @@
     transform: rotate(135deg);
 }
 .ez-decision-flow__nav-btn:hover:not(:disabled) {
-    border-color: var(--ez-color-border, #d1d5db);
+    border-color: var(
+        --ez-color-border,
+        var(--_ez-default-color-border, #d1d5db)
+    );
 }
 .ez-decision-flow__nav-btn:disabled {
     opacity: 0.35;
@@ -246,10 +265,17 @@
     width: 100%;
     min-height: 2rem;
     padding: 0.25rem 0.5rem;
-    border: 1px solid var(--ez-color-border, #d1d5db);
-    border-radius: var(--ez-border-radius, 0.25rem);
-    background: var(--ez-color-background, #fff);
-    color: var(--ez-color-text, inherit);
+    border: 1px solid
+        var(--ez-color-border, var(--_ez-default-color-border, #d1d5db));
+    border-radius: var(
+        --ez-border-radius,
+        var(--_ez-default-border-radius, 0.25rem)
+    );
+    background: var(
+        --ez-color-background,
+        var(--_ez-default-color-background, #fff)
+    );
+    color: var(--ez-color-text, var(--_ez-default-color-text, inherit));
     font: inherit;
     font-size: 1em;
     box-sizing: border-box;
@@ -272,15 +298,24 @@
     gap: 0.125rem;
     padding: 0.25rem 0.5rem;
     border: 1px solid var(--ez-color-primary, #fdb827);
-    border-radius: var(--ez-border-radius, 0.25rem);
-    background: var(--ez-color-background, #fff);
+    border-radius: var(
+        --ez-border-radius,
+        var(--_ez-default-border-radius, 0.25rem)
+    );
+    background: var(
+        --ez-color-background,
+        var(--_ez-default-color-background, #fff)
+    );
 }
 .ez-decision-flow__value-box:focus-within {
     outline: 2px solid var(--ez-color-primary, #fdb827);
     outline-offset: -2px;
 }
 .ez-decision-flow__text-field-wrap > .ez-decision-flow__value-box {
-    border-color: var(--ez-color-border, #d1d5db);
+    border-color: var(
+        --ez-color-border,
+        var(--_ez-default-color-border, #d1d5db)
+    );
 }
 /* The label on the box. On a chosen option it is still the option, so a press
    on it works as one. */
@@ -355,7 +390,7 @@
 }
 /* The open step's scope. */
 .ez-decision-flow__scope-caption[data-current] {
-    color: var(--ez-color-text, inherit);
+    color: var(--ez-color-text, var(--_ez-default-color-text, inherit));
     font-weight: 600;
 }
 .ez-decision-flow__value {
@@ -368,7 +403,7 @@
     padding: 0;
     border: 0;
     background: transparent;
-    color: var(--ez-color-text, inherit);
+    color: var(--ez-color-text, var(--_ez-default-color-text, inherit));
     font: inherit;
     font-size: 1em;
     text-align: start;

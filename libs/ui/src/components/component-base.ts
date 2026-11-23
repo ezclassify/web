@@ -52,6 +52,7 @@ import {
 import { factsOfScopeSet, listedScopesOf, writesCategoryOf } from '../scopes';
 import {
     applyFieldFrame,
+    mirrorHostFrame,
     mountFieldChrome,
     type FieldChrome,
 } from './field-chrome';
@@ -338,6 +339,7 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
      * until the component mounts one.
      */
     protected suiteChrome: FieldChrome | null = null;
+    private stopFrameMirror?: () => void;
 
     /** The root the component's styles and overlays live in. */
     private get styleRoot(): HTMLElement {
@@ -348,8 +350,20 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
      * Give `frame` the suite's field frame (field-chrome.css): the box an
      * ordinary input draws, from the library's tokens.
      */
-    protected applySuiteFrame(frame: HTMLElement): void {
+    protected applySuiteFrame(
+        frame: HTMLElement,
+        host?: HTMLElement | null,
+    ): void {
         applyFieldFrame(frame, this.styleRoot);
+        if (host) {
+            this.stopFrameMirror?.();
+            this.stopFrameMirror = mirrorHostFrame(frame, host, {
+                container: this.container,
+                styleInputs: this.options.styleInputs,
+                explicitPalette: () => !!this.options.theme,
+                paintOnly: true,
+            });
+        }
     }
 
     /**
@@ -449,6 +463,8 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
     protected discardDraft(): void {}
 
     protected destroyClearButton(): void {
+        this.stopFrameMirror?.();
+        this.stopFrameMirror = undefined;
         this.container.removeEventListener('input', this.updateClearButton);
         this.undoScope?.removeEventListener('keydown', this.undoKey, true);
         this.undoScope = null;

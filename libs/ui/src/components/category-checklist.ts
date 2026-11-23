@@ -14,6 +14,7 @@ import {
     suspendNativeChoiceFallback,
     useAuthoredChoiceLabel,
 } from '../native-control-host';
+import { getMountHost } from '../mount-host-registry';
 import { ComponentBase, type ComponentOptions } from './component-base';
 import { createAnnouncer, announce } from './component-utils';
 import type { ConceptView, Suggestion } from '@ezclassify/types';
@@ -168,7 +169,11 @@ export class CategoryChecklist extends ComponentBase {
 
         // Inject styles
         this.injectComponentStyles(CATEGORY_CHECKLIST_CSS);
-        this.restoreFallback = suspendNativeChoiceFallback(this.container);
+        this.restoreFallback = suspendNativeChoiceFallback(
+            this.container,
+            this.options.resolveFacetJudgment,
+            this.categoryId,
+        );
 
         // Preview bar
         this.preview = this.createPreviewBar();
@@ -176,8 +181,8 @@ export class CategoryChecklist extends ComponentBase {
         // The title and the header actions can wrap onto separate lines.
         const frame = document.createElement('div');
         frame.className = 'category-checklist-frame';
-        this.applySuiteFrame(frame);
         this.container.appendChild(frame);
+        this.applySuiteFrame(frame, getMountHost(this.container));
 
         this.headerEl = document.createElement('div');
         this.headerEl.className = 'category-checklist-header';

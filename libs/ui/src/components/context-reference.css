@@ -65,10 +65,19 @@
  * closed state is just the handle. ── */
 .ez-context-ref[data-ez-context-ref-open='true'] {
     pointer-events: auto;
-    background: var(--ez-context-ref-surface, var(--ez-color-background, #fff));
-    color: var(--ez-context-ref-text, var(--ez-color-text, inherit));
-    border: var(--ez-border-width, 1px) solid
-        var(--ez-context-ref-border, var(--ez-color-border, #d1d5db));
+    background: var(
+        --ez-context-ref-surface,
+        var(--ez-color-background, var(--_ez-default-color-background, #fff))
+    );
+    color: var(
+        --ez-context-ref-text,
+        var(--ez-color-text, var(--_ez-default-color-text, inherit))
+    );
+    border: var(--ez-border-width, var(--_ez-default-border-width, 1px)) solid
+        var(
+            --ez-context-ref-border,
+            var(--ez-color-border, var(--_ez-default-color-border, #d1d5db))
+        );
     box-shadow: var(--ez-context-ref-shadow, 0 4px 24px rgba(0, 0, 0, 0.18));
 }
 .ez-context-ref[data-ez-context-ref-open='true'][data-ez-context-ref-placement='left'],
@@ -103,7 +112,10 @@
     appearance: none;
     cursor: pointer;
     border: 0;
-    border-radius: var(--ez-border-radius, 0.375rem);
+    border-radius: var(
+        --ez-border-radius,
+        var(--_ez-default-border-radius, 0.375rem)
+    );
     background: transparent;
     color: inherit;
     font: inherit;
@@ -127,8 +139,12 @@
     flex-wrap: wrap;
     flex: 0 0 auto;
     gap: 0;
-    border-bottom: var(--ez-border-width, 1px) solid
-        var(--ez-context-ref-border, var(--ez-color-border, #d1d5db));
+    border-bottom: var(--ez-border-width, var(--_ez-default-border-width, 1px))
+        solid
+        var(
+            --ez-context-ref-border,
+            var(--ez-color-border, var(--_ez-default-color-border, #d1d5db))
+        );
     background: var(--ez-context-ref-tab-bg, var(--ez-color-surface, #f8f9fa));
 }
 
@@ -155,10 +171,13 @@
     background: var(--ez-color-surface-hover, #f3f4f6);
 }
 .ez-context-ref__tab[aria-selected='true'] {
-    color: var(--ez-context-ref-tab-active-text, var(--ez-color-text, #1a1a1a));
+    color: var(
+        --ez-context-ref-tab-active-text,
+        var(--ez-color-text, var(--_ez-default-color-text, #1a1a1a))
+    );
     background: var(
         --ez-context-ref-tab-active-bg,
-        var(--ez-color-background, #fff)
+        var(--ez-color-background, var(--_ez-default-color-background, #fff))
     );
     border-bottom-color: var(--ez-color-primary, #fdb827);
     font-weight: 600;
@@ -181,8 +200,12 @@
     color: var(--ez-context-ref-tab-text, var(--ez-color-muted, #6b7280));
 }
 .ez-context-ref__tab--context-start {
-    border-left: var(--ez-border-width, 1px) solid
-        var(--ez-context-ref-border, var(--ez-color-border, #d1d5db));
+    border-left: var(--ez-border-width, var(--_ez-default-border-width, 1px))
+        solid
+        var(
+            --ez-context-ref-border,
+            var(--ez-color-border, var(--_ez-default-color-border, #d1d5db))
+        );
 }
 
 /* ── Panels: built-in and custom alike are direct children of the root. Only
@@ -202,8 +225,12 @@
 .ez-context-ref__tabpanel-section + .ez-context-ref__tabpanel-section {
     margin-top: var(--ez-spacing-md, 0.75rem);
     padding-top: var(--ez-spacing-md, 0.75rem);
-    border-top: var(--ez-border-width, 1px) solid
-        var(--ez-context-ref-border, var(--ez-color-border, #d1d5db));
+    border-top: var(--ez-border-width, var(--_ez-default-border-width, 1px))
+        solid
+        var(
+            --ez-context-ref-border,
+            var(--ez-color-border, var(--_ez-default-color-border, #d1d5db))
+        );
 }
 .ez-context-ref__tabpanel[hidden],
 .ez-context-ref > [data-ez-context-ref-panel][hidden] {
@@ -217,8 +244,11 @@
     pointer-events: auto;
     appearance: none;
     cursor: pointer;
-    border: var(--ez-border-width, 1px) solid
-        var(--ez-context-ref-border, var(--ez-color-border, #d1d5db));
+    border: var(--ez-border-width, var(--_ez-default-border-width, 1px)) solid
+        var(
+            --ez-context-ref-border,
+            var(--ez-color-border, var(--_ez-default-color-border, #d1d5db))
+        );
     background: var(
         --ez-context-ref-handle-bg,
         var(--ez-color-primary, #fdb827)
@@ -247,31 +277,39 @@
     top: 50%;
     transform: translateY(-50%);
     writing-mode: vertical-rl;
-    border-radius: 0 var(--ez-border-radius, 0.375rem)
-        var(--ez-border-radius, 0.375rem) 0;
+    border-radius: 0
+        var(--ez-border-radius, var(--_ez-default-border-radius, 0.375rem))
+        var(--ez-border-radius, var(--_ez-default-border-radius, 0.375rem)) 0;
 }
 .ez-context-ref[data-ez-context-ref-placement='right'] .ez-context-ref__handle {
     right: 100%;
     top: 50%;
     transform: translateY(-50%);
     writing-mode: vertical-lr;
-    border-radius: var(--ez-border-radius, 0.375rem) 0 0
-        var(--ez-border-radius, 0.375rem);
+    border-radius: var(
+            --ez-border-radius,
+            var(--_ez-default-border-radius, 0.375rem)
+        )
+        0 0 var(--ez-border-radius, var(--_ez-default-border-radius, 0.375rem));
 }
 .ez-context-ref[data-ez-context-ref-placement='top'] .ez-context-ref__handle {
     top: 100%;
     left: 50%;
     transform: translateX(-50%);
-    border-radius: 0 0 var(--ez-border-radius, 0.375rem)
-        var(--ez-border-radius, 0.375rem);
+    border-radius: 0 0
+        var(--ez-border-radius, var(--_ez-default-border-radius, 0.375rem))
+        var(--ez-border-radius, var(--_ez-default-border-radius, 0.375rem));
 }
 .ez-context-ref[data-ez-context-ref-placement='bottom']
     .ez-context-ref__handle {
     bottom: 100%;
     left: 50%;
     transform: translateX(-50%);
-    border-radius: var(--ez-border-radius, 0.375rem)
-        var(--ez-border-radius, 0.375rem) 0 0;
+    border-radius: var(
+            --ez-border-radius,
+            var(--_ez-default-border-radius, 0.375rem)
+        )
+        var(--ez-border-radius, var(--_ez-default-border-radius, 0.375rem)) 0 0;
 }
 
 @media (prefers-reduced-motion: reduce) {

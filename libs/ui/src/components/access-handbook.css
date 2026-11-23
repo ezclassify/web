@@ -2,7 +2,7 @@
 
 .ez-access-handbook {
     font-family: inherit;
-    color: var(--ez-color-text, inherit);
+    color: var(--ez-color-text, var(--_ez-default-color-text, inherit));
     line-height: 1.5;
 }
 
@@ -10,8 +10,12 @@
 .ez-access-handbook__overview {
     padding: 0.75rem;
     margin-bottom: 0.75rem;
-    border: 1px solid var(--ez-color-border, #d1d5db);
-    border-radius: var(--ez-border-radius, 0.375rem);
+    border: 1px solid
+        var(--ez-color-border, var(--_ez-default-color-border, #d1d5db));
+    border-radius: var(
+        --ez-border-radius,
+        var(--_ez-default-border-radius, 0.375rem)
+    );
     background: var(--ez-handbook-overview-bg, rgba(0, 0, 0, 0.02));
 }
 
@@ -19,7 +23,7 @@
     font-weight: 700;
     font-size: calc(1em * 0.75);
     letter-spacing: 0.02em;
-    color: var(--ez-color-text, #111);
+    color: var(--ez-color-text, var(--_ez-default-color-text, #111));
     margin-bottom: 0.25rem;
     overflow-wrap: anywhere;
 }
@@ -27,7 +31,7 @@
 .ez-access-handbook__overview-name {
     font-weight: 700;
     font-size: 1em;
-    color: var(--ez-color-text, #111);
+    color: var(--ez-color-text, var(--_ez-default-color-text, #111));
     margin-bottom: 0.125rem;
 }
 
@@ -39,7 +43,7 @@
 
 .ez-access-handbook__overview-desc {
     font-size: calc(1em * 0.8125);
-    color: var(--ez-color-text, #333);
+    color: var(--ez-color-text, var(--_ez-default-color-text, #333));
     white-space: pre-line;
 }
 
@@ -52,10 +56,14 @@
     width: 100%;
     padding: 0.375rem 0.5rem;
     font-size: calc(1em * 0.875);
-    border: 1px solid var(--ez-color-border, #d1d5db);
+    border: 1px solid
+        var(--ez-color-border, var(--_ez-default-color-border, #d1d5db));
     border-radius: 0.25rem;
-    background: var(--ez-color-background, #fff);
-    color: var(--ez-color-text, inherit);
+    background: var(
+        --ez-color-background,
+        var(--_ez-default-color-background, #fff)
+    );
+    color: var(--ez-color-text, var(--_ez-default-color-text, inherit));
 }
 
 .ez-access-handbook__search-input:focus-visible {
@@ -71,7 +79,8 @@
 
 /* ── Rule group (always / conditional) ───────────────────── */
 .ez-access-handbook__group {
-    border-bottom: 1px solid var(--ez-color-border, #d1d5db);
+    border-bottom: 1px solid
+        var(--ez-color-border, var(--_ez-default-color-border, #d1d5db));
 }
 
 .ez-access-handbook__group:last-child {
@@ -90,7 +99,8 @@
     cursor: pointer;
     font-weight: 600;
     font-size: calc(1em * 0.875);
-    border-bottom: 1px solid var(--ez-color-border, #d1d5db);
+    border-bottom: 1px solid
+        var(--ez-color-border, var(--_ez-default-color-border, #d1d5db));
     user-select: none;
     background: none;
     border-left: none;
@@ -114,7 +124,7 @@
     flex-shrink: 0;
     /* Full text color (not muted) so the disclosure triangle reads as the
      interactive expander it is, in both light and dark themes. */
-    color: var(--ez-color-text, #1a1a2e);
+    color: var(--ez-color-text, var(--_ez-default-color-text, #1a1a2e));
 }
 
 .ez-access-handbook__group-count {
@@ -136,7 +146,8 @@
 /* ── Rule entry ──────────────────────────────────────────── */
 .ez-access-handbook__entry {
     padding: 0.5rem 0.75rem 0.5rem 1.75rem;
-    border-bottom: 1px solid var(--ez-color-border, #d1d5db);
+    border-bottom: 1px solid
+        var(--ez-color-border, var(--_ez-default-color-border, #d1d5db));
 }
 
 .ez-access-handbook__entry:last-child {
@@ -170,7 +181,7 @@
 
 .ez-access-handbook__section-text {
     font-size: calc(1em * 0.8125);
-    color: var(--ez-color-text, #333);
+    color: var(--ez-color-text, var(--_ez-default-color-text, #333));
 }
 
 /* User attribute chips */
@@ -187,7 +198,8 @@
     border-radius: 0.1875rem;
     background: var(--ez-color-surface, #f5f5f5);
     color: var(--ez-color-muted, #555);
-    border: 1px solid var(--ez-color-border, #d1d5db);
+    border: 1px solid
+        var(--ez-color-border, var(--_ez-default-color-border, #d1d5db));
     font-family: monospace;
 }
 

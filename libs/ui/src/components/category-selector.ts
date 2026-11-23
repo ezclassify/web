@@ -423,7 +423,11 @@ export class CategorySelector extends ComponentBase {
         // Inject styles
         this.injectComponentStyles(choiceButtonCss);
         this.injectComponentStyles(CATEGORY_SELECTOR_CSS);
-        this.restoreFallback = suspendNativeChoiceFallback(this.container);
+        this.restoreFallback = suspendNativeChoiceFallback(
+            this.container,
+            this.options.resolveFacetJudgment,
+            boundCategoryId,
+        );
 
         // Preview bar
         this.preview = this.createPreviewBar();
@@ -432,8 +436,8 @@ export class CategorySelector extends ComponentBase {
         this.bodyEl = document.createElement('div');
         this.bodyEl.className = 'category-selector-body';
         this.bodyEl.addEventListener('keydown', this.onHeaderKeydown, true);
-        this.applySuiteFrame(this.bodyEl);
         this.container.appendChild(this.bodyEl);
+        this.applySuiteFrame(this.bodyEl, getMountHost(this.container));
         this.reason = new ChoiceExplanation(
             this.container.ownerDocument,
             'ez-choice-reason',

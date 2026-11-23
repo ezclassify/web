@@ -1194,6 +1194,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                     };
                     const proposals =
                         read?.proposedFixes ??
+                        state.proposedFixes ??
                         (previous &&
                         previous.marking === segment.marking &&
                         facts(previous.assertions) ===
@@ -1512,7 +1513,6 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                 changedIndices.push(i);
             }
         }
-        this.lastMarkingStrings = embedded.map((r) => r.marking);
         // The marks this user edit wrote. Only they may take the engine's safe
         // repairs: a fix rewrites the portion that was edited and no other, so
         // typing in one paragraph never rewrites the mark of another. The
@@ -1589,6 +1589,8 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
             }
         }
 
+        // Only an accepted scan can supply the baseline for unchanged marks.
+        this.lastMarkingStrings = embedded.map((r) => r.marking);
         let previousSegmentIndex = 0;
         const previousRecognized = prevMarkings.map((marking) => {
             // Recognized spans can lack an entry ID after a failed empty read.

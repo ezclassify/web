@@ -45,7 +45,8 @@
     fill: currentColor;
 }
 .ez-favorites-panel__settings {
-    border-top: 1px solid var(--ez-color-border, #d1d5db);
+    border-top: 1px solid
+        var(--ez-color-border, var(--_ez-default-color-border, #d1d5db));
     padding: 0.375rem 0;
 }
 .ez-favorites-panel__settings-action {
@@ -63,7 +64,8 @@
 .ez-favorites-panel__settings--choice {
     margin-top: 0.625em;
     padding: 0.75em;
-    border: 1px solid var(--ez-color-border, #d1d5db);
+    border: 1px solid
+        var(--ez-color-border, var(--_ez-default-color-border, #d1d5db));
     border-radius: 0.375em;
     background: var(--ez-dropdown-group-bg, rgba(0, 0, 0, 0.04));
 }
@@ -79,9 +81,13 @@
 .ez-favorites-panel__storage-actions .ez-favorites-panel__settings-action {
     min-height: 2.75em;
     padding: 0.625em 0.75em;
-    border: 1px solid var(--ez-color-border, #d1d5db);
+    border: 1px solid
+        var(--ez-color-border, var(--_ez-default-color-border, #d1d5db));
     border-radius: 0.375em;
-    background: var(--ez-dropdown-background, var(--ez-color-background, #fff));
+    background: var(
+        --ez-dropdown-background,
+        var(--ez-color-background, var(--_ez-default-color-background, #fff))
+    );
     line-height: 1.4;
 }
 .ez-favorites-panel__storage-actions
@@ -113,7 +119,8 @@
     align-items: center;
     gap: 0.5em;
     line-height: 1.4;
-    border-bottom: 1px solid var(--ez-color-border, #d1d5db);
+    border-bottom: 1px solid
+        var(--ez-color-border, var(--_ez-default-color-border, #d1d5db));
 }
 .ez-favorites-panel__saved-row {
     display: flex;
@@ -169,7 +176,8 @@
 .ez-favorites-panel__target {
     padding: 0.625em;
     color: inherit;
-    border-bottom: 1px solid var(--ez-color-border, #d1d5db);
+    border-bottom: 1px solid
+        var(--ez-color-border, var(--_ez-default-color-border, #d1d5db));
 }
 
 .ez-favorites-panel__embedded [data-favorite-marking] {

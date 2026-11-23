@@ -106,8 +106,8 @@ describe('styles', () => {
             );
             const root = css.match(/:where\(:root\)\s*\{([\s\S]*?)\n\}/)![1];
             for (const token of [
-                '--ez-border-radius',
-                '--ez-border-width',
+                '--_ez-default-border-radius',
+                '--_ez-default-border-width',
                 '--ez-spacing-xs',
                 '--ez-spacing-sm',
                 '--ez-spacing-md',

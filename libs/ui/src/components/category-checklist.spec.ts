@@ -1290,8 +1290,6 @@ describe('CategoryChecklist header layout', () => {
         const controls = rule('.category-checklist-controls');
         expect(controls).toMatch(/flex-wrap:\s*nowrap/);
         expect(controls).toMatch(/margin-inline-start:\s*auto/);
-        expect(rule('.category-checklist-count')).toMatch(
-            /align-self:\s*flex-end/,
-        );
+        expect(rule('.category-checklist-count')).toMatch(/place-self:\s*end/);
     });
 });

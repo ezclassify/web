@@ -3,10 +3,20 @@
 .ez-choice-button {
     min-height: 2rem;
     box-sizing: border-box;
-    border: 0.0625rem solid var(--ez-color-border, #d1d5db);
-    border-radius: var(--ez-border-radius, var(--ez-choice-radius, 0.25rem));
-    background: var(--ez-color-background, #fff);
-    color: var(--ez-color-text, var(--ez-choice-text, inherit));
+    border: 0.0625rem solid
+        var(--ez-color-border, var(--_ez-default-color-border, #d1d5db));
+    border-radius: var(
+        --ez-border-radius,
+        var(--_ez-default-border-radius, var(--ez-choice-radius, 0.25rem))
+    );
+    background: var(
+        --ez-color-background,
+        var(--_ez-default-color-background, #fff)
+    );
+    color: var(
+        --ez-color-text,
+        var(--_ez-default-color-text, var(--ez-choice-text, inherit))
+    );
     font-family: inherit;
     cursor: pointer;
     user-select: none;
@@ -43,7 +53,10 @@
     color: var(--ez-color-muted, #6b7280);
 }
 .ez-choice-button[data-blocked]:hover {
-    border-color: var(--ez-color-border, #d1d5db);
+    border-color: var(
+        --ez-color-border,
+        var(--_ez-default-color-border, #d1d5db)
+    );
 }
 @media (pointer: coarse) {
     .ez-choice-button {
@@ -86,7 +99,7 @@
     --ez-contrast-fill: color-mix(
         in srgb,
         var(--ez-category-accent, var(--ez-color-primary, #fdb827)) 18%,
-        var(--ez-color-background, #fff)
+        var(--ez-color-background, var(--_ez-default-color-background, #fff))
     );
 }
 @supports (color: color(from red xyz-d65 max(0, sign(0.179 - y)) y z)) {

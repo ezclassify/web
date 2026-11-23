@@ -9,7 +9,9 @@
     gap: 0.5rem;
 }
 .category-selector-body > .ez-field-chrome {
-    inset-inline-end: calc(0.25rem - var(--ez-border-width, 1px));
+    inset-inline-end: calc(
+        0.25rem - var(--ez-border-width, var(--_ez-default-border-width, 1px))
+    );
 }
 
 /* ── Group heading ───────────────────────────────── */
@@ -43,7 +45,7 @@
     min-width: 0;
     font-size: 1em;
     font-weight: 600;
-    color: var(--ez-color-text, inherit);
+    color: var(--ez-color-text, var(--_ez-default-color-text, inherit));
     overflow-wrap: normal;
     word-break: normal;
 }

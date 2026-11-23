@@ -705,7 +705,6 @@ export class DecisionFlow extends ComponentBase {
             this.setOpen(true);
             this.focusCurrentStep();
         });
-        this.applySuiteFrame(this.flowEl);
         this.headerEl = document.createElement('div');
         this.headerEl.className = 'ez-decision-flow__header';
         this.dotsEl = document.createElement('div');
@@ -738,6 +737,10 @@ export class DecisionFlow extends ComponentBase {
             this.previewEl,
         );
         this.container.appendChild(this.flowEl);
+        this.applySuiteFrame(
+            this.flowEl,
+            this.flowOptions.nativeFields?.[0] ?? getMountHost(this.container),
+        );
         this.mountSuiteChrome(this.headerEl);
         // The line under each value carries the report, so the list under
         // the flow stays aside.

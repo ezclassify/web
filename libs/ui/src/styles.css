@@ -46,9 +46,11 @@
  * shadows them for its subtree; a nested ancestor with [data-theme="light"]
  * shadows back to light. */
 :where(:root) {
-    --ez-color-text: inherit;
-    --ez-color-background: #ffffff;
-    --ez-color-border: #d1d5db;
+    /* Keep optional host overrides distinct from the built-in palette so a
+       control can prefer its native appearance whenever an override is unset. */
+    --_ez-default-color-text: initial;
+    --_ez-default-color-background: #ffffff;
+    --_ez-default-color-border: #d1d5db;
     --ez-color-placeholder: #767676;
     --ez-color-muted: #6b7280;
     --ez-color-primary: #fdb827;
@@ -85,8 +87,8 @@
        aliases, they do not require redeclaration in each theme scope. */
     --ez-focus-ring-width: 2px;
     --ez-focus-ring-offset: calc(-1 * var(--ez-focus-ring-width));
-    --ez-border-width: 1px;
-    --ez-border-radius: 0.375rem;
+    --_ez-default-border-width: 1px;
+    --_ez-default-border-radius: 0.375rem;
     --ez-spacing-sm: 0.5rem;
     --ez-spacing-md: 0.75rem;
     --ez-transition: 150ms ease;
@@ -152,9 +154,12 @@
     .dark:not([data-color-scheme='light'])
 ) {
     /* Structural */
-    --ez-color-text: #e5e7eb;
-    --ez-color-background: #1f2937;
-    --ez-color-border: #4b5563;
+    --ez-color-text: initial;
+    --ez-color-background: initial;
+    --ez-color-border: initial;
+    --_ez-default-color-text: #e5e7eb;
+    --_ez-default-color-background: #1f2937;
+    --_ez-default-color-border: #4b5563;
     --ez-color-placeholder: #6b7280;
     --ez-color-muted: #9ca3af;
 
@@ -216,9 +221,12 @@
     [data-theme='light']:not([data-color-scheme='dark']),
     [data-bs-theme='light']:not([data-color-scheme='dark'])
 ) {
-    --ez-color-text: inherit;
-    --ez-color-background: #ffffff;
-    --ez-color-border: #d1d5db;
+    --ez-color-text: initial;
+    --ez-color-background: initial;
+    --ez-color-border: initial;
+    --_ez-default-color-text: initial;
+    --_ez-default-color-background: #ffffff;
+    --_ez-default-color-border: #d1d5db;
     --ez-color-placeholder: #767676;
     --ez-color-muted: #6b7280;
     --ez-color-primary: #fdb827;
@@ -274,7 +282,7 @@
     .marked-input-wrap,
     .marked-textarea-wrap
 ) {
-    color: var(--ez-color-text, inherit);
+    color: var(--ez-color-text, var(--_ez-default-color-text, inherit));
 }
 
 :where(.ez-native-field),
@@ -286,20 +294,25 @@
 }
 
 :where(.ez-native-field) {
-    color: var(--ez-color-text, inherit);
-    background: var(--ez-color-background);
-    border: var(--ez-border-width) solid var(--ez-color-border);
-    border-radius: var(--ez-border-radius);
+    color: var(--ez-color-text, var(--_ez-default-color-text, inherit));
+    background: var(--ez-color-background, var(--_ez-default-color-background));
+    border: var(--ez-border-width, var(--_ez-default-border-width)) solid
+        var(--ez-color-border, var(--_ez-default-color-border));
+    border-radius: var(--ez-border-radius, var(--_ez-default-border-radius));
     padding: var(--ez-spacing-sm) var(--ez-spacing-md);
 }
 
 /* ── Opt-in input styling (.ez-styled-inputs or styleInputs: true) ── */
 .ez-styled-inputs .ez-input,
 .ez-input.ez-styled {
-    color: var(--ez-color-text);
-    background: var(--ez-color-background);
-    border: var(--ez-border-width, 0.0625rem) solid var(--ez-color-border);
-    border-radius: var(--ez-border-radius, 0.375rem);
+    color: var(--ez-color-text, var(--_ez-default-color-text));
+    background: var(--ez-color-background, var(--_ez-default-color-background));
+    border: var(--ez-border-width, var(--_ez-default-border-width, 0.0625rem))
+        solid var(--ez-color-border, var(--_ez-default-color-border));
+    border-radius: var(
+        --ez-border-radius,
+        var(--_ez-default-border-radius, 0.375rem)
+    );
     padding: var(--ez-spacing-sm, 0.5rem) var(--ez-spacing-md, 0.75rem);
     width: 100%;
     box-sizing: border-box;
@@ -332,7 +345,7 @@
     font-family: inherit;
     font-size: 1em;
     font-weight: 600;
-    color: var(--ez-color-text);
+    color: var(--ez-color-text, var(--_ez-default-color-text));
     letter-spacing: 0.02em;
 }
 

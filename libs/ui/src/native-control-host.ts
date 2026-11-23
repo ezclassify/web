@@ -1,4 +1,5 @@
 import { getMountHost } from './mount-host-registry';
+import type { EzClassifyState } from './store/ezclassify-store';
 
 export function isNativeSingleSelect(
     host: HTMLElement | null | undefined,
@@ -32,6 +33,8 @@ export function useAuthoredChoiceLabel(
 /** Keep the authored fallback out of native form submission while enhanced. */
 export function suspendNativeChoiceFallback(
     container: HTMLElement,
+    readJudgment?: () => EzClassifyState,
+    category?: string,
 ): () => void {
     const host = getMountHost(container);
     if (!(host instanceof HTMLFieldSetElement) || nativeChoiceGroup(host))
@@ -44,7 +47,24 @@ export function suspendNativeChoiceFallback(
     const hidden = host.querySelector<HTMLInputElement>('input[type="hidden"]');
     for (const choice of choices) choice.disabled = true;
     return () => {
+        const state = readJudgment?.();
         for (const choice of choices) choice.disabled = false;
+        // The original field resumes ownership with the committed choices.
+        // An unresolved marking must leave the host's fallback alone.
+        if (category && state?.valid && !state.stale) {
+            const selected = new Set(
+                state.assertions
+                    .filter((assertion) => assertion.categoryId === category)
+                    .map((assertion) => assertion.conceptId),
+            );
+            for (const choice of choices) {
+                if (choice instanceof HTMLInputElement)
+                    choice.checked = selected.has(choice.value);
+            }
+            // Remember the restored selection so later native edits win over
+            // the rendered value left in the shared marking.
+            readNativeFacetSelection(host, true);
+        }
         if (hidden && generatedChoices.has(hidden)) hidden.remove();
     };
 }
