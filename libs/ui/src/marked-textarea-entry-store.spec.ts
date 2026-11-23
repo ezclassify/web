@@ -626,6 +626,15 @@ describe('MarkedTextArea two-way entry bindings', () => {
                         textarea.value.length,
                     );
                     document.dispatchEvent(new Event('selectionchange'));
+                    textareaEditor(textarea).dispatchEvent(
+                        new KeyboardEvent('keydown', {
+                            key: 'Enter',
+                            ctrlKey: true,
+                            bubbles: true,
+                            cancelable: true,
+                        }),
+                    );
+                    await flush();
                     brand.click();
                     await flush();
                     document

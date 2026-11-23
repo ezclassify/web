@@ -123,6 +123,9 @@
     color: var(--ez-color-muted, #6b7280);
     cursor: default;
 }
+.ez-marking-tools__target-options [role='option'][data-invalid] {
+    color: var(--ez-color-error, #b91c1c);
+}
 .ez-marking-tools__target-options [role='option']:hover {
     background: var(--ez-dropdown-item-hover, #f3f4f6);
 }

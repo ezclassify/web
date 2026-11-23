@@ -131,6 +131,7 @@ export interface FavoritesPanelHost {
      * empty marking has nothing coherent to save.
      */
     getCurrent: () => { rendered: string; valid: boolean };
+    canApply?: () => boolean;
     /** Describe the caret target when a field contains several markings. */
     describeTarget?: () => string;
     /** Choose which entry in a multi-marking field Favorites will operate on. */
@@ -513,6 +514,7 @@ export class FavoritesPanel {
             this.panelItems.appendChild(target);
         }
         const current = this.host.getCurrent();
+        const canApply = this.host.canApply?.() ?? true;
         const canPin =
             !!this.host.config?.save && current.valid && !!current.rendered;
         if (canPin) {
@@ -538,6 +540,7 @@ export class FavoritesPanel {
         ] of processed.entries()) {
             const isCurrent = current.valid && rendered === current.rendered;
             const row = this.buildFavoriteRow(entry, isCurrent);
+            row.toggleAttribute('disabled', !canApply);
             row.dataset.favoriteMarking = entry.marking;
             this.addRow(row, () => this.applyAndClose(entry.marking));
             if (this.host.config?.remove) {
@@ -588,6 +591,7 @@ export class FavoritesPanel {
                     (entry) => entry.preset.id === preset.id,
                 )?.rendered;
                 const row = this.buildPresetRow(preset, rendered);
+                row.toggleAttribute('disabled', !canApply);
                 row.dataset.presetId = preset.id;
                 this.addRow(row, () => {
                     if (rendered) this.applyAndClose(rendered);

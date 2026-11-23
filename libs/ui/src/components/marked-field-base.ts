@@ -140,6 +140,7 @@ export abstract class MarkedFieldBase<
         actions: Pick<
             FavoritesPanelHost,
             | 'getCurrent'
+            | 'canApply'
             | 'onApply'
             | 'focusField'
             | 'describeTarget'

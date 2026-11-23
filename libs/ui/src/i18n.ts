@@ -51,6 +51,7 @@ export const defaultLocale = {
     'favorites.fromScheme': 'From the scheme',
     'favorites.saved': 'Saved Favorites',
     'favorites.target': 'Marking target',
+    'favorites.chooseTarget': 'Choose a marking',
     'favorites.finishCurrentMarking':
         'Finish the current edit to switch paragraphs.',
     'favorites.editingMarking': 'Editing marking {n} of {total}',
@@ -78,6 +79,8 @@ export const defaultLocale = {
     'tools.entryOne': '1 entry',
     'tools.entryMany': '{count} entries',
     'tools.close': 'Close Marking Tools',
+    'tools.emptyAttention': 'No findings for this marking.',
+    'tools.unresolvedEntry': 'Has unresolved errors',
     'tools.emptyCorrections': 'No auto-fixes yet',
 
     'dualPane.available': 'Available',

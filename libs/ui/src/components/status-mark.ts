@@ -494,8 +494,39 @@ export function setStatusMarkDraft(
     refreshCorrections(mark);
 }
 
-function hasAttention(mark: HTMLElement): boolean {
-    return visibleFindings(mark).length > 0 || visibleError(mark) !== undefined;
+function hasAttention(mark: HTMLElement, target?: string): boolean {
+    return (
+        panelFindings(mark, target).length > 0 ||
+        (target === undefined && visibleError(mark) !== undefined)
+    );
+}
+
+function panelFindings(mark: HTMLElement, target?: string) {
+    const findings = visibleFindings(mark);
+    return target === undefined
+        ? findings
+        : findings.filter(({ id }) => id === target);
+}
+
+function matchesCorrectionTarget(
+    mark: HTMLElement,
+    key: string,
+    target?: string,
+): boolean {
+    if (target === undefined) return true;
+    const group = markGroups.get(mark)?.get(key);
+    return !!group && 'entry:' + group.id === target;
+}
+
+function correctionSnapshot(mark: HTMLElement): ReadonlySet<string> {
+    const target = markToolsTarget.get(mark);
+    if (markOptions.get(mark)?.shouldShowTooltip?.() === false)
+        return new Set();
+    return new Set(
+        [...(markFixes.get(mark)?.keys() ?? [])].filter((key) =>
+            matchesCorrectionTarget(mark, key, target),
+        ),
+    );
 }
 
 function refreshCorrections(mark: HTMLElement): void {
@@ -727,6 +758,7 @@ const markOptions = new WeakMap<HTMLElement, StatusMarkOptions>();
 function linesOf(
     mark: HTMLElement,
     unseenOnly = false,
+    target?: string,
 ): { text: string; rule: string; group?: StatusGroupLabel }[] {
     const words = markOptions.get(mark)?.words;
     const groups = markGroups.get(mark);
@@ -736,6 +768,7 @@ function linesOf(
     const draft = draftFixesOf(mark);
     const fixes = draft?.map((change) => [effectKey(change), change] as const);
     for (const [key, change] of fixes ?? markFixes.get(mark) ?? []) {
+        if (!matchesCorrectionTarget(mark, key, target)) continue;
         if (unseenOnly && !draft && markAcknowledged.get(mark)?.has(key))
             continue;
         const group = draft ? undefined : groups?.get(key);
@@ -757,6 +790,8 @@ const markPinned = new WeakSet<HTMLElement>();
 const markDismissers = new WeakMap<HTMLElement, () => void>();
 /** Retain outgoing chrome ownership until its focusout has settled. */
 const markToolsContent = new WeakMap<HTMLElement, HTMLElement>();
+/** The selected paragraph in the currently displayed tools. */
+const markToolsTarget = new WeakMap<HTMLElement, string>();
 
 /** Whether focus belongs to a marking's branding button or tools dialog. */
 export function statusMarkOwnsNode(
@@ -836,6 +871,7 @@ export function dismissStatusMarkPopover(mark: HTMLElement): void {
  * collapsed.
  */
 function collapse(mark: HTMLElement): void {
+    markToolsTarget.delete(mark);
     markFavorites.get(mark)?.close();
     markPinned.delete(mark);
     markDismissers.get(mark)?.();
@@ -985,30 +1021,51 @@ export function ensureStatusMark(
         const error = visibleError(mark);
         const fixes = markFixes.get(mark);
         if (opts.tools) {
-            const snapshot = new Set(fixes?.keys());
             const favorites = markFavorites.get(mark);
+            const targets = favorites?.targets?.();
+            if (targets) markToolsTarget.set(mark, targets.selected);
+            else markToolsTarget.delete(mark);
+            const target = markToolsTarget.get(mark);
             const attention = hasAttention(mark)
                 ? attentionContent(mark)
                 : undefined;
+            const preferAttention = hasAttention(mark, target);
             const showCorrections =
-                markDraftFixes.has(mark) || linesOf(mark, true).length > 0;
+                markDraftFixes.has(mark) ||
+                linesOf(mark, true, target).length > 0;
+            const acknowledgeCorrections = () => {
+                markContentSnapshot.set(mark, correctionSnapshot(mark));
+                acknowledgeMark(mark);
+            };
             markContentSnapshot.set(
                 mark,
-                !attention && (showCorrections || !favorites)
-                    ? snapshot
+                !preferAttention && (showCorrections || !favorites)
+                    ? correctionSnapshot(mark)
                     : new Set(),
             );
             const tools = buildMarkingTools({
                 attention,
-                targets: favorites?.targets?.(),
+                preferAttention,
+                targets: targets && {
+                    ...targets,
+                    select: (value) => {
+                        if (favorites?.isApplying()) return;
+                        markToolsTarget.set(mark, value);
+                        targets.select(value);
+                        refreshCorrections(mark);
+                        if (
+                            tools.querySelector(
+                                '[data-tools-tab="corrections"][aria-selected="true"]',
+                            )
+                        )
+                            acknowledgeCorrections();
+                    },
+                },
                 corrections: correctionsContent(mark),
                 favorites: favorites?.element,
                 favoritesCount: favorites?.count() ?? 0,
                 showCorrections,
-                onCorrectionsViewed: () => {
-                    markContentSnapshot.set(mark, snapshot);
-                    acknowledgeMark(mark);
-                },
+                onCorrectionsViewed: acknowledgeCorrections,
                 onResize: () => refreshStatusMarkPopover(mark),
                 onClose: () => {
                     dismissStatusMarkPopover(mark);
@@ -1255,10 +1312,11 @@ function setMarkChanges(
 }
 
 function attentionContent(mark: HTMLElement): HTMLElement {
-    const findings = visibleFindings(mark);
+    const target = markToolsTarget.get(mark);
+    const findings = panelFindings(mark, target);
     const content = mark.ownerDocument.createElement('div');
     findings.forEach((finding, index) => {
-        if (finding.heading) {
+        if (finding.heading && target === undefined) {
             const label = mark.ownerDocument.createElement('div');
             label.className = 'ez-status-list__marking';
             label.textContent = finding.heading;
@@ -1280,7 +1338,10 @@ function attentionContent(mark: HTMLElement): HTMLElement {
                           !markToolsContent.get(mark)?.contains(list.element)
                       )
                           return;
-                      const current = visibleFindings(mark)[index];
+                      const current = panelFindings(
+                          mark,
+                          markToolsTarget.get(mark),
+                      )[index];
                       const live = current?.report.fixes.find(
                           (item) => item.fix.rendered === fix.rendered,
                       );
@@ -1295,25 +1356,33 @@ function attentionContent(mark: HTMLElement): HTMLElement {
         );
         content.appendChild(list.element);
     });
-    const error = visibleError(mark);
+    const error = target === undefined ? visibleError(mark) : undefined;
     if (error !== undefined) {
         const reason = mark.ownerDocument.createElement('div');
         reason.className = 'ez-status-list__error';
         reason.textContent = error;
         content.prepend(reason);
     }
+    if (!content.hasChildNodes())
+        content.textContent = t('tools.emptyAttention');
     return content;
 }
 
 function correctionsContent(mark: HTMLElement): HTMLElement {
     const opts = markOptions.get(mark);
     const draft = draftFixesOf(mark);
-    const count = draft?.length ?? markFixes.get(mark)?.size ?? 0;
+    const target = markToolsTarget.get(mark);
+    const count =
+        (target === undefined ? draft?.length : undefined) ??
+        correctionSnapshot(mark).size;
     if (count > 0 && opts?.shouldShowTooltip?.() !== false)
         return changeList(
             mark,
             undefined,
-            draft ? null : (opts?.undoLastEdit?.() ?? null),
+            draft || target !== undefined
+                ? null
+                : (opts?.undoLastEdit?.() ?? null),
+            target,
         );
     const empty = mark.ownerDocument.createElement('div');
     empty.textContent = t('tools.emptyCorrections');
@@ -1329,6 +1398,7 @@ function changeList(
     mark: HTMLElement,
     error: string | undefined,
     undo: (() => void) | null,
+    target?: string,
 ): HTMLElement {
     const list = document.createElement('div');
     list.className = 'ez-status-list';
@@ -1338,7 +1408,7 @@ function changeList(
         reason.textContent = error;
         list.appendChild(reason);
     }
-    const lines = linesOf(mark);
+    const lines = linesOf(mark, false, target);
     const heading = document.createElement('div');
     heading.className = 'ez-tooltip__header';
     heading.textContent = changesLabel(lines.length);
@@ -1350,7 +1420,7 @@ function changeList(
         // marking, as its text now writes it.
         if (!items || line.group?.id !== group?.id) {
             group = line.group;
-            if (group?.label !== undefined) {
+            if (target === undefined && group?.label !== undefined) {
                 const name = document.createElement('div');
                 name.className = 'ez-status-list__marking';
                 name.textContent = group.label;

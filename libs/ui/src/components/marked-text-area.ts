@@ -318,7 +318,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
      * they left behind, not wherever the DOM selection happens to report once
      * focus has moved on.
      */
-    private _lastCaret = 0;
+    private _lastCaret: number | null = null;
     private readonly onBrandDown = (event: KeyboardEvent): void => {
         if (
             event.key !== 'ArrowDown' ||
@@ -336,7 +336,9 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         event.stopPropagation();
         if (this.picker) this.picker.focus();
         else
-            this.focusAt(Math.min(this._lastCaret, this.textarea.value.length));
+            this.focusAt(
+                Math.min(this._lastCaret ?? 0, this.textarea.value.length),
+            );
     };
 
     /**
@@ -447,8 +449,12 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
     private favoriteTargets() {
         const text = this.textarea.value;
         if (text !== this.lastSegmentedText) return;
-        const caret = this.favoriteCaretSegment();
-        if (this.activeRange && !caret) return;
+        const editing = this.favoriteCaretSegment();
+        if (this.activeRange && !editing) return;
+        const caretStart =
+            this._lastCaret === null ? null : this.lineStartAt(this._lastCaret);
+        const caret =
+            editing ?? this.segments.find(({ start }) => start === caretStart);
         const caretKey = caret ? this.favoriteTargetKey(caret) : '';
         const draft = this.picker?.isDirty() ?? false;
         const options = this.segments.flatMap((segment, index) => {
@@ -460,21 +466,22 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                 {
                     value: this.favoriteTargetKey(segment),
                     disabled: draft && segment !== caret,
+                    invalid: segment.errors.length > 0,
                     label: body
                         ? segment.marking + ' ' + body
                         : segment.marking,
                 },
             ];
         });
-        if (!caretKey)
-            options.unshift({
-                value: '',
-                label: this.favoriteInsertionLabel(),
-                disabled: false,
-            });
-        const selected = this.favoriteSelection?.key ?? caretKey;
-        if (!options.some(({ value }) => value === selected)) return;
-        if (options.length > 1 && !this.favoriteSelection)
+        if (!options.length) return;
+        const selected =
+            this.favoriteSelection?.key ??
+            (this._lastCaret === null && !caretKey
+                ? options[0].value
+                : caretKey);
+        if (selected && !options.some(({ value }) => value === selected))
+            return;
+        if (!this.favoriteSelection)
             this.favoriteSelection = { key: selected, text };
         return {
             selected,
@@ -487,13 +494,15 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
 
     private favoriteInsertionLabel(): string {
         return t(
-            this.newMarkedLineInsertion(this._lastCaret).prefix
+            this.newMarkedLineInsertion(this._lastCaret ?? 0).prefix
                 ? 'favorites.insertAfterParagraph'
                 : 'favorites.insertParagraph',
         );
     }
 
     private describeFavoriteTarget(): string {
+        if (this.favoriteSelection?.key === '')
+            return t('favorites.chooseTarget');
         if (this.picker?.isDirty()) return t('favorites.finishCurrentMarking');
         const selected = this.favoriteSelection
             ? this.selectedFavoriteSegment()
@@ -689,6 +698,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                         this.favoriteSelection = null;
                     },
                     getCurrent: () => this.currentFavoritesMarking(),
+                    canApply: () => this.favoriteSelection?.key !== '',
                     onApply: (marking, signal) =>
                         this.applyFavoriteFromTools(marking, signal),
                     focusField: () =>
@@ -734,6 +744,8 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
             }
         });
         this.listenToTextarea('blur', () => {
+            if (this.textarea.selectionStart === this.textarea.selectionEnd)
+                this._lastCaret = this.textarea.selectionStart;
             this.hasFocus = false;
             this.display.style.borderColor = capturedStyles.borderColor;
             if (!this.picker) this.renderDisplay();
@@ -1877,7 +1889,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                 ).fixes;
                 return [
                     {
-                        id: segment.entryId ?? String(segment.start),
+                        id: this.favoriteTargetKey(segment),
                         heading: t('tools.paragraph').replace(
                             '{n}',
                             String(paragraphNumber(text, segment.start)),
@@ -3077,6 +3089,12 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
             : { rendered: '', valid: false };
     }
 
+    private lineStartAt(caret: number): number {
+        const text = this.textarea.value;
+        const safeCaret = Math.min(caret, text.length);
+        return safeCaret === 0 ? 0 : text.lastIndexOf('\n', safeCaret - 1) + 1;
+    }
+
     /**
      * Where a brand-new marked line should start, given a raw caret position. A
      * new part mark leads the paragraph it marks, so a caret sitting inside a
@@ -3097,8 +3115,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         // used here: clamp it to the current text's length instead of
         // resolving line geometry against an offset the text no longer has.
         const safeCaret = Math.min(caret, v.length);
-        const lineStart =
-            safeCaret === 0 ? 0 : v.lastIndexOf('\n', safeCaret - 1) + 1;
+        const lineStart = this.lineStartAt(safeCaret);
         const lineHasMark = this.segments.some((s) => s.start === lineStart);
         if (!lineHasMark) {
             return { insertAt: lineStart, prefix: '' };
@@ -3125,8 +3142,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
             this.nativeTextarea.matches(':disabled, [readonly]') ||
             (!this.picker && this.textarea.value !== this.lastSegmentedText) ||
             (selection &&
-                (selection.text !== this.textarea.value ||
-                    (selection.key && !segment))) ||
+                (selection.text !== this.textarea.value || !segment)) ||
             (selection && this.picker?.isDirty() && segment !== active)
         )
             throw new Error(t('favorites.applyFailed'));
@@ -3199,7 +3215,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         // gluing directly onto the body text that follows it. The
         // Ctrl+Enter insert path never trims for the same reason.
         const insert = wrapped;
-        const caret = this._lastCaret;
+        const caret = this._lastCaret ?? 0;
         const v = this.textarea.value;
         const { insertAt, prefix } = this.newMarkedLineInsertion(caret);
         const inserted = prefix + insert;

@@ -72,7 +72,12 @@ export function focusMarkingTools(mark: HTMLElement): void {
 /** Markings offered by a field that contains several independent entries. */
 export interface MarkingToolsTargets {
     selected: string;
-    options: readonly { value: string; label: string; disabled?: boolean }[];
+    options: readonly {
+        value: string;
+        label: string;
+        disabled?: boolean;
+        invalid?: boolean;
+    }[];
     select: (value: string) => void;
 }
 
@@ -80,6 +85,7 @@ export interface MarkingToolsTargets {
 export interface MarkingToolsContent {
     /** Unresolved errors, warnings, and available remedies. */
     attention?: HTMLElement;
+    preferAttention?: boolean;
     targets?: MarkingToolsTargets;
     /** Applied changes and available undo. */
     corrections: HTMLElement;
@@ -155,23 +161,32 @@ function markingTargetSelector(
     list.setAttribute('role', 'listbox');
     list.setAttribute('aria-label', t('favorites.target'));
     list.hidden = true;
-    let selected = Math.max(
-        0,
-        targets.options.findIndex(({ value }) => value === targets.selected),
+    let selected = targets.options.findIndex(
+        ({ value }) => value === targets.selected,
     );
     let active = selected;
-    const options = targets.options.map(({ label, disabled }, index) => {
-        const option = document.createElement('div');
-        option.id = list.id + '-' + index;
-        option.setAttribute('role', 'option');
-        if (disabled) option.setAttribute('aria-disabled', 'true');
-        option.textContent = label;
-        option.addEventListener('click', () => choose(index));
-        list.appendChild(option);
-        return option;
-    });
+    const options = targets.options.map(
+        ({ label, disabled, invalid }, index) => {
+            const option = document.createElement('div');
+            option.id = list.id + '-' + index;
+            option.setAttribute('role', 'option');
+            if (disabled) option.setAttribute('aria-disabled', 'true');
+            if (invalid) {
+                option.dataset.invalid = '';
+                option.setAttribute(
+                    'aria-description',
+                    t('tools.unresolvedEntry'),
+                );
+            }
+            option.textContent = label;
+            option.addEventListener('click', () => choose(index));
+            list.appendChild(option);
+            return option;
+        },
+    );
     const showSelection = () => {
-        value.textContent = targets.options[selected].label;
+        value.textContent =
+            targets.options[selected]?.label ?? t('favorites.chooseTarget');
         options.forEach((option, index) =>
             option.setAttribute('aria-selected', String(index === selected)),
         );
@@ -181,8 +196,13 @@ function markingTargetSelector(
         options.forEach((option, key) =>
             option.toggleAttribute('data-active', key === active),
         );
-        target.setAttribute('aria-activedescendant', options[active].id);
-        options[active].scrollIntoView?.({ block: 'nearest' });
+        const option = options[active];
+        target.setAttribute('aria-activedescendant', option.id);
+        const bottom = option.offsetTop + option.offsetHeight;
+        if (option.offsetTop < list.scrollTop)
+            list.scrollTop = option.offsetTop;
+        else if (bottom > list.scrollTop + list.clientHeight)
+            list.scrollTop = bottom - list.clientHeight;
     };
     const setOpen = (open: boolean) => {
         if (
@@ -283,13 +303,16 @@ export function buildMarkingTools(content: MarkingToolsContent): HTMLElement {
     const panels: HTMLElement[] = [];
     const id = 'ez-tools-' + Math.random().toString(36).slice(2, 10);
     let selected =
-        content.attention || content.showCorrections || !content.favorites
+        content.attention && content.preferAttention !== false
             ? 0
-            : sections.length - 1;
+            : content.showCorrections || !content.favorites
+              ? sections.findIndex(({ kind }) => kind === 'corrections')
+              : sections.length - 1;
     const selector =
-        content.targets && content.targets.options.length > 1
+        content.targets &&
+        (content.targets.options.length > 1 || !content.targets.selected)
             ? markingTargetSelector(content.targets, id, () =>
-                  tabs[selected].focus(),
+                  tabs[selected].focus({ preventScroll: true }),
               )
             : undefined;
     if (selector) {
@@ -305,7 +328,7 @@ export function buildMarkingTools(content: MarkingToolsContent): HTMLElement {
             )
                 return;
             event.preventDefault();
-            selector.target.focus();
+            selector.target.focus({ preventScroll: true });
         });
     }
     const actions = (panel: HTMLElement) =>
@@ -376,7 +399,7 @@ export function buildMarkingTools(content: MarkingToolsContent): HTMLElement {
                     return;
                 event.preventDefault();
                 event.stopPropagation();
-                if (selector) selector.target.focus();
+                if (selector) selector.target.focus({ preventScroll: true });
                 else content.onClose();
                 return;
             }

@@ -20,6 +20,8 @@ import {
     setStatusMarkError,
     setStatusMarkFindings,
     setStatusMarkDraft,
+    setStatusMarkFavorites,
+    setStatusMarkGroups,
     setStatusMarkFixes,
 } from './status-mark';
 import type { ConceptWriting } from '../written-concept';
@@ -352,6 +354,71 @@ describe('the mark glyph and the plain input it sits on', () => {
 });
 
 describe('field tools findings', () => {
+    it('shows and acknowledges only the selected paragraph without changing the field total', () => {
+        const mark = ensureStatusMark(wrap, { shape: 'chrome', tools: true });
+        const badge = mark.querySelector('.ez-status-mark__count')!;
+        setStatusMarkGroups(wrap, [
+            { entryId: 'a', marking: '(A)', changes: [makeFix('first')] },
+            { entryId: 'b', marking: '(B)', changes: [makeFix('second')] },
+        ]);
+        setStatusMarkFindings(wrap, [
+            {
+                id: 'entry:a',
+                report: { messages: ['Error in A.'], warnings: [], fixes: [] },
+            },
+        ]);
+        setStatusMarkFavorites(wrap, {
+            element: document.createElement('div'),
+            count: () => 0,
+            open: () => {},
+            close: () => {},
+            isApplying: () => false,
+            targets: () => ({
+                selected: 'entry:b',
+                options: [
+                    { value: 'entry:a', label: '(A)', invalid: true },
+                    { value: 'entry:b', label: '(B)' },
+                ],
+                select: () => {},
+            }),
+        });
+        expect(badge.textContent).toBe('3');
+        mark.click();
+        const popup = document.getElementById(
+            mark.getAttribute('aria-describedby')!,
+        )!;
+        const select = (query: string) =>
+            popup.querySelector<HTMLElement>(query)!;
+        expect(
+            select('[aria-selected="true"][role="tab"]').dataset.toolsTab,
+        ).toBe('corrections');
+        expect(
+            select('[data-tools-panel="corrections"]').textContent,
+        ).toContain('second');
+        expect(
+            select('[data-tools-panel="corrections"]').textContent,
+        ).not.toContain('first');
+        expect(badge.textContent).toBe('2');
+        select('[data-tools-tab="attention"]').click();
+        expect(select('[data-tools-panel="attention"]').textContent).toBe(
+            'No findings for this marking.',
+        );
+        select('[role="combobox"]').click();
+        select('[role="option"][data-invalid]').click();
+        expect(select('[data-tools-panel="attention"]').textContent).toBe(
+            'Error in A.',
+        );
+        expect(badge.textContent).toBe('2');
+        select('[data-tools-tab="corrections"]').click();
+        expect(
+            select('[data-tools-panel="corrections"]').textContent,
+        ).toContain('first');
+        expect(
+            select('[data-tools-panel="corrections"]').textContent,
+        ).not.toContain('second');
+        expect(badge.textContent).toBe('1');
+    });
+
     it('opens Needs attention at the first fix and keeps errors counted after Auto-fixes are viewed', () => {
         const root = document.createElement('div');
         document.body.appendChild(root);
