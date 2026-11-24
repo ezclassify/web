@@ -29,6 +29,8 @@ updates:
           - minor
           - patch
     ignore:
+      - dependency-name: '*'
+        update-types: ['version-update:semver-major']
       - dependency-name: '@angular/*'
         update-types:
           - version-update:semver-major
@@ -97,6 +99,9 @@ updates:
     labels:
       - dependencies
       - ci
+    ignore:
+      - dependency-name: '*'
+        update-types: ['version-update:semver-major']
     allow:
       - dependency-name: '*'
         update-types:
