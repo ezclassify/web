@@ -47,6 +47,7 @@
         "check:publish-content": "node scripts/check-publish-content.mjs",
         "check:recordings": "node scripts/record-demo-runtime.mjs --check",
         "check:spec-imports": "node scripts/check-spec-imports.mjs",
+        "deps:release-prepare": "node scripts/prepare-release-esbuild.mjs",
         "deps:relock": "node scripts/relock.mjs --clean && node scripts/relock.mjs --strip && npm install --package-lock-only --include=optional --ignore-scripts --before=\"$(node -e 'console.log(new Date(Date.now()-7*864e5).toISOString())')\" && node scripts/relock.mjs --restore && npm install --package-lock-only --include=optional --ignore-scripts --tag=dev && node scripts/relock.mjs --normalize && npm run check:lockfile-portable && npm run check:dependency-age",
         "docs": "npm exec --yes --package=typedoc@0.28.20 --package=typescript@5.9.3 -- typedoc --treatWarningsAsErrors",
         "docs:source": "npm exec --yes --package=typedoc@0.28.20 --package=typescript@5.9.3 -- typedoc --options typedoc.source.json --treatWarningsAsErrors",
@@ -87,11 +88,17 @@
         "vitest": "^4.1.2"
     },
     "overrides": {
+        "@angular/cli": {
+            "zod": "4.6.7"
+        },
         "@hono/node-server": "2.1.0",
         "@modelcontextprotocol/sdk": "1.32.1",
         "eventsource-parser": "3.1.0",
         "hono": "4.13.13",
         "ip-address": "10.7.4",
+        "ng-packagr": {
+            "esbuild": "0.28.2"
+        },
         "rollup-plugin-dts": "6.5.1",
         "vite": "8.3.4"
     }
