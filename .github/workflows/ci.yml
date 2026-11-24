@@ -75,6 +75,13 @@ jobs:
             exit 1
           fi
 
+      - name: Build and test UI tools with only its own dependencies
+        working-directory: libs/ui-tools
+        run: |
+          npm install --min-release-age=7 --ignore-scripts --no-audit --no-fund
+          npm run build
+          npm test
+
       - name: Resolve the qualified JavaScript SDK snapshot
         id: sdk
         env:

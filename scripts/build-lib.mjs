@@ -17,7 +17,8 @@
  */
 import * as fs from 'fs';
 import * as path from 'path';
-import { execSync, spawn } from 'child_process';
+import { execFileSync, spawn } from 'child_process';
+import { createRequire } from 'node:module';
 
 /**
  * Resolve extensionless relative imports in TypeScript sources for esbuild
@@ -197,9 +198,11 @@ export async function buildLib({
     extraExports,
     esmSubpaths,
 } = {}) {
-    // Imported lazily so loading this module for its pure helpers (unit tests
-    // run under jsdom) never evaluates esbuild, which requires a Node realm.
-    const esbuild = await import('esbuild');
+    // Build tools belong to the package being built. Standalone packages have
+    // their own node_modules, while workspaces can use the hoisted tools.
+    const requireBuildTool = createRequire(path.resolve('package.json'));
+    const esbuild = requireBuildTool('esbuild');
+    const tsc = requireBuildTool.resolve('typescript/bin/tsc');
     const { name, version } = JSON.parse(
         fs.readFileSync('package.json', 'utf8'),
     );
@@ -272,10 +275,18 @@ export async function buildLib({
     }
 
     // One-shot tsc pass; in watch mode, the long-lived tsc --watch takes over below.
-    execSync(
-        `npx tsc -p ${tsconfig} --emitDeclarationOnly --declaration --declarationMap false --outDir dist/lib`,
-        { stdio: 'inherit' },
-    );
+    const declarationArgs = [
+        tsc,
+        '-p',
+        tsconfig,
+        '--emitDeclarationOnly',
+        '--declaration',
+        '--declarationMap',
+        'false',
+        '--outDir',
+        'dist/lib',
+    ];
+    execFileSync(process.execPath, declarationArgs, { stdio: 'inherit' });
 
     ensureTopLevelDtsStub(outDir);
 
@@ -299,20 +310,8 @@ export async function buildLib({
         await cjsCtx.watch();
         // Long-lived tsc watcher for declarations.
         const tscChild = spawn(
-            'npx',
-            [
-                'tsc',
-                '-p',
-                tsconfig,
-                '--emitDeclarationOnly',
-                '--declaration',
-                '--declarationMap',
-                'false',
-                '--outDir',
-                'dist/lib',
-                '--watch',
-                '--preserveWatchOutput',
-            ],
+            process.execPath,
+            [...declarationArgs, '--watch', '--preserveWatchOutput'],
             { stdio: 'inherit' },
         );
         const shutdown = (sig) => {

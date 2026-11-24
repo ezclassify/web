@@ -4,7 +4,7 @@
         "declarationMap": true,
         "outDir": "../../dist/out-tsc",
         "rootDir": "./src",
-        "types": ["node", "vite/client"]
+        "types": ["node"]
     },
     "exclude": ["src/**/*.spec.ts", "src/**/*.test.ts", "src/**/__tests__/**"],
     "extends": "./tsconfig.json",
