@@ -8,7 +8,7 @@
         "url": "git+https://github.com/ezclassify/web.git",
         "directory": "libs/ui"
     },
-    "homepage": "https://ezclassify.com/docs/integrate-web-ui",
+    "homepage": "https://ezclassify.com/",
     "bugs": {
         "url": "https://github.com/ezclassify/web/issues"
     },
