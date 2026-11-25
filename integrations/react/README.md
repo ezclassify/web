@@ -183,16 +183,24 @@ const client = await connectContext({
         <input
             id="document"
             name="document"
-            value="SECRET//NOFORN"
+            defaultValue="SECRET//NOFORN"
             data-ezclassify-controller="marking"
         />
         <input
             name="part1"
-            value="S//NF"
+            defaultValue="S//NF"
             data-ezclassify-controller="marking"
         />
-        <input name="part2" value="C" data-ezclassify-controller="marking" />
-        <input name="part3" value="U" data-ezclassify-controller="marking" />
+        <input
+            name="part2"
+            defaultValue="C"
+            data-ezclassify-controller="marking"
+        />
+        <input
+            name="part3"
+            defaultValue="U"
+            data-ezclassify-controller="marking"
+        />
         <div
             data-ezclassify-controller="banner"
             data-ezclassify-source="document"
