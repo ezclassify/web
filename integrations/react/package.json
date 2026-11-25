@@ -51,7 +51,15 @@
         "classification",
         "marking",
         "library",
-        "components"
+        "components",
+        "module",
+        "package",
+        "sdk",
+        "component",
+        "ui",
+        "input",
+        "form",
+        "widget"
     ],
     "scripts": {
         "build": "node build-lib.mjs",
