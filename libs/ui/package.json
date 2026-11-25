@@ -2,7 +2,7 @@
     "name": "@ezclassify/ui",
     "version": "1.0.0-dev.30",
     "type": "module",
-    "description": "Marking and label fields, pickers and document banners for any web page, driven by HTML attributes. Works with CAPCO, CUI, TLP 2.0, CVSS or your own rules. Needs an EzClassify runtime.",
+    "description": "UI component library for security markings and sensitivity labels: marking and label fields, pickers and document banners for any web page, driven by HTML attributes. Works with CAPCO, CUI, TLP 2.0, CVSS or your own rules. Needs an EzClassify runtime.",
     "repository": {
         "type": "git",
         "url": "git+https://github.com/ezclassify/web.git",
@@ -54,7 +54,11 @@
         "cui-banner",
         "marking-picker",
         "forms",
-        "ezclassify"
+        "ezclassify",
+        "classification",
+        "marking",
+        "library",
+        "components"
     ],
     "scripts": {
         "build": "npm run build:lib",

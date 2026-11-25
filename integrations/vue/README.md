@@ -1,6 +1,6 @@
 # @ezclassify/vue
 
-Vue 3 fields and banners for security markings and sensitivity labels: validate, combine portion marks into an overall marking, show the banner. Rules come from your EzClassify runtime: IC Classification and Control Markings (CAPCO), Controlled Unclassified Information (CUI), Traffic Light Protocol (TLP) 2.0, Common Vulnerability Scoring System (CVSS), or schemes you write yourself. This package needs a running EzClassify runtime. The free developer runtime includes TLP 2.0, CVSS and demo subsets of CAPCO and CUI. The full CAPCO and CUI schemes are licensed content.
+Vue 3 component library for security markings and sensitivity labels: validate, combine portion marks into an overall marking, show the banner. Rules come from your EzClassify runtime: IC Classification and Control Markings (CAPCO), Controlled Unclassified Information (CUI), Traffic Light Protocol (TLP) 2.0, Common Vulnerability Scoring System (CVSS), or schemes you write yourself. This package needs a running EzClassify runtime. The free developer runtime includes TLP 2.0, CVSS and demo subsets of CAPCO and CUI. The full CAPCO and CUI schemes are licensed content.
 
 ## Install
 
