@@ -1,8 +1,8 @@
 # @ezclassify/ui
 
-The forms library enhances native HTML inputs with interactive marking components. It is the shared UI layer used by every framework integration (React, Angular, Vue), and it mounts over plain markup with no framework at all.
+UI component library for security markings and sensitivity labels: marking and label fields, pickers and document banners for any web page, driven by HTML attributes. Validate a security marking or sensitivity label as people type, combine portion marks into an overall marking, and show the banner. Rules come from your EzClassify runtime: IC Classification and Control Markings (CAPCO), Controlled Unclassified Information (CUI), Traffic Light Protocol (TLP) 2.0, Common Vulnerability Scoring System (CVSS), or schemes you write yourself. This package needs a running EzClassify runtime. The free developer runtime includes TLP 2.0, CVSS and demo subsets of CAPCO and CUI. The full CAPCO and CUI schemes are licensed content.
 
-You initialize it once. Everything after that is HTML attributes.
+It is the shared UI layer under the React, Vue and Angular integrations, and it mounts over plain markup with no framework at all. You initialize it once. Everything after that is HTML attributes.
 
 ## Architecture
 
@@ -181,6 +181,38 @@ MarkingField shows its contextual errors and fixes. The store's `valid` and
 `errors` describe each marking itself; they do not include the whole's
 coverage of its parts. `aggregate="document"` shows only the parts. A bare
 `data-ezclassify-aggregate` shows the page: every whole on it.
+
+### Try the capco-demo Context
+
+This one uses the `capco-demo` Context on the free developer runtime (the start command is in the section above). Against that runtime the engine reads `SECRET//NOFORN` as a valid marking, and rolls the portion marks `S//NF`, `C` and `U` up to the overall marking `SECRET//NOFORN`, which is what the aggregate banner shows.
+
+```html
+<form data-ezclassify-whole="document">
+    <input
+        id="document"
+        name="document"
+        value="SECRET//NOFORN"
+        data-ezclassify-controller="marking" />
+    <input name="part1" value="S//NF" data-ezclassify-controller="marking" />
+    <input name="part2" value="C" data-ezclassify-controller="marking" />
+    <input name="part3" value="U" data-ezclassify-controller="marking" />
+    <div
+        data-ezclassify-controller="banner"
+        data-ezclassify-source="document"></div>
+    <div
+        data-ezclassify-controller="banner"
+        data-ezclassify-aggregate="document"></div>
+</form>
+```
+
+```ts
+const client = await connectContext({
+    baseUrl: 'http://localhost:3000',
+    contextId: 'capco-demo',
+    contextVersion: '1.0.0',
+});
+new EzClassifyUI(client);
+```
 
 ### Read and write the state in code
 

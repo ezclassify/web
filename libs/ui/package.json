@@ -2,13 +2,13 @@
     "name": "@ezclassify/ui",
     "version": "1.0.0-dev.30",
     "type": "module",
-    "description": "UI component library (autocomplete, handbook, comparison, document-format, forms) for EzClassify deployments",
+    "description": "UI component library for security markings and sensitivity labels: marking and label fields, pickers and document banners for any web page, driven by HTML attributes. Works with CAPCO, CUI, TLP 2.0, CVSS or your own rules. Needs an EzClassify runtime.",
     "repository": {
         "type": "git",
         "url": "git+https://github.com/ezclassify/web.git",
         "directory": "libs/ui"
     },
-    "homepage": "https://github.com/ezclassify/web/tree/main/libs/ui#readme",
+    "homepage": "https://ezclassify.com/",
     "bugs": {
         "url": "https://github.com/ezclassify/web/issues"
     },
@@ -36,11 +36,37 @@
         "!dist/**/*.map"
     ],
     "keywords": [
-        "classification",
+        "classification-marking",
+        "classification-banner",
+        "portion-marking",
+        "sensitivity-label",
+        "data-classification",
+        "capco",
+        "ism",
+        "cui",
+        "tlp",
+        "cvss",
+        "security-marking",
+        "banner-line",
+        "portion-mark",
+        "banner-rollup",
+        "cui-marking",
+        "cui-banner",
+        "marking-picker",
         "forms",
-        "tags",
-        "security-classification",
-        "html"
+        "ezclassify",
+        "classification",
+        "marking",
+        "library",
+        "components",
+        "module",
+        "package",
+        "sdk",
+        "component",
+        "ui",
+        "input",
+        "form",
+        "widget"
     ],
     "scripts": {
         "build": "npm run build:lib",

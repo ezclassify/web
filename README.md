@@ -5,9 +5,7 @@
 [![license: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Node.js 22 | 24](https://img.shields.io/badge/node-22%20%7C%2024-339933.svg)](package.json)
 
-Apache-2.0 UI components and React, Vue, and Angular integrations for
-EzClassify. Add marking inputs, suggestions, validation, and document banners
-to an application connected to an EzClassify REST deployment.
+Apache-2.0 UI components and React, Vue and Angular integrations for security markings and sensitivity labels: fields, pickers and document banners that validate a marking, combine portion marks into an overall marking and show the banner. Rules come from your EzClassify runtime: IC Classification and Control Markings (CAPCO), Controlled Unclassified Information (CUI), Traffic Light Protocol (TLP) 2.0, Common Vulnerability Scoring System (CVSS), or schemes you write yourself. These packages need a running EzClassify runtime. The free developer runtime includes TLP 2.0, CVSS and demo subsets of CAPCO and CUI. The full CAPCO and CUI schemes are licensed content.
 
 The REST client the examples below import, `@ezclassify/rest-client`, ships from
 [ezclassify/sdk-js](https://github.com/ezclassify/sdk-js) with the Java,

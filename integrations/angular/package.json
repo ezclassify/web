@@ -2,13 +2,13 @@
     "name": "@ezclassify/angular",
     "version": "1.0.0-dev.30",
     "type": "module",
-    "description": "Angular integration components for the ezclassify classification engine",
+    "description": "Angular component library for security markings and sensitivity labels: validate, combine parts into an overall marking, show the banner. CAPCO, CUI, TLP 2.0, CVSS or your own rules. Needs an EzClassify runtime.",
     "repository": {
         "type": "git",
         "url": "git+https://github.com/ezclassify/web.git",
         "directory": "integrations/angular"
     },
-    "homepage": "https://github.com/ezclassify/web/tree/main/integrations/angular#readme",
+    "homepage": "https://ezclassify.com/",
     "bugs": {
         "url": "https://github.com/ezclassify/web/issues"
     },
@@ -22,10 +22,38 @@
         "!dist/**/*.map"
     ],
     "keywords": [
-        "classification",
+        "classification-marking",
+        "classification-banner",
+        "portion-marking",
+        "sensitivity-label",
+        "data-classification",
+        "capco",
+        "ism",
+        "cui",
+        "tlp",
+        "cvss",
+        "security-marking",
+        "banner-line",
+        "portion-mark",
+        "banner-rollup",
+        "cui-marking",
+        "cui-banner",
+        "marking-picker",
         "angular",
         "ezclassify",
-        "security-classification"
+        "classification",
+        "marking",
+        "library",
+        "components",
+        "module",
+        "package",
+        "sdk",
+        "component",
+        "ui",
+        "input",
+        "form",
+        "widget",
+        "directive"
     ],
     "scripts": {
         "build": "node build-lib.mjs",
