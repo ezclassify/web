@@ -1,6 +1,6 @@
 # @ezclassify/react
 
-React marking controls backed by one application-owned EzClassify REST client.
+React fields and banners for security markings and sensitivity labels: validate, combine portion marks into an overall marking, show the banner. Rules come from your EzClassify runtime: IC Classification and Control Markings (CAPCO), Controlled Unclassified Information (CUI), Traffic Light Protocol (TLP) 2.0, Common Vulnerability Scoring System (CVSS), or schemes you write yourself. This package needs a running EzClassify runtime. The free developer runtime includes TLP 2.0, CVSS and demo subsets of CAPCO and CUI. The full CAPCO and CUI schemes are licensed content.
 
 ## Install
 
@@ -166,6 +166,44 @@ author's document marking with the computed rollup. The MarkedTextArea
 registers its individual portions beneath that whole. Its body text stays in
 the textarea's value. MarkedInput enhances a text input with one logical line
 of marked text.
+
+### Try the capco-demo Context
+
+This one uses the `capco-demo` Context on the free developer runtime (the start command is in the section above). Against that runtime the engine reads `SECRET//NOFORN` as a valid marking, and rolls the portion marks `S//NF`, `C` and `U` up to the overall marking `SECRET//NOFORN`, which is what the aggregate banner shows.
+
+```tsx
+const client = await connectContext({
+    baseUrl: 'http://localhost:3000',
+    contextId: 'capco-demo',
+    contextVersion: '1.0.0',
+});
+// <EzClassifyProvider context={client}> at the app root, then:
+<EzClassify>
+    <form data-ezclassify-whole="document">
+        <input
+            id="document"
+            name="document"
+            value="SECRET//NOFORN"
+            data-ezclassify-controller="marking"
+        />
+        <input
+            name="part1"
+            value="S//NF"
+            data-ezclassify-controller="marking"
+        />
+        <input name="part2" value="C" data-ezclassify-controller="marking" />
+        <input name="part3" value="U" data-ezclassify-controller="marking" />
+        <div
+            data-ezclassify-controller="banner"
+            data-ezclassify-source="document"
+        />
+        <div
+            data-ezclassify-controller="banner"
+            data-ezclassify-aggregate="document"
+        />
+    </form>
+</EzClassify>;
+```
 
 ### Read and Write the State in Code
 

@@ -2,13 +2,13 @@
     "name": "@ezclassify/react",
     "version": "1.0.0-dev.30",
     "type": "module",
-    "description": "React integration components for the ezclassify classification engine",
+    "description": "React fields and banners for security markings and sensitivity labels: validate, combine parts into an overall marking, show the banner. CAPCO, CUI, TLP 2.0, CVSS or your own rules. Needs an EzClassify runtime.",
     "repository": {
         "type": "git",
         "url": "git+https://github.com/ezclassify/web.git",
         "directory": "integrations/react"
     },
-    "homepage": "https://github.com/ezclassify/web/tree/main/integrations/react#readme",
+    "homepage": "https://ezclassify.com/docs/integrate-web-ui",
     "bugs": {
         "url": "https://github.com/ezclassify/web/issues"
     },
@@ -29,10 +29,24 @@
         "!dist/**/*.map"
     ],
     "keywords": [
-        "classification",
+        "classification-marking",
+        "classification-banner",
+        "portion-marking",
+        "sensitivity-label",
+        "data-classification",
+        "capco",
+        "cui",
+        "tlp",
+        "cvss",
+        "security-marking",
+        "banner-line",
+        "portion-mark",
+        "banner-rollup",
+        "cui-marking",
+        "cui-banner",
+        "marking-picker",
         "react",
-        "ezclassify",
-        "security-classification"
+        "ezclassify"
     ],
     "scripts": {
         "build": "node build-lib.mjs",
