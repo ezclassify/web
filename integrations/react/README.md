@@ -346,6 +346,18 @@ shared client. Each `<EzClassify>` releases its store when it unmounts. Closing
 an individual control releases its UI subscriptions while the rest of the form
 keeps its store and client.
 
+## When a Check Fails
+
+A field that cannot check the text typed into it (the runtime is unreachable,
+times out, or answers badly) keeps its last result and says so itself, under
+the field. To react beside it, `useEzClassifyCheckFailed(id)` is true while the
+field with that DOM id has a failed check. Each field reports for itself.
+
+```tsx
+const failed = useEzClassifyCheckFailed('summary');
+return <button disabled={failed}>Save</button>;
+```
+
 ## Presentation
 
 Control options choose colors, tooltips and favorites. Omit `format` to use

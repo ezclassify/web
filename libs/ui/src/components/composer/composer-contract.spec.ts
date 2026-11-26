@@ -43,7 +43,7 @@ async function createContext() {
         position,
         rank: position,
     });
-    return await connectDemoContext({
+    const context = await connectDemoContext({
         draft: {
             scheme: {
                 scheme: {
@@ -100,7 +100,17 @@ async function createContext() {
             },
         },
     });
+    // A runtime that goes away: every read of text fails until it is back.
+    const read = context.scheme.process.bind(context.scheme);
+    context.scheme.process = ((...args: Parameters<typeof read>) =>
+        runtimeDown
+            ? Promise.reject(new Error('runtime unreachable'))
+            : read(...args)) as typeof read;
+    return context;
 }
+
+/** Whether the runtime answers: set by a spec that needs a failed check. */
+let runtimeDown = false;
 
 type Kind = 'tags' | 'marking' | 'marked-input' | 'marked-textarea';
 const KINDS: Kind[] = ['tags', 'marking', 'marked-input', 'marked-textarea'];
@@ -190,6 +200,7 @@ async function key(field: Field, name: string): Promise<KeyboardEvent> {
 }
 
 beforeEach(() => {
+    runtimeDown = false;
     root = document.createElement('div');
     document.body.appendChild(root);
     Element.prototype.scrollIntoView = vi.fn();
@@ -418,6 +429,66 @@ const NOFORN_SECRET_FIXES = [
     'Read `secret` as `SECRET` (case).',
     'Moved `//NOFORN` into this position (order).',
 ];
+
+describe.each(['tags', 'marking'] as const)(
+    'a failed check of the typed text in %s',
+    (kind) => {
+        it('is reported on its own host, shown in the field and cleared by the next check that lands', async () => {
+            const field = await mountField(kind);
+            const other = document.createElement('input');
+            other.id = 'other';
+            root.appendChild(other);
+            const events: boolean[] = [];
+            field.host.addEventListener('ezclassify:check-change', (event) =>
+                events.push((event as CustomEvent).detail.failed),
+            );
+            runtimeDown = true;
+            await type(field, 'sec');
+            await wait(50);
+            expect(
+                field.host.hasAttribute('data-ezclassify-check-failed'),
+            ).toBe(true);
+            expect(events).toEqual([true]);
+            expect(other.hasAttribute('data-ezclassify-check-failed')).toBe(
+                false,
+            );
+            const note = root.querySelector('.ez-composer-note') as HTMLElement;
+            expect(note.hidden).toBe(false);
+            expect(note.textContent).toBe(
+                'This text could not be checked. The result shown may be out of date.',
+            );
+            expect(
+                openSurface()
+                    ?.querySelector('.ez-composer__result')
+                    ?.getAttribute('aria-busy'),
+            ).toBe('false');
+            runtimeDown = false;
+            await type(field, 'secret zzz');
+            await wait(50);
+            expect(
+                field.host.hasAttribute('data-ezclassify-check-failed'),
+            ).toBe(false);
+            expect(events).toEqual([true, false]);
+            expect(note.hidden).toBe(true);
+        });
+    },
+);
+
+describe.each(['marked-input', 'marked-textarea'] as const)(
+    'a failed read of the typed marking in %s',
+    (kind) => {
+        it('is reported on its own host', async () => {
+            const field = await mountField(kind);
+            runtimeDown = true;
+            await type(field, 'secret zzz');
+            await leave(field.input());
+            await wait(400);
+            expect(
+                field.host.hasAttribute('data-ezclassify-check-failed'),
+            ).toBe(true);
+        });
+    },
+);
 
 describe.each(KINDS)('the fixes behind a typed marking in %s', (kind) => {
     it('reach the status mark when the commit stores what was typed', async () => {

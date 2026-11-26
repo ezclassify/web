@@ -19,7 +19,8 @@
  *
  * Components inside a root read and write marking state with
  * `useEzClassify(id)`, `useEzClassifyState(id)`, `useEzClassifyAssertions(id)`
- * and `useEzClassifyFacet(id, categoryId)`. See the package README.
+ * and `useEzClassifyFacet(id, categoryId)`; `useEzClassifyCheckFailed(id)` says
+ * when a field could not check its text. See the package README.
  */
 
 import { computed, type Ref, type WritableComputedRef } from 'vue';
@@ -100,6 +101,7 @@ export type {
     EzClassifyProvision,
 } from './plugin';
 export { EzClassify, useEzClassifyUI } from './EzClassify';
+export { useEzClassifyCheckFailed } from './composables/useEzClassifyCheckFailed';
 export { useEzClassifyFacet } from './composables/useEzClassifyFacet';
 export type { UseEzClassifyFacetReturn } from './composables/useEzClassifyFacet';
 export { VueRefStore, VueRefStoreKey } from './composables/vue-ref-store';

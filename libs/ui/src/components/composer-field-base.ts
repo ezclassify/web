@@ -49,6 +49,9 @@ export abstract class ComposerFieldBase extends ComponentBase {
         });
         this.container.appendChild(this.view.announcer);
         noteAnchor.insertAdjacentElement('afterend', this.view.note);
+        this.controller.subscribe((snapshot) =>
+            this.reportCheckFailed(snapshot.checkFailed),
+        );
     }
 
     protected focusComposerTools(button: HTMLElement | null): void {
@@ -72,6 +75,7 @@ export abstract class ComposerFieldBase extends ComponentBase {
             this,
             this.controller?.isDirty() ? () => this.controller.commit() : null,
             () => {
+                this.reportCheckFailed(false);
                 this.destroyClearButton();
                 this.removeRuleErrors();
                 this._destroyed = true;

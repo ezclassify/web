@@ -1275,6 +1275,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
 
     private teardown(): void {
         this.tornDown = true;
+        this.reportCheckFailed(false);
         this.pickerCommittedState = null;
         this.pendingEntryStates = null;
         if (this.syncTimer) clearTimeout(this.syncTimer);
@@ -1427,6 +1428,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
             this.activeSegmentIndex = -1;
             this.scanComplete = true;
             this.scanFailed = false;
+            this.reportCheckFailed(false);
             this.renderDisplay();
             this.updateStatusMark();
             this.syncHiddenFields();
@@ -1456,6 +1458,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
             if (isCurrent() && this.lastScannedText === text) {
                 this.lastScannedText = previousScannedText;
                 this.scanFailed = true;
+                this.reportCheckFailed(true);
                 // Fail closed: a scan that never answered read none of this
                 // text. The portions committed before stay, and the field says
                 // the text is unchecked until a scan reads all of it.
@@ -1760,6 +1763,11 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                     this.proposedFixesBySegment.set(segment, proposals);
             }
         });
+        // A marking the engine raised on stays as it was read before and says
+        // why; the page hears that its text was not fully checked.
+        this.reportCheckFailed(
+            this.segments.some((segment) => segment.readFailure !== undefined),
+        );
         // An edit that extends the end of a mark and also changes its body
         // can replace the store span. Its unchanged start still anchors the
         // local correction record. The history drops any fixes whose marking

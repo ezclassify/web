@@ -341,6 +341,18 @@ saves needs an `id` on its field. The store's `valid` and `errors` describe the
 marking itself, not whole-versus-parts coverage. The whole MarkingField owns
 that contextual comparison and displays its errors and proposed fixes.
 
+## When a Check Fails
+
+A field that cannot check the text typed into it (the runtime is unreachable,
+times out, or answers badly) keeps its last result and says so itself, under
+the field. To react beside it, `injectEzClassifyCheckFailed(id)` returns a
+signal that is true while the field with that DOM id has a failed check. Call
+it from an injection context. Each field reports for itself.
+
+```ts
+readonly failed = injectEzClassifyCheckFailed('summary');
+```
+
 ## Presentation
 
 Omit `format` to use the Context's whole and part defaults. A control may use

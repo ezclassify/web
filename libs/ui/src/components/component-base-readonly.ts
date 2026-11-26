@@ -62,6 +62,7 @@ import {
     renderViewRefused,
 } from '../render-refusal';
 import { getMountHost } from '../mount-host-registry';
+import { setCheckFailed } from '../field-check';
 import { schemeChangeWords, type ChangeWords } from './status-mark';
 import type { MarkingUndo } from './marking-undo';
 import { assertWritesScopes, viewOutputOf } from '../format-resolver';
@@ -883,6 +884,16 @@ export abstract class ReadOnlyComponentBase
     protected retryRead(): void {
         if (this.failedRead === null) return;
         void this.setValue(this.failedRead);
+    }
+
+    /**
+     * Tell the page whether this field's last check of its text failed: the
+     * attribute and event on the host the page authored (see field-check.ts).
+     * One field's state is never another's, because each stamps its own host.
+     */
+    protected reportCheckFailed(failed: boolean): void {
+        const host = getMountHost(this.container) ?? this.enhancedInput;
+        if (host) setCheckFailed(host, failed);
     }
 
     /** Whether the field's last read of its own value failed. */

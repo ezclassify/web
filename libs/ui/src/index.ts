@@ -24,6 +24,8 @@
  */
 export { EzClassifyUI } from './ezclassify-ui';
 export type { ControllerName } from './element-scanner';
+export { watchCheckFailed } from './field-check';
+export type { CheckChangeDetail } from './field-check';
 export type { EzClassifyAttributes } from './added-attributes';
 export {
     getDefaultStyles,

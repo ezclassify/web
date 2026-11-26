@@ -740,6 +740,35 @@ rewrites that portion's mark and no other.
 Read-only views report state and do not judge it. `banner` shows the marking,
 or its empty state when there is nothing to render, and never a rule error.
 
+## When a check fails
+
+A field reads the text typed into it through your runtime. If that read fails
+(the runtime is unreachable, times out, or answers with an error or a body the
+client cannot read), the field keeps the last result it has and does not blank
+it. It also says so: under the field a note reads "This text could not be
+checked. The result shown may be out of date.", announced politely to screen
+readers, and the result stays dimmed as not current. The note goes away when a
+later check of the current text lands. There is nothing to configure, and a
+field with a failed check is never shown as a checked one.
+
+Your page can follow it too. The field's host element carries the
+presence-only attribute `data-ezclassify-check-failed` while its last check
+failed, and dispatches a bubbling `ezclassify:check-change` event on each
+change, with `detail.failed` set to the new state. Each field reports on its
+own host, so two fields never share a state. MarkingField, TagInput, MarkedInput
+and MarkedTextArea all report it.
+
+```ts
+const field = document.getElementById('summary')!;
+field.addEventListener('ezclassify:check-change', (event) => {
+    submit.disabled = (event as CustomEvent<{ failed: boolean }>).detail.failed;
+});
+```
+
+`watchCheckFailed(id, listener)` follows one field by its DOM id, calling the
+listener with the current state at once and then on each change. It returns a
+function that stops following.
+
 ## Native choice controls
 
 Use `data-ezclassify-controller="select"` on an existing single-value

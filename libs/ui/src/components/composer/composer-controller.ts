@@ -295,6 +295,18 @@ export interface ComposerSnapshot {
     readonly reading: ComposerReading | null;
     /** True when `reading` belongs to an older text than `text`. */
     readonly stale: boolean;
+    /**
+     * True while the last check of the text failed and no later check has
+     * landed: whatever `reading` shows may not describe `text`. A failure stays
+     * until a check of the then-current text answers, so a result for older
+     * text never looks like a checked one.
+     */
+    readonly checkFailed: boolean;
+    /**
+     * True while a check of `text` is under way or about to start: stale, and
+     * not already known to have failed.
+     */
+    readonly checking: boolean;
     readonly mode: 'ranked' | 'browse';
     readonly groups: ComposerGroup[];
     /** Navigable rows in display order; `activeIndex` indexes this. */
@@ -484,6 +496,12 @@ export class ComposerController {
      * outside, under an unchanged text makes the old reading wrong.
      */
     private readingKey = '';
+    /**
+     * The key of the read that failed, until a read lands or the draft is
+     * thrown away. Only the newest request records one: an older request that
+     * fails after a newer one started says nothing about the current text.
+     */
+    private failedKey: string | null = null;
     /**
      * The reading came from a structural edit (a rule fix), not from the text,
      * so the draft is dirty even when its text matches the stored rendering:
@@ -747,6 +765,7 @@ export class ComposerController {
         this.caret = this.text.length;
         this.reading = null;
         this.readingKey = '';
+        this.failedKey = null;
         this.invalid = false;
         this.problem = null;
         this.activeIndex = -1;
@@ -879,12 +898,22 @@ export class ComposerController {
                 reading = await this.port.read(text, base);
             } catch {
                 // A transient failure (network, abort) keeps the last reading
-                // rather than blanking the result row for one keystroke.
+                // rather than blanking the result row for one keystroke, and
+                // says so: the reading no longer describes the text. A request
+                // that was replaced by a newer one says nothing about it.
+                if (seq === this.readSeq) {
+                    const already = this.failedKey !== null;
+                    this.failedKey = key;
+                    this.emit();
+                    // Once per failure, not on every keystroke that fails.
+                    if (!already) this.announceText(t('composer.checkFailed'));
+                }
                 return;
             }
             if (seq !== this.readSeq) return;
             this.reading = reading;
             this.readingKey = key;
+            this.failedKey = null;
             this.refreshGated();
             this.arm();
             this.emit();
@@ -1531,6 +1560,10 @@ export class ComposerController {
             token,
             reading: this.reading,
             stale: this.readingKey !== this.readKey(),
+            checkFailed: this.failedKey !== null,
+            checking:
+                this.readingKey !== this.readKey() &&
+                this.failedKey !== this.readKey(),
             mode: built.mode,
             groups: built.groups,
             rows: built.rows,
@@ -1751,6 +1784,7 @@ export class ComposerController {
         this.readSeq++;
         this.reading = reading;
         this.readingKey = this.readKey();
+        this.failedKey = null;
         this.structural = true;
         void this.refreshOffered();
         this.refreshGated();

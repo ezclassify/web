@@ -18,6 +18,8 @@
  * exported names and option shapes. It exists only to remove duplication.
  */
 
+import { getMountHost } from '../mount-host-registry';
+import { setCheckFailed } from '../field-check';
 import type {
     Assertion,
     Change,
@@ -938,6 +940,7 @@ export abstract class MarkedFieldBase<
                 focusTarget: this.wrap,
                 isFieldChrome: (node) => this.isFieldChrome(node),
                 root: this.container,
+                onCheckFailed: (failed) => this.reportCheckFailed(failed),
             },
         );
         if (openSeq !== this.pickerOpenSeq) {
@@ -976,6 +979,15 @@ export abstract class MarkedFieldBase<
             marking: this.wrapRendered(picker.getRendered().trim()).trimEnd(),
             assertions: picker.getAssertions(),
         };
+    }
+
+    /**
+     * Tell the page whether the last check of this field's text failed (see
+     * field-check.ts), on the host the page authored.
+     */
+    protected reportCheckFailed(failed: boolean): void {
+        const host = getMountHost(this.container);
+        if (host) setCheckFailed(host, failed);
     }
 
     protected destroyPicker(): void {
