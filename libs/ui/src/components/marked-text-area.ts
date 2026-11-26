@@ -2083,13 +2083,16 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
      */
     private updateUnverifiedState(): void {
         if (!this.scanNotice || this.tornDown) return;
-        const failed =
+        const checkFailed =
             this.scanFailed ||
-            this.valueNotShared ||
             this.segments.some((segment) => segment.readFailure !== undefined);
-        this.setFieldUnverified(failed);
-        const message = failed
-            ? t('composer.unverified')
+        this.setFieldUnverified(checkFailed || this.valueNotShared);
+        const said = [
+            checkFailed ? t('composer.unverified') : null,
+            this.valueNotShared ? this.notSharedNotice() : null,
+        ].filter(Boolean);
+        const message = said.length
+            ? said.join(' ')
             : this.scanComplete
               ? null
               : t('mark.scanIncomplete');

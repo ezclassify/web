@@ -198,6 +198,9 @@ export const defaultLocale = {
     'composer.unverified':
         'This text could not be checked. The result shown may be out of date.',
     'composer.actionFailed': 'That change could not be applied. Try again.',
+    'share.notShared':
+        'Your entry is kept, but it has not reached the rest of the page yet.',
+    'share.retryLeave': 'Leave the field to try again.',
     'composer.didYouMean': 'Did you mean {label}?',
     'composer.needs': 'Needs',
     'composer.categories': 'Category',

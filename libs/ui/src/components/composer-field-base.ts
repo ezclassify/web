@@ -3,6 +3,7 @@ import { ComposerController } from './composer/composer-controller';
 import { ComposerView } from './composer/composer-view';
 import type { SchemeMetaView } from '@ezclassify/types';
 import { teardownAfterWrite } from './teardown-write';
+import { t } from '../i18n';
 
 type ComposerShape = ConstructorParameters<
     typeof ComposerController
@@ -45,6 +46,8 @@ export abstract class ComposerFieldBase extends ComponentBase {
                       this.getConceptHint(conceptId, categoryId)?.title
                 : undefined,
             onPlacement: (open) => this.setReportInField(open),
+            fieldNotice: () =>
+                this.valueNotShared ? this.notSharedNotice() : null,
             textToolsEdges: () => true,
         });
         this.container.appendChild(this.view.announcer);
@@ -52,6 +55,28 @@ export abstract class ComposerFieldBase extends ComponentBase {
         this.controller.subscribe((snapshot) =>
             this.reportUnverified(snapshot.unverified),
         );
+    }
+
+    /**
+     * The open list covers the note under the field: say there, too, that the
+     * value has not reached the page, and announce it while the list holds the
+     * field's report.
+     */
+    protected override onUnverifiedChanged(): void {
+        const wasShared = !this.notSharedShown;
+        this.notSharedShown = this.valueNotShared;
+        super.onUnverifiedChanged();
+        if (!this.view) return;
+        this.view.refreshValidity();
+        if (wasShared && this.notSharedShown && this.controller.isOpen)
+            this.view.announce(this.notSharedNotice());
+    }
+
+    private notSharedShown = false;
+
+    /** Leaving the field commits the value it holds, which sends it again. */
+    protected override shareRetryHint(): string | null {
+        return t('share.retryLeave');
     }
 
     protected focusComposerTools(button: HTMLElement | null): void {

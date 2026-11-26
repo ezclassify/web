@@ -1,14 +1,20 @@
 /**
- * What a marking field tells its host when the result it shows has not been
- * verified for the text in it.
+ * What a field tells its host while what it shows cannot be trusted as the
+ * page's value, for either of two reasons.
  *
- * A field reads typed text through the runtime. When that read fails (the
+ * A text field reads typed text through the runtime. When that read fails (the
  * runtime is unreachable, a timeout, a malformed response, an HTTP error) the
  * field keeps showing the last result it has, marked as possibly out of date,
- * because the last check could not be completed. The page hears the same thing:
- * a presence-only attribute on the field's host element and an
- * `ezclassify:unverified-change` event dispatched from it, so "not checked"
- * never has to be inferred from the absence of an error.
+ * because the last check could not be completed.
+ *
+ * Any field bound to a page marking shares its value with the rest of the page
+ * through the store. When the store did not take it, the field keeps the user's
+ * entry while the banner, rollups and hidden fields still show the value from
+ * before, until the page holds the field's value.
+ *
+ * The page hears both the same way: a presence-only attribute on the field's
+ * host element and an `ezclassify:unverified-change` event dispatched from it,
+ * so neither has to be inferred from the absence of an error.
  */
 
 import { getMountHost } from './mount-host-registry';
@@ -26,8 +32,8 @@ export const UNVERIFIED_CHANGE_EVENT = 'ezclassify:unverified-change';
 /** `detail` of {@link UNVERIFIED_CHANGE_EVENT}. */
 export interface UnverifiedChangeDetail {
     /**
-     * True when the result the field shows has not been verified for its
-     * current text because the last check could not be completed.
+     * True while the field's last check of its text could not be completed, or
+     * the page does not hold the value the field holds.
      */
     unverified: boolean;
 }

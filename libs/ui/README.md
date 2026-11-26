@@ -754,11 +754,14 @@ to configure, and an unverified result is never shown as a checked one.
 MarkingField, TagInput, MarkedInput and MarkedTextArea all behave this way and
 use these words for any failed check, never the client's own error string.
 
-A field bound to a page marking is also unverified when its value could not be
-shared with the rest of the page: the field keeps what was entered, while the
-banner, rollups and hidden fields still show the value from before. It says so
-the same way, and stops once the value reaches the page. To send it again,
-commit the value as it stands (press Enter in the field) or change it.
+A field bound to a page marking is also unverified while its value has not
+reached the rest of the page: the field keeps what was entered, while the
+banner, rollups and hidden fields still show the value from before. It says
+"Your entry is kept, but it has not reached the rest of the page yet." and
+stops as soon as the page holds the field's value, whoever puts it there.
+Leaving the field sends the value again, and so does changing it; a MarkedInput
+sends it again when its marking is confirmed. This applies to every control
+bound to a marking, the choice controls and the decision flow included.
 
 Your page can follow it too. The field's host element carries the
 presence-only attribute `data-ezclassify-unverified` while its result is

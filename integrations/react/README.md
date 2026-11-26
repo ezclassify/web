@@ -351,8 +351,7 @@ keeps its store and client.
 A field that cannot complete the check of the text typed into it (the runtime is
 unreachable, times out, or answers badly) keeps its last result, marks it as
 unverified and says so itself, in its own message area. A field is unverified
-too while the value entered in it could not be shared with the rest of the
-page. To react beside it,
+too while the value entered in it has not reached the rest of the page. To react beside it,
 `useEzClassifyUnverified(id)` is true while the field with that DOM id is unverified. Each field reports for itself, and a field that is
 not enhanced yet reads false until it is.
 

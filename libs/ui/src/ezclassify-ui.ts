@@ -368,6 +368,36 @@ function signAssertions(
 }
 
 /**
+ * Whether two lists hold the same facts, inferred ones aside: what a field
+ * holds against what the store holds for it.
+ */
+function sameFacts(
+    left: readonly EngineAssertion[],
+    right: readonly EngineAssertion[],
+): boolean {
+    const stated = (facts: readonly EngineAssertion[]) =>
+        facts.filter((fact) => fact.confidence !== 'inferred');
+    return signAssertions(stated(left)) === signAssertions(stated(right));
+}
+
+/** One channel of a field's publishes (see EzClassifyUI.trackShare). */
+interface ShareChannel {
+    /** The newest publish of the channel. */
+    seq: number;
+    /** The store does not hold the field's value for the channel. */
+    failed: boolean;
+    /**
+     * Whether the store holds the field's value for the channel now, or
+     * undefined when that cannot be told from the two sides.
+     */
+    holds?: () => boolean | undefined;
+    /** The marking whose commits may share the channel again. */
+    watch?: string;
+    /** Stops following that marking. */
+    stop?: () => void;
+}
+
+/**
  * Views must see inferred choices become explicit even when their text stays
  * the same.
  */
@@ -5016,54 +5046,72 @@ export class EzClassifyUI {
             facts: handle.lastSeenFactSig,
             origins: handle.lastSeenAssertionSig,
         };
-        this.trackShare(handle.token, 'value', publish, (error) => {
-            if (
-                handle.lastSeenRendered === sent.rendered &&
-                handle.lastSeenFactSig === sent.facts &&
-                handle.lastSeenAssertionSig === sent.origins
-            ) {
-                handle.lastSeenRendered = '';
-                handle.lastSeenFactSig = '';
-                handle.lastSeenAssertionSig = '';
-            }
-            this.reportFailedPublish('field', handle.markingId, error);
-        });
+        this.trackShare(
+            handle.token,
+            'value',
+            publish,
+            (error) => {
+                if (
+                    handle.lastSeenRendered === sent.rendered &&
+                    handle.lastSeenFactSig === sent.facts &&
+                    handle.lastSeenAssertionSig === sent.origins
+                ) {
+                    handle.lastSeenRendered = '';
+                    handle.lastSeenFactSig = '';
+                    handle.lastSeenAssertionSig = '';
+                }
+                this.reportFailedPublish('field', handle.markingId, error);
+            },
+            { holds: this.holdsViewValue(handle), watch: handle.markingId },
+        );
     }
 
     /**
-     * Whether each field's publishes reached the store, by channel (its value,
-     * a portion's entry, its rollup): the newest publish of each and whether it
-     * failed. Only the newest publish of a channel decides it, so an older one
+     * Each field's publishes to the store, by channel (its value, a portion's
+     * entry, its rollup): the newest publish of each, whether the store failed
+     * to take it, and how to tell whether the store holds what the field holds
+     * for it. Only the newest publish of a channel decides it, so an older one
      * that settles late changes nothing.
      */
     private readonly shareStates = new WeakMap<
         object,
-        Map<string, { seq: number; failed: boolean }>
+        Map<string, ShareChannel>
     >();
     private shareSeq = 0;
 
     /**
-     * Follow one publish a field made: a rejection runs `onFail`, and the field
-     * reports itself unverified while the newest publish of any of its channels
-     * was rejected (see FieldComponentBase.setShareFailed). A torn- down page
-     * tells no field anything.
+     * Follow one publish a field made. The field is not shared on a channel
+     * when the store rejected the channel's newest publish, or resolved it
+     * without holding the field's value (a newer publish to the same marking
+     * superseded it), and stays so while the store holds something else for the
+     * channel. It is shared again as soon as the store holds what the field
+     * holds, whoever published it. While any channel is not shared the field
+     * reports itself unverified (see FieldComponentBase.setShareFailed).
      *
      * @param source - The publish source, whose token is the field's element
      * @param channel - Which of the field's publishes this is
      * @param publish - The store's publish, as it was sent
      * @param onFail - Runs when the store rejects it
-     * @param onLand - Runs when the store takes it
+     * @param options - `holds` tells whether the store holds the field's value
+     *   for the channel, read from both sides now, and `watch` names the
+     *   marking whose commits may change that; `onLand` runs when the store
+     *   takes the publish. A channel with no `holds` is shared once its own
+     *   publish lands.
      */
     private trackShare(
         source: PublishSource,
         channel: string,
         publish: Promise<unknown>,
         onFail: (error: unknown) => void,
-        onLand?: () => void,
+        options: {
+            holds?: () => boolean | undefined;
+            watch?: string;
+            onLand?: () => void;
+        } = {},
     ): void {
         const owner = source.token;
         if (typeof owner !== 'object' || owner === null) {
-            publish.then(onLand, onFail);
+            publish.then(options.onLand, onFail);
             return;
         }
         let channels = this.shareStates.get(owner);
@@ -5072,24 +5120,33 @@ export class EzClassifyUI {
             this.shareStates.set(owner, channels);
         }
         const seq = ++this.shareSeq;
-        const failed = channels.get(channel)?.failed ?? false;
-        channels.set(channel, { seq, failed });
+        // The marking as it stands now: a publish that resolves with the store
+        // still holding exactly this committed nothing (a newer publish to the
+        // same marking superseded it and did not land either).
+        const before = options.watch ? this.store.get(options.watch) : null;
+        const previous = channels.get(channel);
+        const state: ShareChannel = {
+            seq,
+            failed: previous?.failed ?? false,
+            holds: options.holds,
+            watch: options.watch,
+            stop: previous?.stop,
+        };
+        channels.set(channel, state);
         const settle = (rejected: boolean) => {
-            const state = channels.get(channel);
-            if (!state || state.seq !== seq) return;
-            state.failed = rejected;
-            if (this._destroyed || destroyedStores.has(this.store)) return;
-            const field =
-                this.mounted.get(owner as HTMLElement) ??
-                this.autocompleters.get(owner as HTMLInputElement);
-            if (field && 'setShareFailed' in field)
-                (field as FieldComponentBase).setShareFailed(
-                    [...channels.values()].some((one) => one.failed),
-                );
+            if (channels.get(channel) !== state) return;
+            if (rejected) state.failed = state.holds?.() !== true;
+            else
+                state.failed =
+                    !!options.watch &&
+                    this.store.get(options.watch) === before &&
+                    state.holds?.() === false;
+            this.watchShare(owner, channel, state);
+            this.reportShare(owner);
         };
         publish.then(
             () => {
-                onLand?.();
+                options.onLand?.();
                 settle(false);
             },
             (error: unknown) => {
@@ -5097,6 +5154,109 @@ export class EzClassifyUI {
                 settle(true);
             },
         );
+    }
+
+    /**
+     * While a channel is not shared, follow the commits of the marking it
+     * publishes to: once the store holds what the field holds, whoever
+     * published it, the channel is shared again. The field adopts a value
+     * another view committed in the same commit, so the comparison waits for
+     * the commit's listeners to run.
+     */
+    private watchShare(
+        owner: object,
+        channel: string,
+        state: ShareChannel,
+    ): void {
+        if (!state.failed || !state.holds || !state.watch) {
+            state.stop?.();
+            state.stop = undefined;
+            return;
+        }
+        if (state.stop) return;
+        state.stop = this.store.subscribe(state.watch, () =>
+            queueMicrotask(() => this.recheckShare(owner)),
+        );
+    }
+
+    /**
+     * Compare every channel of a field that is not shared with what the store
+     * holds now, and report the result.
+     *
+     * @param owner - The field's element
+     */
+    private recheckShare(owner: object): void {
+        const channels = this.shareStates.get(owner);
+        if (!channels) return;
+        for (const [channel, state] of channels) {
+            if (state.failed && state.holds?.() === true) {
+                state.failed = false;
+                this.watchShare(owner, channel, state);
+            }
+        }
+        this.reportShare(owner);
+    }
+
+    /**
+     * Forget a channel whose subject is gone (a portion deleted from the text):
+     * nothing is left on the page for it to be shared.
+     */
+    private dropShare(owner: object, channel: string): void {
+        const channels = this.shareStates.get(owner);
+        const state = channels?.get(channel);
+        if (!channels || !state) return;
+        state.stop?.();
+        channels.delete(channel);
+        this.reportShare(owner);
+    }
+
+    /**
+     * Forget a field's portion channels whose portion is gone.
+     *
+     * @param owner - The field's element
+     * @param present - The portion channels the field still has
+     */
+    private keepShareChannels(owner: object, present: readonly string[]): void {
+        const channels = this.shareStates.get(owner);
+        if (!channels) return;
+        for (const channel of [...channels.keys()])
+            if (channel.startsWith('entry:') && !present.includes(channel))
+                this.dropShare(owner, channel);
+    }
+
+    /** Tell a field whether any of its channels is not shared. */
+    private reportShare(owner: object): void {
+        if (this._destroyed || destroyedStores.has(this.store)) return;
+        const channels = this.shareStates.get(owner);
+        const field =
+            this.mounted.get(owner as HTMLElement) ??
+            this.autocompleters.get(owner as HTMLInputElement);
+        if (field && 'setShareFailed' in field)
+            (field as FieldComponentBase).setShareFailed(
+                [...(channels?.values() ?? [])].some((one) => one.failed),
+            );
+    }
+
+    /**
+     * Whether the store holds what a bound view holds: the facts of its own
+     * scopes, or of its category for a facet, inferred ones aside.
+     */
+    private holdsViewValue(binding: StoreBinding): () => boolean {
+        return () => {
+            const host = binding.token.token as HTMLElement;
+            const view =
+                this.mounted.get(host) ??
+                this.autocompleters.get(host as HTMLInputElement);
+            if (!view) return true;
+            const pick = (facts: readonly EngineAssertion[]) =>
+                binding.isFacet
+                    ? facts.filter((a) => a.categoryId === binding.category)
+                    : this.factsOfOwnScopes(host, facts);
+            return sameFacts(
+                pick(this.store.get(binding.markingId).assertions),
+                pick(view.getAssertions()),
+            );
+        };
     }
 
     /**
@@ -5423,8 +5583,11 @@ export class EzClassifyUI {
                     states,
                     current,
                 );
-                if (applied) snapshotLocal();
-                else if (!current() && !stopped && !this._destroyed)
+                if (applied) {
+                    snapshotLocal();
+                    // The portions now hold what the page holds.
+                    this.recheckShare(binding.token.token as object);
+                } else if (!current() && !stopped && !this._destroyed)
                     reflectAgain = true;
             } catch (error) {
                 // A failed remote rendering leaves the entire body untouched.
@@ -5514,6 +5677,21 @@ export class EzClassifyUI {
                         error,
                     );
                 },
+                {
+                    // One portion rolls up to itself; the rollup of several
+                    // is the engine's to compute, so the page holding it can
+                    // only be told by this textarea's own publish landing.
+                    holds: () => {
+                        const portions = component.getCommittedPortions();
+                        return portions.length === 1
+                            ? sameFacts(
+                                  this.store.get(binding.markingId).assertions,
+                                  portions[0]!.assertions,
+                              )
+                            : undefined;
+                    },
+                    watch: binding.markingId,
+                },
             );
         };
         /**
@@ -5571,7 +5749,22 @@ export class EzClassifyUI {
                             unshared.add(entryId);
                             this.reportFailedPublish('portion', entryId, error);
                         },
-                        () => unshared.delete(entryId),
+                        {
+                            holds: () => {
+                                const portion = component
+                                    .getCommittedPortions()
+                                    .find((one) => one.entryId === entryId);
+                                return (
+                                    !portion ||
+                                    sameFacts(
+                                        this.store.get(entryId).assertions,
+                                        portion.assertions,
+                                    )
+                                );
+                            },
+                            watch: entryId,
+                            onLand: () => unshared.delete(entryId),
+                        },
                     );
                 }
             }
@@ -5598,6 +5791,13 @@ export class EzClassifyUI {
                 // A source edit may have ended the draft that held a remote update.
                 scheduleReflect();
             }
+            // A portion deleted from the text has nothing left to share.
+            this.keepShareChannels(
+                binding.token.token as object,
+                segments.flatMap((segment) =>
+                    segment.entryId ? [`entry:${segment.entryId}`] : [],
+                ),
+            );
             publishAggregate(segments);
         };
         textarea.addEventListener('ezclassify:marked-change', handler);
@@ -5718,6 +5918,10 @@ export class EzClassifyUI {
                     if (sig === lastPublishedSig) lastPublishedSig = undefined;
                     this.reportFailedPublish('field', binding.markingId, error);
                 },
+                {
+                    holds: this.holdsViewValue(binding),
+                    watch: binding.markingId,
+                },
             );
         };
     }
@@ -5746,6 +5950,10 @@ export class EzClassifyUI {
                 ),
                 (error) =>
                     this.reportFailedPublish('field', binding.markingId, error),
+                {
+                    holds: this.holdsViewValue(binding),
+                    watch: binding.markingId,
+                },
             );
         };
     }

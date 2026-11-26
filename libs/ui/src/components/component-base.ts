@@ -475,6 +475,11 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
             container.removeEventListener('focusout', onLeave);
     }
 
+    /** A choice control that sends its value again when focus leaves it. */
+    protected override shareRetryHint(): string | null {
+        return this.releaseRetryOnLeave ? t('share.retryLeave') : null;
+    }
+
     protected hasClearValue(): boolean {
         return !!this._lastRendered || this.assertions.length > 0;
     }
@@ -1660,13 +1665,17 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
     }
 
     /**
-     * Show the field's record of fixes again after it changed without a new
-     * value (see ComposerPort.reentered).
+     * Publish the value the field holds again while the store has not taken it,
+     * through the field's ordinary change.
      */
     protected override shareAgain(): void {
         if (this.valueNotShared) this.onAssertionsChanged();
     }
 
+    /**
+     * Show the field's record of fixes again after it changed without a new
+     * value (see ComposerPort.reentered).
+     */
     protected refreshFixStatus(): void {
         this.updateSuiteStatusMark();
     }

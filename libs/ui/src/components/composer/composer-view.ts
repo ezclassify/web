@@ -130,6 +130,11 @@ export interface ComposerViewOptions {
     /** The composer opened, closed or changed side. */
     readonly onPlacement?: (open: boolean) => void;
     /**
+     * What the field says about its held value under the field, which the open
+     * list covers: shown in the list as well while it is open.
+     */
+    readonly fieldNotice?: () => string | null;
+    /**
      * The field control that must remain reachable while its phone sheet is
      * open.
      */
@@ -1464,8 +1469,11 @@ export class ComposerView {
         this.paintResultRow(s);
         // The open list covers the note under the field, and the result it
         // shows is the one that may be out of date: say so there as well.
-        if (s.unverified || s.actionFailed)
-            this.appendProblems([], this.noticeText(s));
+        const notices = [
+            s.unverified || s.actionFailed ? this.noticeText(s) : '',
+            this.opts.fieldNotice?.() ?? '',
+        ].filter(Boolean);
+        if (notices.length) this.appendProblems([], notices.join(' '));
     }
 
     /** What the field says when nothing is invalid but something failed. */

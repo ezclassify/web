@@ -15,6 +15,8 @@ import { press, typeText, wait } from './components/composer/composer-harness';
 
 const UNVERIFIED =
     'This text could not be checked. The result shown may be out of date.';
+const NOT_SHARED =
+    'Your entry is kept, but it has not reached the rest of the page yet.';
 
 let root: HTMLDivElement;
 let forms: EzClassifyUI | null = null;
@@ -157,13 +159,23 @@ async function enter(page: Page, text: string): Promise<void> {
 }
 
 /** The field's notice that its result may be out of date, when shown. */
-function unverifiedNotice(): string | null {
-    const shown = [
-        ...document.querySelectorAll<HTMLElement>(
-            '.ez-validation-errors, .marked-textarea-scan-notice, [id$="-scan-notice"], .ez-composer-note',
-        ),
-    ].filter((n) => !n.hidden && n.textContent?.includes(UNVERIFIED));
-    return shown.length ? UNVERIFIED : null;
+function shown(text: string): number {
+    return (
+        [
+            ...document.querySelectorAll<HTMLElement>(
+                '.ez-validation-errors, .marked-textarea-scan-notice, [id$="-scan-notice"], .ez-composer-note',
+            ),
+        ]
+            .filter((n) => !n.hidden && n.isConnected)
+            .map((n) => n.textContent ?? '')
+            .join(' ')
+            .split(text).length - 1
+    );
+}
+
+/** The field's notice that its value has not reached the page, when shown. */
+function notSharedNotice(): string | null {
+    return shown(NOT_SHARED) > 0 ? NOT_SHARED : null;
 }
 
 describe.each(['marking', 'tags', 'marked-input', 'marked-textarea'] as const)(
@@ -180,8 +192,11 @@ describe.each(['marking', 'tags', 'marked-input', 'marked-textarea'] as const)(
                 true,
             );
             expect(page.events).toEqual([true]);
-            expect(unverifiedNotice()).toBe(UNVERIFIED);
-            expect(page.said).toContain(UNVERIFIED);
+            expect(notSharedNotice()).toBe(NOT_SHARED);
+            expect(shown(UNVERIFIED)).toBe(0);
+            expect(page.said.some((text) => text.includes(NOT_SHARED))).toBe(
+                true,
+            );
             expect(page.reports().length).toBeGreaterThan(0);
 
             page.store.refuse = false;
@@ -195,10 +210,95 @@ describe.each(['marking', 'tags', 'marked-input', 'marked-textarea'] as const)(
                 false,
             );
             expect(page.events).toEqual([true, false]);
-            expect(unverifiedNotice()).toBeNull();
+            expect(notSharedNotice()).toBeNull();
+        });
+
+        it('is shared again once the page holds the same value, whoever put it there', async () => {
+            const page = await mountBound(kind);
+            await enter(page, 'secret');
+            expect(page.events).toEqual([true]);
+
+            page.store.refuse = false;
+            await forms!.store.publishRendered('doc', 'SECRET');
+            await wait(400);
+
+            expect(
+                forms!.store.get('doc').assertions.map((a) => a.conceptId),
+            ).toContain('S');
+            expect(page.host.hasAttribute('data-ezclassify-unverified')).toBe(
+                false,
+            );
+            expect(page.events).toEqual([true, false]);
+            expect(notSharedNotice()).toBeNull();
         });
     },
 );
+
+describe('a MarkedTextArea portion whose publish failed', () => {
+    it('leaves nothing unshared once it is deleted from the text', async () => {
+        const page = await mountBound('marked-textarea');
+        await enter(page, 'secret');
+        expect(page.events).toEqual([true]);
+
+        page.store.refuse = false;
+        page.host.value = '';
+        page.host.dispatchEvent(new Event('input', { bubbles: true }));
+        await wait(700);
+
+        expect(page.host.hasAttribute('data-ezclassify-unverified')).toBe(
+            false,
+        );
+        expect(page.events).toEqual([true, false]);
+    });
+});
+
+describe('a MarkingField publish that a newer publish to its marking superseded', () => {
+    it('is not shared when the newer publish did not land either', async () => {
+        root.innerHTML = `<input type="hidden" id="doc" data-ezclassify-marking>
+            <label for="f">Marking</label>
+            <input id="f" data-ezclassify-controller="marking" data-ezclassify-bound-to="doc">`;
+        const context = await createUnverifiableContext({ down: false });
+        // The field's value is read slowly, and the page's newer value cannot
+        // be read at all.
+        const read = context.scheme.process.bind(context.scheme);
+        const holds = (args: unknown[], concept: string) =>
+            JSON.stringify(args).includes(`"conceptId":"${concept}"`);
+        context.scheme.process = ((...args: Parameters<typeof read>) =>
+            JSON.stringify(args).includes('UNCLASSIFIED') || holds(args, 'U')
+                ? Promise.reject(new Error('runtime unreachable'))
+                : holds(args, 'S')
+                  ? new Promise((resolve) => setTimeout(resolve, 80)).then(() =>
+                        read(...args),
+                    )
+                  : read(...args)) as typeof read;
+        const ready = new Promise((resolve) =>
+            root.addEventListener('ezclassify:ready', resolve, { once: true }),
+        );
+        forms = new EzClassifyUI(asContext(context as never), { root });
+        await ready;
+        await wait();
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+        const store = forms.store;
+        const sent = vi.spyOn(store, 'publishAssertions');
+        const host = document.getElementById('f')!;
+        const editor = root.querySelector<HTMLTextAreaElement>(
+            '.marking-field-host',
+        )!;
+        editor.focus();
+        typeText(editor, 'secret');
+        await wait(120);
+        press(editor, 'Enter');
+        await vi.waitFor(() => expect(sent).toHaveBeenCalled(), {
+            timeout: 2000,
+        });
+        await store.publishRendered('doc', 'UNCLASSIFIED').catch(() => {});
+        await wait(400);
+
+        expect(store.get('doc').assertions).toEqual([]);
+        expect(editor.value).toBe('SECRET');
+        expect(host.hasAttribute('data-ezclassify-unverified')).toBe(true);
+    });
+});
 
 describe('a MarkingField that failed a check and could not share its value', () => {
     it('stays unverified while either holds: a check that lands does not clear a stale store', async () => {
@@ -212,6 +312,13 @@ describe('a MarkingField that failed a check and could not share its value', () 
         await page.open();
         typeText(page.input(), `${held} zzz`);
         await wait(150);
+        // Both causes hold: the open list says each once.
+        const list =
+            document.querySelector(
+                '.ez-composer:not([hidden]) .ez-composer__result',
+            )?.textContent ?? '';
+        expect(list.split(UNVERIFIED).length - 1).toBe(1);
+        expect(list.split(NOT_SHARED).length - 1).toBe(1);
         page.runtime.down = false;
         typeText(page.input(), held);
         await wait(150);
@@ -311,6 +418,11 @@ describe.each(['select', 'selector', 'checklist'] as const)(
                 forms!.store.get('doc').assertions.map((a) => a.conceptId),
             ).not.toContain(concept);
             expect(unverified()).toBe(true);
+            expect(
+                [...root.querySelectorAll('.ez-validation-errors')]
+                    .map((n) => n.textContent)
+                    .join(' '),
+            ).toContain(`${NOT_SHARED} Leave the field to try again.`);
 
             store.refuse = false;
             const control = root.querySelector<HTMLElement>(

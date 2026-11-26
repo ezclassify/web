@@ -171,10 +171,29 @@ export abstract class FieldComponentBase {
 
     /** A report with the unverified notice added while the value is not shared. */
     private withShareFailure(report: RuleErrorReport): RuleErrorReport {
-        const notice = t('composer.unverified');
+        const notice = this.notSharedNotice();
         if (!this.shareFailed || report.messages.includes(notice))
             return report;
         return { ...report, messages: [...report.messages, notice] };
+    }
+
+    /**
+     * What the field says while its value has not reached the rest of the page:
+     * that the entry is kept, then how to try again where the field has a way
+     * to.
+     */
+    protected notSharedNotice(): string {
+        return [t('share.notShared'), this.shareRetryHint()]
+            .filter(Boolean)
+            .join(' ');
+    }
+
+    /**
+     * How the user sends a value the store rejected again, or null when the
+     * field has no single action for it.
+     */
+    protected shareRetryHint(): string | null {
+        return null;
     }
 
     protected setFieldFindings(findings: readonly StatusMarkFinding[]): void {
