@@ -35,6 +35,55 @@ export const defaultLocale = {
     'aria.inferredSuffix': ' (inferred)',
     'guide.scanFailed':
         'Unable to analyze text. Your selections are unchanged.',
+    'guide.unavailableRules':
+        'Guide unavailable. The rules could not be loaded, so this is not a complete list of what applies.',
+    'guide.unavailableSetup':
+        'Guide unavailable. This checklist is set up incorrectly, so no marking is shown.',
+    'guide.analyzePrompt': 'Analyze text to nominate rules for review.',
+    'guide.evaluationFailed':
+        'The marking for this selection could not be computed. What is shown may be out of date.',
+    'guide.nominatedStatus.one':
+        '{count} rule nominated. Review the highlighted rows and select the ones that apply.',
+    'guide.nominatedStatus.other':
+        '{count} rules nominated. Review the highlighted rows and select the ones that apply.',
+    'guide.nominatedAnnouncement.one':
+        '{count} rule nominated from text. Review and select any that apply.',
+    'guide.nominatedAnnouncement.other':
+        '{count} rules nominated from text. Review and select any that apply.',
+    'guide.noneNominated': 'No rules nominated. Your selections are unchanged.',
+    'guide.contributing': 'Contributing to marking:',
+    'guide.pasteLabel': 'Paste or type your text',
+    'guide.analyzeButton': 'Analyze Text',
+    'guide.searchLabel': 'Search rules by keyword',
+    'guide.searchPlaceholder': 'Type keywords to filter rules\u2026',
+    'guide.searchHint':
+        'Type keywords to filter matching rules. Check all that apply.',
+    'guide.selectLegend': 'Select all rules that apply',
+    'guide.compoundRules': 'Compound Rules',
+    'guide.nominatedBadge': 'Nominated',
+    'guide.noMatch': 'No rules match \u201c{filter}\u201d',
+    'guide.computedLabel': 'Computed marking:',
+    'guide.copy': 'Copy',
+    'guide.copyLabel': 'Copy marking to clipboard',
+    'guide.copied': 'Marking copied to clipboard',
+    'guide.copyFailed': 'Failed to copy marking',
+    'guide.currentLabel': 'Current marking:',
+    'flow.label': 'Decision flow',
+    'flow.steps': 'Steps',
+    'flow.selectAll': 'Select all that apply.',
+    'flow.previous': 'Previous step',
+    'flow.next': 'Next step',
+    'flow.stepOf': 'Step {n} of {total}, {label}',
+    'flow.stepAnnounce': 'Step {n}: {label}',
+    'flow.selected': 'Selected {label}',
+    'flow.deselected': 'Deselected {label}',
+    'flow.missing': 'Missing:',
+    'flow.notSet': 'not set',
+    'flow.dotChosen': 'chosen',
+    'flow.dotNeedsAnswer': 'needs an answer',
+    'flow.dotOptional': 'optional, {notSet}',
+    'flow.dotRequired': 'required, {notSet}',
+    'flow.stepState': '{label}: {state}',
     'flow.writeFailed':
         'The marking could not be written just now. Change a choice to try again.',
     'flow.includedBy': 'Included by {choice}',

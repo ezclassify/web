@@ -15,6 +15,8 @@ import { setMarkingTarget } from './marking-target';
 import { cleanupTooltipForRoot } from './tooltip-manager';
 import { resetLocale, setLocale } from '../i18n';
 
+afterEach(() => resetLocale());
+
 const toCtx = (eng: unknown) => schemeOnlyContext(eng as never);
 
 /** Minimal rule for testing, no compound logic. */
@@ -313,6 +315,103 @@ describe('GuideChecklist', () => {
             ...extraOpts,
         });
     }
+
+    it('says everything it shows and announces in the host locale', async () => {
+        const keys = [
+            'guide.analyzePrompt',
+            'guide.nominatedStatus.one',
+            'guide.nominatedStatus.other',
+            'guide.nominatedAnnouncement.one',
+            'guide.pasteLabel',
+            'guide.analyzeButton',
+            'guide.searchLabel',
+            'guide.searchPlaceholder',
+            'guide.searchHint',
+            'guide.selectLegend',
+            'guide.nominatedBadge',
+            'guide.noMatch',
+            'guide.computedLabel',
+            'guide.copy',
+            'guide.copyLabel',
+            'guide.copied',
+            'guide.contributing',
+            'guide.currentLabel',
+        ];
+        setLocale(Object.fromEntries(keys.map((key) => [key, `[${key}]`])));
+        try {
+            await init({ editor: '' });
+            (
+                checklist as unknown as {
+                    guideAdapter: { scan: () => unknown[] };
+                }
+            ).guideAdapter = {
+                scan: () => [{ rule: { id: 'rule-a' }, guideId: 'test-guide' }],
+            };
+            await checklist.analyzeText('alpha');
+            const text = (selector: string) =>
+                container.querySelector(selector)?.textContent;
+            expect(text('.ezc-guide-nomination-status')).toBe(
+                '[guide.nominatedStatus.one]',
+            );
+            expect(text('.ezc-guide-analyze-btn')).toBe(
+                '[guide.analyzeButton]',
+            );
+            expect(text('.ezc-guide-copy-btn')).toBe('[guide.copy]');
+            expect(
+                container
+                    .querySelector('.ezc-guide-copy-btn')
+                    ?.getAttribute('aria-label'),
+            ).toBe('[guide.copyLabel]');
+            expect(
+                container.querySelector<HTMLInputElement>(
+                    '.ezc-guide-search-input',
+                )?.placeholder,
+            ).toBe('[guide.searchPlaceholder]');
+            expect(text('.ezc-guide-nominated-badge')).toBe(
+                '[guide.nominatedBadge]',
+            );
+            const shown = container.textContent ?? '';
+            for (const english of [
+                'Computed marking',
+                'Paste or type your text',
+                'Search rules by keyword',
+                'Select all rules that apply',
+            ])
+                expect(shown).not.toContain(english);
+        } finally {
+            resetLocale();
+        }
+    });
+
+    it('speaks the host locale when a copy succeeds', async () => {
+        setLocale({ 'guide.copied': 'Copié' });
+        const writeText = vi.fn().mockResolvedValue(undefined);
+        vi.stubGlobal('navigator', { clipboard: { writeText } });
+        try {
+            await init();
+            (
+                checklist as unknown as {
+                    lastEvaluation: { aggregatedMarking: string };
+                }
+            ).lastEvaluation = { aggregatedMarking: 'MARK-1' };
+            container.querySelector<HTMLButtonElement>(
+                '.ezc-guide-copy-btn',
+            )!.disabled = false;
+            container
+                .querySelector<HTMLButtonElement>('.ezc-guide-copy-btn')!
+                .click();
+            await vi.waitFor(() =>
+                expect(
+                    [...document.querySelectorAll('[aria-live]')].map(
+                        (el) => el.textContent,
+                    ),
+                ).toContain('Copié'),
+            );
+        } finally {
+            vi.unstubAllGlobals();
+            resetLocale();
+        }
+    });
 
     it('mounts and renders rule checkboxes', async () => {
         await init();
@@ -1036,6 +1135,7 @@ describe('GuideChecklist', () => {
                 .spyOn(console, 'error')
                 .mockImplementation(() => {});
             const pending = deferred<GuideStructuralView[]>();
+            setLocale({ 'guide.unavailableRules': 'Indisponible' });
             await initRemote(pending.promise);
             pending.reject(new Error('guide fetch failed'));
 
@@ -1047,7 +1147,7 @@ describe('GuideChecklist', () => {
                 return el!;
             });
             expect(failed.getAttribute('role')).toBe('alert');
-            expect(failed.textContent).toContain('unavailable');
+            expect(failed.textContent).toBe('Indisponible');
             expect(consoleError).toHaveBeenCalled();
             consoleError.mockRestore();
         });
@@ -1342,6 +1442,7 @@ describe('GuideChecklist', () => {
             ],
             ['a computed rule', '[{"guideId":"test-guide","ruleId":"auto"}]'],
         ])('refuses %s and evaluates nothing', async (_name, selected) => {
+            setLocale({ 'guide.unavailableSetup': 'Configuration refusée' });
             const { guide, errors } = await mountFromMarkup(
                 { selected },
                 COMPUTED_GUIDE,
@@ -1354,7 +1455,7 @@ describe('GuideChecklist', () => {
             expect(container.querySelector('.ezc-guide-result')).toBeNull();
             expect(
                 container.querySelector('.ezc-guide-unavailable')?.textContent,
-            ).toMatch(/no marking is shown/);
+            ).toBe('Configuration refusée');
         });
 
         it('analyzes the text a page textarea was written with', async () => {

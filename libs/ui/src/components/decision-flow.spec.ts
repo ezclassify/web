@@ -1,5 +1,6 @@
 import { openFieldTools } from '../../test-fixtures/marking-tools';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { resetLocale, setLocale } from '../i18n';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -554,6 +555,115 @@ describe('DecisionFlow', () => {
         await enterFlow(container);
         const dots = container.querySelectorAll('.ez-decision-flow__step-dot');
         expect(dots.length).toBe(2);
+    });
+
+    describe('in the host locale', () => {
+        afterEach(() => {
+            component.destroy();
+            resetLocale();
+        });
+
+        it('labels the flow, its dots, arrows and unset value from the locale', async () => {
+            setLocale({
+                'flow.label': 'Flux',
+                'flow.steps': 'Étapes',
+                'flow.previous': 'Précédent',
+                'flow.next': 'Suivant',
+                'flow.notSet': 'vide',
+                'flow.stepOf': 'Étape {n} sur {total}, {label}',
+                'flow.dotOptional': 'facultatif, {notSet}',
+                'flow.stepState': '{label} = {state}',
+            });
+            await component.init(container, toCtx(engine));
+            await enterFlow(container);
+            expect(
+                container
+                    .querySelector('.ez-decision-flow')
+                    ?.getAttribute('aria-label'),
+            ).toBe('Flux');
+            expect(
+                container
+                    .querySelector('.ez-decision-flow__step-dots')
+                    ?.getAttribute('aria-label') ??
+                    container.querySelector('[aria-label="Étapes"]')?.tagName,
+            ).toBeTruthy();
+            const [back, next] = container.querySelectorAll<HTMLButtonElement>(
+                '.ez-decision-flow__nav-btn',
+            );
+            expect(back.getAttribute('aria-label')).toBe('Précédent');
+            expect(next.getAttribute('aria-label')).toBe('Suivant');
+            expect(
+                container.querySelector('.ez-decision-flow__value-text')
+                    ?.textContent,
+            ).toBe('vide');
+            expect(
+                container
+                    .querySelector('.ez-decision-flow__step-dot')
+                    ?.getAttribute('aria-label'),
+            ).toMatch(/^Étape 1 sur 2, .* = facultatif, vide$/);
+        });
+
+        it('announces a choice and a step change from the locale', async () => {
+            setLocale({
+                'flow.selected': 'Choisi : {label}',
+                'flow.stepAnnounce': 'Étape {n} : {label}',
+            });
+            await component.init(container, toCtx(engine));
+            await enterFlow(container);
+            // Run each announcement as it is made, so a later one cannot hide it.
+            vi.stubGlobal(
+                'requestAnimationFrame',
+                (cb: FrameRequestCallback) => {
+                    cb(0);
+                    return 0;
+                },
+            );
+            const spoken: string[] = [];
+            const watch = new MutationObserver(() => {
+                for (const el of document.querySelectorAll('[aria-live]'))
+                    if (el.textContent) spoken.push(el.textContent);
+            });
+            watch.observe(document.body, {
+                subtree: true,
+                childList: true,
+                characterData: true,
+            });
+            try {
+                container
+                    .querySelector<HTMLButtonElement>(
+                        '.ez-decision-flow__option',
+                    )!
+                    .click();
+                await vi.waitFor(() => {
+                    expect(spoken.some((t) => t.startsWith('Choisi : '))).toBe(
+                        true,
+                    );
+                    expect(spoken.some((t) => t.startsWith('Étape 2 : '))).toBe(
+                        true,
+                    );
+                });
+            } finally {
+                vi.unstubAllGlobals();
+                watch.disconnect();
+            }
+        });
+
+        it('says which steps are missing from the locale', async () => {
+            setLocale({ 'flow.missing': 'Manque :' });
+            await component.init(container, toCtx(createMockEngine()));
+            await settle();
+            component.updateValidationErrors([
+                {
+                    constraintId: 'required',
+                    message: 'Impact is required',
+                    categoryId: 'impact',
+                },
+            ]);
+            expect(
+                container.querySelector('.ez-decision-flow__missing')
+                    ?.textContent,
+            ).toMatch(/^Manque : /);
+        });
     });
 
     it('renders the first step by default', async () => {

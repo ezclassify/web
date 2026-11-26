@@ -303,9 +303,7 @@ export class GuideChecklist extends ReadOnlyComponentBase {
             error,
         );
 
-        this.paintUnavailable(
-            'Guide unavailable. The rules could not be loaded, so this is not a complete list of what applies.',
-        );
+        this.paintUnavailable(t('guide.unavailableRules'));
     }
 
     private paintUnavailable(text: string): void {
@@ -322,9 +320,7 @@ export class GuideChecklist extends ReadOnlyComponentBase {
      */
     private refuseMarkup(refusal: RefusedMarkup): void {
         console.error(refusal.message);
-        this.paintUnavailable(
-            'Guide unavailable. This checklist is set up incorrectly, so no marking is shown.',
-        );
+        this.paintUnavailable(t('guide.unavailableSetup'));
         (getMountHost(this.container) ?? this.container).dispatchEvent(
             new CustomEvent('ezclassify:host-error', {
                 bubbles: true,
@@ -484,8 +480,7 @@ export class GuideChecklist extends ReadOnlyComponentBase {
             this.nominationStatus.className = 'ezc-guide-nomination-status';
             this.nominationStatus.setAttribute('role', 'status');
             this.nominationStatus.setAttribute('aria-live', 'polite');
-            this.nominationStatus.textContent =
-                'Analyze text to nominate rules for review.';
+            this.nominationStatus.textContent = t('guide.analyzePrompt');
             root.appendChild(this.nominationStatus);
         }
 
@@ -502,8 +497,7 @@ export class GuideChecklist extends ReadOnlyComponentBase {
         this.evaluationErrorEl.className = 'ezc-guide-error';
         this.evaluationErrorEl.setAttribute('role', 'alert');
         this.evaluationErrorEl.hidden = true;
-        this.evaluationErrorEl.textContent =
-            'The marking for this selection could not be computed. What is shown may be out of date.';
+        this.evaluationErrorEl.textContent = t('guide.evaluationFailed');
 
         // The failure notice stays beside the marking it qualifies, wherever
         // that marking is shown.
@@ -655,12 +649,19 @@ export class GuideChecklist extends ReadOnlyComponentBase {
         const count = this.nominatedRules.size;
         if (count > 0) {
             this.pendingScanStatus = {
-                status: `${count} rule${count === 1 ? '' : 's'} nominated. Review the highlighted rows and select the ones that apply.`,
-                announcement: `${count} rule${count === 1 ? '' : 's'} nominated from text. Review and select any that apply.`,
+                status: t(
+                    count === 1
+                        ? 'guide.nominatedStatus.one'
+                        : 'guide.nominatedStatus.other',
+                ).replace('{count}', String(count)),
+                announcement: t(
+                    count === 1
+                        ? 'guide.nominatedAnnouncement.one'
+                        : 'guide.nominatedAnnouncement.other',
+                ).replace('{count}', String(count)),
             };
         } else {
-            const message =
-                'No rules nominated. Your selections are unchanged.';
+            const message = t('guide.noneNominated');
             this.pendingScanStatus = { status: message, announcement: message };
         }
     }
@@ -695,7 +696,7 @@ export class GuideChecklist extends ReadOnlyComponentBase {
 
         const heading = document.createElement('div');
         heading.className = 'ezc-guide-breakdown-heading';
-        heading.textContent = 'Contributing to marking:';
+        heading.textContent = t('guide.contributing');
         this.breakdownContainer.appendChild(heading);
 
         const list = document.createElement('ul');
@@ -763,7 +764,7 @@ export class GuideChecklist extends ReadOnlyComponentBase {
 
         const label = document.createElement('label');
         label.setAttribute('for', `ezc-guide-textarea-${this.uid}`);
-        label.textContent = 'Paste or type your text';
+        label.textContent = t('guide.pasteLabel');
         wrap.appendChild(label);
 
         const textarea = document.createElement('textarea');
@@ -782,7 +783,7 @@ export class GuideChecklist extends ReadOnlyComponentBase {
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'ezc-guide-analyze-btn';
-        btn.textContent = 'Analyze Text';
+        btn.textContent = t('guide.analyzeButton');
         btn.addEventListener('click', () => {
             void this.analyzeText(textarea.value);
         });
@@ -795,14 +796,14 @@ export class GuideChecklist extends ReadOnlyComponentBase {
 
         const label = document.createElement('label');
         label.setAttribute('for', `ezc-guide-search-${this.uid}`);
-        label.textContent = 'Search rules by keyword';
+        label.textContent = t('guide.searchLabel');
         wrap.appendChild(label);
 
         this.searchInput = document.createElement('input');
         this.searchInput.id = `ezc-guide-search-${this.uid}`;
         this.searchInput.type = 'search';
         this.searchInput.className = 'ezc-guide-search-input';
-        this.searchInput.placeholder = 'Type keywords to filter rules\u2026';
+        this.searchInput.placeholder = t('guide.searchPlaceholder');
         this.searchInput.value = this.filterText;
         this.searchInput.setAttribute('autocomplete', 'off');
         this.searchInput.setAttribute(
@@ -831,8 +832,7 @@ export class GuideChecklist extends ReadOnlyComponentBase {
         const hint = document.createElement('span');
         hint.id = `ezc-guide-search-hint-${this.uid}`;
         hint.className = 'ezc-sr-only';
-        hint.textContent =
-            'Type keywords to filter matching rules. Check all that apply.';
+        hint.textContent = t('guide.searchHint');
         wrap.appendChild(hint);
 
         this.matchCountEl = document.createElement('span');
@@ -850,7 +850,7 @@ export class GuideChecklist extends ReadOnlyComponentBase {
 
         const legend = document.createElement('legend');
         legend.className = 'ezc-sr-only';
-        legend.textContent = 'Select all rules that apply';
+        legend.textContent = t('guide.selectLegend');
         fieldset.appendChild(legend);
 
         this.buildRuleCheckboxes(fieldset);
@@ -862,7 +862,7 @@ export class GuideChecklist extends ReadOnlyComponentBase {
         this.rulesContainer.innerHTML = '';
         const legend = document.createElement('legend');
         legend.className = 'ezc-sr-only';
-        legend.textContent = 'Select all rules that apply';
+        legend.textContent = t('guide.selectLegend');
         this.rulesContainer.appendChild(legend);
         this.buildRuleCheckboxes(this.rulesContainer);
     }
@@ -933,11 +933,11 @@ export class GuideChecklist extends ReadOnlyComponentBase {
             if (compoundItems.length > 0) {
                 const group = document.createElement('div');
                 group.setAttribute('role', 'group');
-                group.setAttribute('aria-label', 'Compound Rules');
+                group.setAttribute('aria-label', t('guide.compoundRules'));
                 group.dataset.sectionTotal = String(compoundItems.length);
 
                 const heading = this.buildCategoryHeading(
-                    'Compound Rules',
+                    t('guide.compoundRules'),
                     compoundItems.length,
                 );
                 group.appendChild(heading);
@@ -1010,7 +1010,7 @@ export class GuideChecklist extends ReadOnlyComponentBase {
 
         const badge = document.createElement('span');
         badge.className = 'ezc-guide-nominated-badge';
-        badge.textContent = 'Nominated';
+        badge.textContent = t('guide.nominatedBadge');
         badge.hidden = !this.nominatedRules.has(key);
         label.appendChild(badge);
 
@@ -1197,10 +1197,16 @@ export class GuideChecklist extends ReadOnlyComponentBase {
                     const empty = document.createElement('div');
                     empty.className = 'ezc-guide-empty';
                     empty.setAttribute('role', 'status');
-                    empty.textContent = `No rules match \u201c${this.filterText}\u201d`;
+                    empty.textContent = t('guide.noMatch').replace(
+                        '{filter}',
+                        () => this.filterText,
+                    );
                     this.rulesContainer.appendChild(empty);
                 } else {
-                    existingEmpty.textContent = `No rules match \u201c${this.filterText}\u201d`;
+                    existingEmpty.textContent = t('guide.noMatch').replace(
+                        '{filter}',
+                        () => this.filterText,
+                    );
                 }
             } else if (existingEmpty) {
                 existingEmpty.remove();
@@ -1239,7 +1245,7 @@ export class GuideChecklist extends ReadOnlyComponentBase {
         const label = document.createElement('span');
         label.className = 'ezc-guide-result-label';
         label.id = `result-label-${this.uid}`;
-        label.textContent = 'Computed marking:';
+        label.textContent = t('guide.computedLabel');
         wrap.appendChild(label);
 
         this.resultOutput = document.createElement('output');
@@ -1255,8 +1261,8 @@ export class GuideChecklist extends ReadOnlyComponentBase {
         this.copyBtn = document.createElement('button');
         this.copyBtn.type = 'button';
         this.copyBtn.className = 'ezc-guide-copy-btn';
-        this.copyBtn.textContent = 'Copy';
-        this.copyBtn.setAttribute('aria-label', 'Copy marking to clipboard');
+        this.copyBtn.textContent = t('guide.copy');
+        this.copyBtn.setAttribute('aria-label', t('guide.copyLabel'));
         this.copyBtn.addEventListener('click', () => this.handleCopy());
         wrap.appendChild(this.copyBtn);
 
@@ -1390,8 +1396,8 @@ export class GuideChecklist extends ReadOnlyComponentBase {
 
         if (typeof navigator !== 'undefined' && navigator.clipboard) {
             navigator.clipboard.writeText(marking).then(
-                () => announce(this.announcer, 'Marking copied to clipboard'),
-                () => announce(this.announcer, 'Failed to copy marking'),
+                () => announce(this.announcer, t('guide.copied')),
+                () => announce(this.announcer, t('guide.copyFailed')),
             );
         }
 
@@ -1420,7 +1426,7 @@ export class GuideChecklist extends ReadOnlyComponentBase {
         label.className = 'ezc-guide-marking-label';
         label.id = `current-marking-label-${this.uid}`;
         row.setAttribute('aria-labelledby', label.id);
-        label.textContent = 'Current marking:';
+        label.textContent = t('guide.currentLabel');
         const value = document.createElement('span');
         value.className = 'ezc-guide-marking-value';
         this.markingValue = value;

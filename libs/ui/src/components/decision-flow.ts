@@ -700,7 +700,7 @@ export class DecisionFlow extends ComponentBase {
         this.flowEl = document.createElement('div');
         this.flowEl.className = 'ez-decision-flow';
         this.flowEl.setAttribute('role', 'group');
-        this.flowEl.setAttribute('aria-label', 'Decision flow');
+        this.flowEl.setAttribute('aria-label', t('flow.label'));
         this.flowEl.tabIndex = 0;
         this.flowEl.addEventListener('focus', () => {
             if (document.activeElement !== this.flowEl) return;
@@ -712,7 +712,7 @@ export class DecisionFlow extends ComponentBase {
         this.dotsEl = document.createElement('div');
         this.dotsEl.className = 'ez-decision-flow__progress';
         this.dotsEl.setAttribute('role', 'toolbar');
-        this.dotsEl.setAttribute('aria-label', 'Steps');
+        this.dotsEl.setAttribute('aria-label', t('flow.steps'));
         this.titleEl = document.createElement('div');
         this.titleEl.className = 'ez-decision-flow__question-label';
         const headerMain = document.createElement('div');
@@ -1619,7 +1619,10 @@ export class DecisionFlow extends ComponentBase {
             this.markCurrent(dot, index);
             dot.setAttribute(
                 'aria-label',
-                `Step ${index + 1} of ${this.steps.length}, ${this.dotLabel(step)}`,
+                t('flow.stepOf')
+                    .replace('{n}', () => String(index + 1))
+                    .replace('{total}', () => String(this.steps.length))
+                    .replace('{label}', () => this.dotLabel(step)),
             );
         }
     }
@@ -1640,19 +1643,22 @@ export class DecisionFlow extends ComponentBase {
     private dotLabel(step: StepDef): string {
         const state = this.stepState(step);
         const held = this.selectionText(step);
+        const notSet = t('flow.notSet');
         if (state === 'answered' && held && this.onlyDerived(step))
             return `${step.label}: ${held}${t('aria.inferredSuffix')}`;
         if (state === 'answered' && held && this.holdsOnlyValues(step))
             return held;
         const said =
             state === 'answered'
-                ? held || 'chosen'
+                ? held || t('flow.dotChosen')
                 : state === 'missing'
-                  ? 'needs an answer'
+                  ? t('flow.dotNeedsAnswer')
                   : state === 'optional'
-                    ? `optional, ${NOT_SET}`
-                    : `required, ${NOT_SET}`;
-        return `${step.label}: ${said}`;
+                    ? t('flow.dotOptional').replace('{notSet}', notSet)
+                    : t('flow.dotRequired').replace('{notSet}', notSet);
+        return t('flow.stepState')
+            .replace('{label}', () => step.label)
+            .replace('{state}', () => said);
     }
 
     /**
@@ -1705,7 +1711,10 @@ export class DecisionFlow extends ComponentBase {
         dot.tabIndex = i === this.dotFocus ? 0 : -1;
         dot.setAttribute(
             'aria-label',
-            `Step ${i + 1} of ${steps.length}, ${this.dotLabel(step)}`,
+            t('flow.stepOf')
+                .replace('{n}', () => String(i + 1))
+                .replace('{total}', () => String(steps.length))
+                .replace('{label}', () => this.dotLabel(step)),
         );
         dot.addEventListener('click', () => {
             // A finger has no hover: its first tap shows the dot's label and
@@ -1986,7 +1995,7 @@ export class DecisionFlow extends ComponentBase {
             const hint = document.createElement('div');
             // Said to assistive technology; the toggles' check marks show it.
             hint.className = 'ez-decision-flow__question-desc ez-sr-only';
-            hint.textContent = 'Select all that apply.';
+            hint.textContent = t('flow.selectAll');
             q.appendChild(hint);
         }
 
@@ -2156,8 +2165,14 @@ export class DecisionFlow extends ComponentBase {
                         announce(
                             this.announcer,
                             pressed
-                                ? `Deselected ${concept.label}`
-                                : `Selected ${concept.label}`,
+                                ? t('flow.deselected').replace(
+                                      '{label}',
+                                      () => concept.label,
+                                  )
+                                : t('flow.selected').replace(
+                                      '{label}',
+                                      () => concept.label,
+                                  ),
                         );
                     });
                 },
@@ -2622,8 +2637,14 @@ export class DecisionFlow extends ComponentBase {
                         announce(
                             this.announcer,
                             isChecked
-                                ? `Deselected ${concept.label}`
-                                : `Selected ${concept.label}`,
+                                ? t('flow.deselected').replace(
+                                      '{label}',
+                                      () => concept.label,
+                                  )
+                                : t('flow.selected').replace(
+                                      '{label}',
+                                      () => concept.label,
+                                  ),
                         );
                     });
                 },
@@ -2670,7 +2691,9 @@ export class DecisionFlow extends ComponentBase {
                 ?.focus();
         announce(
             this.announcer,
-            `Step ${index + 1}: ${steps[index].label ?? ''}`,
+            t('flow.stepAnnounce')
+                .replace('{n}', () => String(index + 1))
+                .replace('{label}', () => steps[index].label ?? ''),
         );
     }
 
@@ -2714,13 +2737,13 @@ export class DecisionFlow extends ComponentBase {
         glyph.setAttribute('aria-hidden', 'true');
         button.appendChild(glyph);
         if (side === 'start') {
-            button.setAttribute('aria-label', 'Previous step');
+            button.setAttribute('aria-label', t('flow.previous'));
             button.disabled = this.currentStep === 0;
             button.addEventListener('click', () => {
                 if (this.currentStep > 0) this.goToStep(this.currentStep - 1);
             });
         } else {
-            button.setAttribute('aria-label', 'Next step');
+            button.setAttribute('aria-label', t('flow.next'));
             // An optional step (required: false) can be passed unanswered.
             button.disabled =
                 this.currentStep >= this.steps.length - 1 ||
@@ -2995,7 +3018,7 @@ export class DecisionFlow extends ComponentBase {
         shown.className = 'ez-decision-flow__value-text';
         if (text) writeBreakable(shown, text, this.inferredRuns(text));
         else {
-            shown.textContent = NOT_SET;
+            shown.textContent = t('flow.notSet');
             shown.dataset.empty = '';
         }
         line.appendChild(shown);
@@ -3047,7 +3070,7 @@ export class DecisionFlow extends ComponentBase {
         if (missing.length > 0) {
             const line = document.createElement('div');
             line.className = 'ez-decision-flow__missing';
-            line.append('Missing: ');
+            line.append(`${t('flow.missing')} `);
             missing.forEach((step, i) => {
                 if (i > 0) line.append(', ');
                 const go = document.createElement('button');
@@ -3207,9 +3230,6 @@ export class DecisionFlow extends ComponentBase {
  * the move does not wait for.
  */
 const ADVANCE_SETTLE_ROUNDS = 3;
-
-/** What a step or a scope line says when the marking holds nothing there. */
-const NOT_SET = 'not set';
 
 /**
  * The category ids a `data-ezclassify-decisionflow-categories` value lists: a
