@@ -349,6 +349,8 @@ export class DecisionFlow extends ComponentBase {
         key: string;
         texts: Map<string, string>;
         forms: ShownForm[];
+        /** True when writing the facts threw, so the lines hold no text. */
+        failed?: true;
     } | null = null;
     private resultSequence = 0;
     /** The facts the result is being written for, while a write is in flight. */
@@ -2768,6 +2770,13 @@ export class DecisionFlow extends ComponentBase {
             block.append(caption, this.valueOf(scope, texts?.get(scope) ?? ''));
             this.valuesEl.appendChild(block);
         }
+        if (this.result?.key === key && this.result.failed) {
+            const failed = document.createElement('div');
+            failed.className = 'ez-decision-flow__problem';
+            failed.setAttribute('role', 'status');
+            failed.textContent = t('flow.writeFailed');
+            this.valuesEl.appendChild(failed);
+        }
         if (!texts && this.resultWriting !== key) void this.writeResult(key);
     }
 
@@ -3127,9 +3136,11 @@ export class DecisionFlow extends ComponentBase {
                 ),
                 forms: written.flatMap(([, , form]) => (form ? [form] : [])),
             };
-        } catch {
+        } catch (error) {
             if (this._destroyed || sequence !== this.resultSequence) return;
-            this.result = { key, texts: new Map(), forms: [] };
+            console.error('[DecisionFlow] writing the result failed:', error);
+            this.result = { key, texts: new Map(), forms: [], failed: true };
+            announce(this.announcer, t('flow.writeFailed'));
         }
         this.resultWriting = null;
         this.renderValues();

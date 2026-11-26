@@ -291,6 +291,7 @@ describe('TranslatedView', () => {
         });
 
         it('is gone when the next read fails', async () => {
+            vi.spyOn(console, 'error').mockImplementation(() => undefined);
             const translate = vi
                 .fn<Translate>()
                 .mockResolvedValueOnce(envelope(withLoser()))
@@ -441,13 +442,18 @@ describe('TranslatedView', () => {
                 },
             }),
         );
+        const consoleError = vi
+            .spyOn(console, 'error')
+            .mockImplementation(() => undefined);
 
         view.setAssertions([high]);
         await settle();
 
         expect(shown(el).status).toBe('error');
         expect(shown(el).marking).toBe('');
-        expect(shown(el).note).toContain('crosswalk unavailable');
+        expect(shown(el).note).toBe('The marking could not be translated.');
+        expect(consoleError).toHaveBeenCalled();
+        consoleError.mockRestore();
     });
 
     it('shows the empty value without calling the engine for no facts', async () => {

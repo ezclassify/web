@@ -353,6 +353,24 @@ describe('loads and races', () => {
         ).toBe('status');
         expect(pinned()).toBeNull();
     });
+    it('says the favorites could not be loaded, apart from having none', async () => {
+        const panel = mount(
+            makeHost({
+                config: { load: () => Promise.reject(new Error('Offline')) },
+            }),
+        );
+        await open(panel);
+        const status = document.querySelector('.ez-favorites-panel__empty');
+        expect(status?.textContent).toBe(
+            'Could not load your favorites. Try again.',
+        );
+        expect(document.body.textContent).not.toContain(
+            'No favorites saved yet',
+        );
+        expect(spokenText()).toContain(
+            'Could not load your favorites. Try again.',
+        );
+    });
     it('does not let a late mount load replace the newer open result', async () => {
         const mountLoad = deferred<FavoriteEntry[]>();
         const load = vi
@@ -663,6 +681,28 @@ describe('current marking and persistence', () => {
 });
 
 describe('presets and native rows', () => {
+    it('says so, instead of applying nothing, when a preset cannot be read', async () => {
+        const onApply = vi.fn();
+        const panel = mount(
+            makeHost({
+                config: undefined,
+                scheme: makeScheme({
+                    labelPresets: [{ id: 'a', label: 'Preset A' }],
+                }),
+                applyPreset: () => Promise.reject(new Error('Offline')),
+                onApply,
+            }),
+        );
+        await open(panel);
+        document
+            .querySelector<HTMLButtonElement>('[data-preset-id=a]')!
+            .click();
+        await wait();
+        expect(onApply).not.toHaveBeenCalled();
+        expect(spokenText()).toContain(
+            'Could not apply this favorite. Try again.',
+        );
+    });
     it('offers scoped scheme presets without a persistence provider', async () => {
         const onApply = vi.fn();
         const panel = mount(

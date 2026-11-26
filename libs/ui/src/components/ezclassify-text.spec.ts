@@ -529,6 +529,30 @@ describe('EzClassifyText (standalone)', () => {
         }
     });
 
+    it('shows a localized message, not the raw error, when reading throws', async () => {
+        const errorEl = document.createElement('span');
+        errorEl.id = 'ez-err-raw';
+        document.body.appendChild(errorEl);
+        const consoleError = vi
+            .spyOn(console, 'error')
+            .mockImplementation(() => undefined);
+        try {
+            vi.mocked(engine.validate).mockImplementation(() => {
+                throw new Error('GET https://runtime.example/v1 failed');
+            });
+            host.textContent = 'c1';
+            host.setAttribute('data-ezclassify-error-target', 'ez-err-raw');
+            await field.init(host as HTMLDivElement, toCtx(engine));
+            expect(errorEl.textContent).toBe(
+                'This could not be read just now. Try again.',
+            );
+            expect(consoleError).toHaveBeenCalled();
+        } finally {
+            consoleError.mockRestore();
+            errorEl.remove();
+        }
+    });
+
     it('clears aria-errormessage and target text when marking becomes valid', async () => {
         const errorEl = document.createElement('span');
         errorEl.id = 'ez-err-2';

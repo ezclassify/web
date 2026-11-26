@@ -407,6 +407,26 @@ describe('DecisionFlow across scopes', () => {
         );
     });
 
+    it('says why the lines are empty when writing the marking fails', async () => {
+        const ctx = await context();
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+        const { host } = await mountFlow({ scope: 'label origin' }, ctx);
+        await enter(host);
+        vi.spyOn(ctx.scheme, 'render').mockRejectedValue(
+            new Error('GET https://runtime.example/v1 failed'),
+        );
+        await choose(host, 'HIGH');
+        await demoRuntimeSettled();
+
+        const note = host.querySelector(
+            '.ez-decision-flow__value-wrap ~ [role=status], .ez-decision-flow__problem[role=status]',
+        );
+        expect(note?.textContent).toBe(
+            'The marking could not be written just now. Change a choice to try again.',
+        );
+        expect(host.textContent).not.toContain('runtime.example');
+    });
+
     it('shows each scope written in its own output on its line', async () => {
         const { host } = await mountFlow({ scope: 'label origin' });
         await enter(host);

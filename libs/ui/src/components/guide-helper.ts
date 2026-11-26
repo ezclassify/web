@@ -42,6 +42,7 @@ import {
 } from './component-base-readonly';
 import { createAnnouncer, announce } from './component-utils';
 import { EMPTY_VALUE } from '../text-utils';
+import { t } from '../i18n';
 import { getMountHost } from '../mount-host-registry';
 import guideHelperCss from './guide-helper.css?inline';
 import { dismissStatusMarkPopover } from './status-mark';
@@ -622,8 +623,7 @@ export class GuideChecklist extends ReadOnlyComponentBase {
             console.error('[GuideChecklist] analyzing text failed:', error);
             this.lastScanResults = null;
             this.nominatedRules.clear();
-            const message =
-                'Unable to analyze text. Your selections are unchanged.';
+            const message = t('guide.scanFailed');
             this.pendingScanStatus = { status: message, announcement: message };
             if (this.panelBuilt) {
                 this.render();

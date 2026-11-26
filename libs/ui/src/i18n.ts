@@ -33,6 +33,10 @@ export const defaultLocale = {
     'aria.selectedMarkingsAndSearch': 'Selected markings and search',
     'aria.removeTag': 'Remove {name}',
     'aria.inferredSuffix': ' (inferred)',
+    'guide.scanFailed':
+        'Unable to analyze text. Your selections are unchanged.',
+    'flow.writeFailed':
+        'The marking could not be written just now. Change a choice to try again.',
     'flow.includedBy': 'Included by {choice}',
     'tag.defaultUnwritten': 'Default {category}, not written in the marking',
     'tag.unwritten': 'Not written in the marking',
@@ -64,6 +68,7 @@ export const defaultLocale = {
     'favorites.unsaveCurrent': 'Unsave Current Marking',
     'favorites.applyFailed': 'Could not apply this favorite. Try again.',
     'favorites.saveFailed': 'Could not save this favorite. Try again.',
+    'favorites.loadFailed': 'Could not load your favorites. Try again.',
     'favorites.removeFailed': 'Could not remove this favorite. Try again.',
     'favorites.removed': 'Favorite removed',
     'favorites.rememberPrompt': 'Keep Favorites for Your Next Visit?',

@@ -13,6 +13,7 @@ import { parseComponentOptions } from '../component-factory';
 import { harvestControllerOptions } from '../element-scanner';
 import { setMarkingTarget } from './marking-target';
 import { cleanupTooltipForRoot } from './tooltip-manager';
+import { resetLocale, setLocale } from '../i18n';
 
 const toCtx = (eng: unknown) => schemeOnlyContext(eng as never);
 
@@ -560,6 +561,7 @@ describe('GuideChecklist', () => {
             checklist as unknown as { guideAdapter: typeof mockGuideAdapter }
         ).guideAdapter = mockGuideAdapter;
         const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+        setLocale({ 'guide.scanFailed': 'Analyse impossible.' });
         try {
             await checklist.analyzeText('first');
             expect(await checklist.analyzeText('second')).toEqual([]);
@@ -571,8 +573,9 @@ describe('GuideChecklist', () => {
             expect(
                 container.querySelector('.ezc-guide-nomination-status')
                     ?.textContent,
-            ).toMatch(/Unable to analyze text/);
+            ).toBe('Analyse impossible.');
         } finally {
+            resetLocale();
             log.mockRestore();
         }
     });

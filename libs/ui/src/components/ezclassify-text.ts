@@ -27,6 +27,7 @@ import type {
     ComponentSchemeEngine,
 } from './component-base-readonly';
 import { resolveProfile, resolveSchemeEngine } from './component-base-readonly';
+import { t } from '../i18n';
 import {
     renderViewRefusalMessages,
     renderViewRefused,
@@ -294,7 +295,8 @@ export class EzClassifyText implements ComponentInstance {
         } catch (err) {
             // Engine errors are treated as a hard-invalid marking: keep the prior
             // assertions empty so we don't leak stale state into the aggregate,
-            // surface the error message via onChange.
+            // surface a localized message via onChange. The raw error stays in
+            // the console: it is unlocalized and can carry the runtime URL.
             console.error(
                 '[EzClassifyText] validate failed:',
                 err,
@@ -309,7 +311,7 @@ export class EzClassifyText implements ComponentInstance {
             this.errors = [
                 {
                     constraintId: '_process',
-                    message: String((err as Error)?.message ?? err),
+                    message: t('composer.readFailed'),
                 } as ValidationError,
             ];
         }
