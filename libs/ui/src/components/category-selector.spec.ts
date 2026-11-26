@@ -549,7 +549,7 @@ describe('CategorySelector', () => {
         outside.remove();
     });
 
-    it.each(['local', 'dependent', 'stale', 'outside'])(
+    it.each(['local', 'dependent', 'stale', 'outside', 'failed'])(
         'applies a canonical whole %s remedy through the associated store while retaining captured values',
         async (choice) => {
             const scheme = engine.getScheme();
@@ -768,6 +768,38 @@ describe('CategorySelector', () => {
                     expect(
                         store.get('canonical-whole').assertions,
                     ).toContainEqual(expect.objectContaining(newerDate));
+                    return;
+                }
+                if (choice === 'failed') {
+                    // The store's publish fails, saying where it went.
+                    const publish = vi
+                        .spyOn(store, 'publishAssertions')
+                        .mockRejectedValueOnce(
+                            new Error(
+                                'POST https://runtime.example/v1/process failed',
+                            ),
+                        );
+                    actions()[0].click();
+                    await vi.waitFor(() => expect(publish).toHaveBeenCalled());
+                    await new Promise((resolve) => setTimeout(resolve, 50));
+                    const said = [
+                        ...container.querySelectorAll('[aria-live]'),
+                    ].map((region) => region.textContent ?? '');
+                    expect(said).toContain(
+                        'That change could not be applied. Try again.',
+                    );
+                    expect(said.join(' ')).not.toContain('runtime.example');
+                    expect(
+                        actions().map((button) => button.textContent),
+                    ).toEqual([
+                        'Remove Option X',
+                        'Remove Option Y and Country',
+                    ]);
+                    expect(
+                        store
+                            .get('canonical-whole')
+                            .assertions.map((fact) => fact.conceptId),
+                    ).toEqual(expect.arrayContaining(['c4', 'c5', 'country']));
                     return;
                 }
                 const action = actions()[choice === 'local' ? 0 : 1];

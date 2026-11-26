@@ -824,13 +824,11 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
                             )
                                 return apply(fix, new AbortController().signal);
                         })
-                        .catch((error: unknown) => {
+                        .catch(() => {
                             if (!this._destroyed && this.undoAnnouncer)
                                 announce(
                                     this.undoAnnouncer,
-                                    error instanceof Error
-                                        ? error.message
-                                        : String(error),
+                                    t('composer.actionFailed'),
                                 );
                         });
                 }

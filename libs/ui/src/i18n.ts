@@ -63,6 +63,7 @@ export const defaultLocale = {
     'favorites.saveCurrent': 'Save Current Marking',
     'favorites.unsaveCurrent': 'Unsave Current Marking',
     'favorites.applyFailed': 'Could not apply this favorite. Try again.',
+    'favorites.saveFailed': 'Could not save this favorite. Try again.',
     'favorites.removeFailed': 'Could not remove this favorite. Try again.',
     'favorites.removed': 'Favorite removed',
     'favorites.rememberPrompt': 'Keep Favorites for Your Next Visit?',

@@ -1015,8 +1015,17 @@ export class FavoritesPanel {
                 }
             }
         } catch {
-            // Persistence failure: leave the panel open on its current
-            // (stale) list rather than pretending the save/remove landed.
+            // Persistence failure: leave the panel open on its current list
+            // rather than pretending the save or remove landed, and say so.
+            if (!this._destroyed)
+                announce(
+                    this.announcer,
+                    t(
+                        isFavorite
+                            ? 'favorites.removeFailed'
+                            : 'favorites.saveFailed',
+                    ),
+                );
             return;
         }
         if (this._destroyed) return;

@@ -16,6 +16,13 @@ function wait(ms = 20): Promise<void> {
     return new Promise((r) => setTimeout(r, ms));
 }
 
+/** What the page's live regions say now. */
+function spokenText(): string[] {
+    return [...document.querySelectorAll('[aria-live]')].map(
+        (region) => region.textContent ?? '',
+    );
+}
+
 function makeScheme(
     overrides: Partial<SchemePublicView> = {},
 ): SchemePublicView {
@@ -573,6 +580,29 @@ describe('current marking and persistence', () => {
         await wait();
         expect(panel.isOpen()).toBe(true);
         expect(pinned()?.textContent).toBe('Save Current Marking');
+        expect(spokenText()).toContain(
+            'Could not save this favorite. Try again.',
+        );
+    });
+    it('says so when unsaving the current marking fails', async () => {
+        const panel = mount(
+            makeHost({
+                config: {
+                    load: () => [{ marking: 'A' }],
+                    save: vi.fn(),
+                    remove: () => Promise.reject(new Error('Offline')),
+                },
+                getCurrent: () => ({ rendered: 'A', valid: true }),
+            }),
+        );
+        await open(panel);
+        pinned()!.click();
+        await wait();
+        expect(panel.isOpen()).toBe(true);
+        expect(pinned()?.textContent).toBe('Unsave Current Marking');
+        expect(spokenText()).toContain(
+            'Could not remove this favorite. Try again.',
+        );
     });
     it('reloads a completed save even when a faster reopen read preceded the write', async () => {
         const write = deferred<void>();

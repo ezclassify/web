@@ -130,7 +130,12 @@ import type {
     StatusBanner,
     StatusBannerBucket,
 } from './components/status-banner';
-import { bucketKey, bucketParts, type BucketKey } from './store/store-shared';
+import {
+    bucketKey,
+    bucketParts,
+    destroyedStores,
+    type BucketKey,
+} from './store/store-shared';
 import { reportPublishFailure } from './store/publish-failure';
 import {
     parseComponentOptions,
@@ -4877,14 +4882,15 @@ export class EzClassifyUI {
                     const others = current.assertions.filter(
                         (a) => a.categoryId !== cat,
                     );
-                    this.store
-                        .publishAssertions(
+                    this.publishOrForget(
+                        handle,
+                        this.store.publishAssertions(
                             markingId,
                             [...others, ...filtered],
                             token,
                             category ? { categories: [category] } : undefined,
-                        )
-                        .catch(() => {});
+                        ),
+                    );
                 } else {
                     // A marking's text states its default scope only, so a
                     // view of other scopes, one whose facts reach past the
@@ -4914,9 +4920,14 @@ export class EzClassifyUI {
                         if (sig === handle.lastSeenAssertionSig) return;
                         handle.lastSeenAssertionSig = sig;
                         handle.lastSeenRendered = rendered;
-                        this.store
-                            .publishAssertions(markingId, facts, token)
-                            .catch(() => {});
+                        this.publishOrForget(
+                            handle,
+                            this.store.publishAssertions(
+                                markingId,
+                                facts,
+                                token,
+                            ),
+                        );
                         return;
                     }
                     const facts = signAssertions(assertions);
@@ -4951,20 +4962,71 @@ export class EzClassifyUI {
                         // text would: one it left empty is cleared, and one
                         // equal to the committed value still replaces an edit
                         // on the wire.
-                        this.store
-                            .publishAssertions(markingId, assertions, token, {
-                                categories: this.categoriesWritten(el),
-                            })
-                            .catch(() => {});
+                        this.publishOrForget(
+                            handle,
+                            this.store.publishAssertions(
+                                markingId,
+                                assertions,
+                                token,
+                                { categories: this.categoriesWritten(el) },
+                            ),
+                        );
                         return;
                     }
-                    this.store
-                        .publishRendered(markingId, rendered, token)
-                        .catch(() => {});
+                    this.publishOrForget(
+                        handle,
+                        this.store.publishRendered(markingId, rendered, token),
+                    );
                 }
             },
         };
         return handle;
+    }
+
+    /**
+     * Report a publish the store rejected after a user edit, unless the page is
+     * being torn down: a torn-down store rejects every publish by design.
+     */
+    private reportFailedPublish(
+        label: string,
+        markingId: string,
+        error: unknown,
+    ): void {
+        if (this._destroyed || destroyedStores.has(this.store)) return;
+        reportPublishFailure(label, markingId, error);
+    }
+
+    /**
+     * Send a view's publish to the store. A publish the store rejects (its
+     * runtime call failed) leaves the store's previous value in place, so the
+     * binding forgets what it last sent: the view's next publish of the same
+     * value is sent again rather than taken for one the store already holds.
+     * The failure is reported the way every failed publish is.
+     *
+     * @param handle - The binding that published
+     * @param publish - The store's publish, as it was sent
+     */
+    private publishOrForget(
+        handle: StoreBinding,
+        publish: Promise<unknown>,
+    ): void {
+        const sent = {
+            rendered: handle.lastSeenRendered,
+            facts: handle.lastSeenFactSig,
+            origins: handle.lastSeenAssertionSig,
+        };
+        publish.catch((error: unknown) => {
+            if (
+                handle.lastSeenRendered === sent.rendered &&
+                handle.lastSeenFactSig === sent.facts &&
+                handle.lastSeenAssertionSig === sent.origins
+            ) {
+                handle.lastSeenRendered = '';
+                handle.lastSeenFactSig = '';
+                handle.lastSeenAssertionSig = '';
+            }
+            this.reportFailedPublish('field', handle.markingId, error);
+        });
     }
 
     /**
@@ -5367,9 +5429,10 @@ export class EzClassifyUI {
                 binding.markingId,
                 sets,
                 binding.token,
-            ).catch(() => {
+            ).catch((error: unknown) => {
                 if (signature === lastPublishedSig)
                     lastPublishedSig = undefined;
+                this.reportFailedPublish('aggregate', binding.markingId, error);
             });
         };
         /**
@@ -5405,15 +5468,21 @@ export class EzClassifyUI {
                             ),
                         ),
                 );
-                if (categories.length || !told)
+                if (categories.length || !told) {
+                    const entryId = segment.entryId;
+                    const sent = segment.assertions;
                     void this.store
-                        .publishAssertions(
-                            segment.entryId,
-                            segment.assertions,
-                            binding.token,
-                            { categories },
-                        )
-                        .catch(() => {});
+                        .publishAssertions(entryId, sent, binding.token, {
+                            categories,
+                        })
+                        .catch((error: unknown) => {
+                            // The store kept the entry's previous value: the
+                            // next change publishes this portion in full.
+                            if (local.get(entryId) === sent)
+                                local.delete(entryId);
+                            this.reportFailedPublish('portion', entryId, error);
+                        });
+                }
             }
         };
         const handler = (event: Event) => {
@@ -5503,7 +5572,13 @@ export class EzClassifyUI {
                                   state.assertions,
                                   binding.token,
                               )
-                              .catch(() => {});
+                              .catch((error: unknown) =>
+                                  this.reportFailedPublish(
+                                      'portion',
+                                      ids[0]!,
+                                      error,
+                                  ),
+                              );
                       },
                       binding.token,
                   )
@@ -5540,7 +5615,12 @@ export class EzClassifyUI {
             lastPublishedSig = sig;
             this.store
                 .publishAssertions(binding.markingId, assertions, binding.token)
-                .catch(() => {});
+                .catch((error: unknown) => {
+                    // The store kept its previous value: send this again next
+                    // time rather than take it for one the store holds.
+                    if (sig === lastPublishedSig) lastPublishedSig = undefined;
+                    this.reportFailedPublish('field', binding.markingId, error);
+                });
         };
     }
 
@@ -5560,7 +5640,9 @@ export class EzClassifyUI {
             if (signAssertions(held) === signAssertions(assertions)) return;
             this.store
                 .publishAssertions(binding.markingId, assertions, binding.token)
-                .catch(() => {});
+                .catch((error: unknown) =>
+                    this.reportFailedPublish('field', binding.markingId, error),
+                );
         };
     }
 
