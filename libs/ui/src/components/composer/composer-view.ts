@@ -695,9 +695,11 @@ export class ComposerView {
             const kind = (e as InputEvent).inputType ?? '';
             const edit = replacesAll
                 ? 'replace-all'
-                : kind.startsWith('history')
+                : kind === 'historyUndo'
                   ? 'undo'
-                  : undefined;
+                  : kind === 'historyRedo'
+                    ? 'redo'
+                    : undefined;
             replacesAll = false;
             if (this.destroyed || this.muted > 0) return;
             // The same text pasted over itself changes nothing on screen, but

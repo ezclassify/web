@@ -221,7 +221,7 @@ export interface ComposerPort {
 export type ComposerDraftShape = 'whole' | 'additive';
 
 /** How an input changed the draft's text, as the view saw it. */
-export type ComposerTextEdit = 'replace-all' | 'undo';
+export type ComposerTextEdit = 'replace-all' | 'undo' | 'redo';
 
 /** What an accepted concept row does to the draft. */
 export type ComposerRowAction = 'add' | 'remove' | 'replace' | 'confirm';
@@ -555,6 +555,8 @@ export class ComposerController {
      * (see ComposerPort.reentered).
      */
     private reentered = false;
+    /** An undo took a re-entry back; a redo onto the same text restores it. */
+    private undoneReentry = false;
     /**
      * Bumped when an action starts, the text changes, or the draft is reset, so
      * a runtime call that fails after something newer happened says nothing
@@ -809,6 +811,7 @@ export class ComposerController {
         this.actionSeq++;
         this.structural = false;
         this.reentered = false;
+        this.undoneReentry = false;
         this.actionFailed = false;
         // Any read still in flight was for the draft being thrown away.
         this.readSeq++;
@@ -853,22 +856,29 @@ export class ComposerController {
      * @param edit - How the input changed the text, when the view knows:
      *   'replace-all' for one input that replaced a selection covering all of
      *   the text (typing or pasting over it, the same text included), 'undo'
-     *   for the platform's undo or redo
+     *   and 'redo' for the platform's undo and redo
      */
     input(text: string, caret: number, edit?: ComposerTextEdit): Promise<void> {
         ({ text, caret } = this.attachSeparator(text, caret));
         const textChanged = text !== this.text;
         const caretMoved = caret !== this.caret;
         if (this.shape === 'whole') {
-            if (edit === 'replace-all' || (textChanged && !text.trim()))
+            const onBaseline = text.trim() === this.baselineText.trim();
+            if (edit === 'replace-all' || (textChanged && !text.trim())) {
                 this.reentered = true;
-            // An undo that lands back on the committed text took the re-entry
-            // back with whatever else it undid.
-            else if (
-                edit === 'undo' &&
-                text.trim() === this.baselineText.trim()
-            )
+                this.undoneReentry = false;
+            } else if (edit === 'undo' && onBaseline && this.reentered) {
+                // An undo that lands back on the committed text took the
+                // re-entry back with whatever else it undid; a redo that
+                // lands there again puts it back.
                 this.reentered = false;
+                this.undoneReentry = true;
+            } else if (edit === 'redo' && onBaseline && this.undoneReentry) {
+                this.reentered = true;
+                this.undoneReentry = false;
+            } else if (textChanged && edit !== 'undo' && edit !== 'redo') {
+                this.undoneReentry = false;
+            }
         }
         if (textChanged) this.actionSeq++;
         const previousQuery =
@@ -1798,6 +1808,10 @@ export class ComposerController {
             this.announceText(t('a11y.composer.reverted'));
             return true;
         }
+        // The same text entered again changes nothing on screen, but Escape
+        // still cancels it: a later commit keeps the record of fixes.
+        this.reentered = false;
+        this.undoneReentry = false;
         return false;
     }
 

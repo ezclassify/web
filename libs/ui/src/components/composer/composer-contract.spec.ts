@@ -999,6 +999,37 @@ describe.each(['marking', 'marked-input', 'marked-textarea'] as const)(
             });
         }
 
+        it('starts its fixes over when a re-entry that was undone is redone', async () => {
+            const { field, stored } = await corrected();
+            const input = field.input();
+            edit(input, `${stored}X`, 'insertText', 'X');
+            input.setSelectionRange(0, input.value.length);
+            edit(input, stored, 'insertFromPaste', stored);
+            edit(input, `${stored}X`, 'historyUndo');
+            edit(input, stored, 'historyRedo');
+            await wait();
+            await store(field);
+
+            expect(field.stored()).toEqual(['NF', 'S']);
+            expect(await markedFixes()).toEqual([]);
+        });
+
+        if (kind === 'marking') {
+            it('keeps its fixes when Escape cancels a re-entry of the same text', async () => {
+                const { field, stored } = await corrected();
+                const input = field.input();
+                input.setSelectionRange(0, input.value.length);
+                edit(input, stored, 'insertFromPaste', stored);
+                await wait();
+                press(input, 'Escape');
+                press(input, 'Escape');
+                await leave(input);
+
+                expect(field.stored()).toEqual(['NF', 'S']);
+                expect(await markedFixes()).toEqual(NOFORN_SECRET_FIXES);
+            });
+        }
+
         it('says nothing was discarded on Escape after an edit that changed nothing', async () => {
             const { field, stored } = await corrected();
             edit(field.input(), `${stored}X`, 'insertText', 'X');

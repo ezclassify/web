@@ -2369,6 +2369,60 @@
             "method": "POST",
             "statusCode": 200
         },
+        "c8580bee29b24abfd900558bd93694c1691f5ce37f59c3156b860f0d1ab6e00d": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mi-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "mi-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [
+                        {
+                            "constraintId": "_recognition_incomplete",
+                            "message": "The input does not read as a marking."
+                        },
+                        {
+                            "constraintId": "_unmatched_token",
+                            "message": "\"U$&$'$1\" was not recognized: it matched no known concept and will be kept visible in the rendered marking."
+                        }
+                    ],
+                    "inputWasValid": false,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "status": "unrecognized",
+                        "unmatched": [
+                            { "end": 7, "start": 0, "text": "U$&$'$1" }
+                        ]
+                    },
+                    "rendered": "U$&$'$1",
+                    "renders": {},
+                    "valid": false,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "d0c73f99e64e5e1440ab3f8a31abf8db34f5fcbf1ae5c743d4101bebbbed115e": {
             "body": {
                 "resolution": {

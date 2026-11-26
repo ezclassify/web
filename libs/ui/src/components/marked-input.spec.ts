@@ -3220,6 +3220,13 @@ describe('MarkedInput on the phone layout: the painted mark is the control for i
         expect(mark()!.getAttribute('aria-label')).toBe('(U), marking actions');
     });
 
+    it('names a mark whose text holds replacement patterns by that text, as written', async () => {
+        const { mark } = await mountPhone("(U$&$'$1) Text");
+        await expect
+            .poll(() => mark()?.getAttribute('aria-label') ?? '')
+            .toMatch(/^\(U\$&\$'\$1\), marking actions/);
+    });
+
     it('says what is wrong with an invalid mark, which has no tooltip here', async () => {
         const { mark } = await mountPhone('(U/S) Text');
         await expect

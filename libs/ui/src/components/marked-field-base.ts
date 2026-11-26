@@ -1428,13 +1428,13 @@ export abstract class MarkedFieldBase<
         const shown = marking.trim();
         if (!segment.valid && segment.errors.length)
             return t('mark.actionsInvalidLabel')
-                .replace('{marking}', shown)
-                .replace('{messages}', sentences(segment.errors));
+                .replace('{marking}', () => shown)
+                .replace('{messages}', () => sentences(segment.errors));
         if (segment.valid && segment.warnings?.length)
             return t('mark.actionsWarningLabel')
-                .replace('{marking}', shown)
-                .replace('{messages}', sentences(segment.warnings));
-        return t('mark.actionsLabel').replace('{marking}', shown);
+                .replace('{marking}', () => shown)
+                .replace('{messages}', () => sentences(segment.warnings ?? []));
+        return t('mark.actionsLabel').replace('{marking}', () => shown);
     }
 
     /**

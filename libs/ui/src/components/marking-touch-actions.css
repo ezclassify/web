@@ -15,8 +15,9 @@
     }
 
     /* The painted mark is the control for an existing marking here. Its hit
-       area is at least 1.5rem (24 CSS px) tall, centered on the mark, without
-       changing how the mark looks. */
+       area is at least 24 CSS px tall, centered on the mark, without changing
+       how the mark looks. The target size is a pointer measure, so it is in px:
+       a page with a small root font size must not shrink it. */
     [data-ez-phone-mark-action] {
         position: relative;
     }
@@ -25,7 +26,7 @@
         content: '';
         position: absolute;
         inset-inline: 0;
-        inset-block: min(0px, calc((100% - 1.5rem) / 2));
+        inset-block: min(0px, calc((100% - 24px) / 2));
     }
 
     .ez-marked-field-add:not([hidden]) {
