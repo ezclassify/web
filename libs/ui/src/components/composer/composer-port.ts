@@ -65,6 +65,8 @@ export interface ComposerPortField {
     committed(): ComposerCommitted;
     /** See ComposerPort.reentered. */
     reentered?(): void;
+    /** See ComposerPort.kept. */
+    kept?(): void;
     store: ComposerPort['store'];
     /**
      * For a field that holds one category of a larger marking (a facet): what
@@ -230,6 +232,7 @@ export function createComposerPort(field: ComposerPortField): ComposerPort {
         gated: (query, live) => field.gated(query, live),
         committed: () => field.committed(),
         reentered: () => field.reentered?.(),
+        kept: () => field.kept?.(),
         store: (reading, commit) => field.store(owned(reading), commit),
         separators: () => {
             const format = field

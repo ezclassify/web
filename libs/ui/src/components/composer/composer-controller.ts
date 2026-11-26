@@ -176,6 +176,12 @@ export interface ComposerPort {
      * Optional; a field without such a record ignores it.
      */
     reentered?(): void;
+    /**
+     * A commit stored nothing because the draft is the committed value. A field
+     * whose last publish of that value to the page was rejected sends it again
+     * here. Optional.
+     */
+    kept?(): void;
     /** Store a complete reading, or return false if its final write is refused. */
     store(
         reading: ComposerReading,
@@ -2082,6 +2088,7 @@ export class ComposerController {
                 this.reentered = false;
                 this.port.reentered?.();
             }
+            this.port.kept?.();
             // Nothing to store, but the text may still differ from what is
             // stored by its spacing (a pick leaves a separator after the
             // concept it added). The field's text after a commit is the stored

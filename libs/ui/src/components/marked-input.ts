@@ -1733,6 +1733,10 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
         }
     }
 
+    protected override shareAgain(): void {
+        if (this.valueNotShared) this.emitChange();
+    }
+
     private emitChange(): void {
         this._publishedTaken = takenSignature(this.assertions);
         this.options.onChange?.(this.assertions, this.rendered);

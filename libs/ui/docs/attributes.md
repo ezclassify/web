@@ -234,7 +234,9 @@ script, never set it by hand.
 Each change fires `ezclassify:unverified-change` on the host, bubbling, with
 `detail: { unverified: boolean }`; destroying an unverified field fires it once
 with `unverified: false`. MarkingField, TagInput, MarkedInput and MarkedTextArea
-all report it, each on its own host.
+all report it, each on its own host. A field bound to a page marking also
+carries it while its value could not be shared with the rest of the page, until
+the value reaches the page.
 
 ### Enhancement status mark (runtime element, not an attribute)
 

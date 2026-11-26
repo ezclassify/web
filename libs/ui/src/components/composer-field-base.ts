@@ -75,6 +75,7 @@ export abstract class ComposerFieldBase extends ComponentBase {
             this,
             this.controller?.isDirty() ? () => this.controller.commit() : null,
             () => {
+                this.setShareFailed(false);
                 this.reportUnverified(false);
                 this.destroyClearButton();
                 this.removeRuleErrors();

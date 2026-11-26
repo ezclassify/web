@@ -934,6 +934,9 @@ export abstract class MarkedFieldBase<
                         finishBlur();
                 },
                 onCancel: (fromSheet) => this.escapeClosePicker(fromSheet),
+                onKept: () => {
+                    if (this.picker === picker) this.shareAgain();
+                },
                 onChange: (...args) => {
                     if (!this.discardStalePhoneMarking())
                         options.onChange?.(...args);
@@ -1013,13 +1016,23 @@ export abstract class MarkedFieldBase<
     protected releaseUnverified(): void {
         this.fieldUnverified = false;
         this.editorUnverified = false;
+        this.setShareFailed(false);
+        this.publishUnverified();
+    }
+
+    protected override onUnverifiedChanged(): void {
         this.publishUnverified();
     }
 
     private publishUnverified(): void {
         const host = unverifiedHostOf(this.container, this.enhancedElement());
         if (host)
-            setUnverified(host, this.fieldUnverified || this.editorUnverified);
+            setUnverified(
+                host,
+                this.fieldUnverified ||
+                    this.editorUnverified ||
+                    this.valueNotShared,
+            );
     }
 
     protected destroyPicker(): void {

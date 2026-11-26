@@ -137,6 +137,7 @@ import {
     type BucketKey,
 } from './store/store-shared';
 import { reportPublishFailure } from './store/publish-failure';
+import type { FieldComponentBase } from './components/field-component-base';
 import {
     parseComponentOptions,
     resolveNativeInput,
@@ -5015,7 +5016,7 @@ export class EzClassifyUI {
             facts: handle.lastSeenFactSig,
             origins: handle.lastSeenAssertionSig,
         };
-        publish.catch((error: unknown) => {
+        this.trackShare(handle.token, 'value', publish, (error) => {
             if (
                 handle.lastSeenRendered === sent.rendered &&
                 handle.lastSeenFactSig === sent.facts &&
@@ -5027,6 +5028,75 @@ export class EzClassifyUI {
             }
             this.reportFailedPublish('field', handle.markingId, error);
         });
+    }
+
+    /**
+     * Whether each field's publishes reached the store, by channel (its value,
+     * a portion's entry, its rollup): the newest publish of each and whether it
+     * failed. Only the newest publish of a channel decides it, so an older one
+     * that settles late changes nothing.
+     */
+    private readonly shareStates = new WeakMap<
+        object,
+        Map<string, { seq: number; failed: boolean }>
+    >();
+    private shareSeq = 0;
+
+    /**
+     * Follow one publish a field made: a rejection runs `onFail`, and the field
+     * reports itself unverified while the newest publish of any of its channels
+     * was rejected (see FieldComponentBase.setShareFailed). A torn- down page
+     * tells no field anything.
+     *
+     * @param source - The publish source, whose token is the field's element
+     * @param channel - Which of the field's publishes this is
+     * @param publish - The store's publish, as it was sent
+     * @param onFail - Runs when the store rejects it
+     * @param onLand - Runs when the store takes it
+     */
+    private trackShare(
+        source: PublishSource,
+        channel: string,
+        publish: Promise<unknown>,
+        onFail: (error: unknown) => void,
+        onLand?: () => void,
+    ): void {
+        const owner = source.token;
+        if (typeof owner !== 'object' || owner === null) {
+            publish.then(onLand, onFail);
+            return;
+        }
+        let channels = this.shareStates.get(owner);
+        if (!channels) {
+            channels = new Map();
+            this.shareStates.set(owner, channels);
+        }
+        const seq = ++this.shareSeq;
+        const failed = channels.get(channel)?.failed ?? false;
+        channels.set(channel, { seq, failed });
+        const settle = (rejected: boolean) => {
+            const state = channels.get(channel);
+            if (!state || state.seq !== seq) return;
+            state.failed = rejected;
+            if (this._destroyed || destroyedStores.has(this.store)) return;
+            const field =
+                this.mounted.get(owner as HTMLElement) ??
+                this.autocompleters.get(owner as HTMLInputElement);
+            if (field && 'setShareFailed' in field)
+                (field as FieldComponentBase).setShareFailed(
+                    [...channels.values()].some((one) => one.failed),
+                );
+        };
+        publish.then(
+            () => {
+                onLand?.();
+                settle(false);
+            },
+            (error: unknown) => {
+                onFail(error);
+                settle(true);
+            },
+        );
     }
 
     /**
@@ -5288,6 +5358,8 @@ export class EzClassifyUI {
         let sourceAmbiguous = false;
         let lastPublishedSig: string | undefined;
         const local = new Map<string, EngineAssertion[]>();
+        /** Portions whose newest publish the store rejected. */
+        const unshared = new Set<string>();
         const entrySubscriptions = new Map<string, () => void>();
         /**
          * Entries this textarea added to its collection whose state the store
@@ -5425,15 +5497,24 @@ export class EzClassifyUI {
             const signature = JSON.stringify(sets.map(signAssertions));
             if (signature === lastPublishedSig) return;
             lastPublishedSig = signature;
-            void this.store.publishAggregate!(
-                binding.markingId,
-                sets,
+            this.trackShare(
                 binding.token,
-            ).catch((error: unknown) => {
-                if (signature === lastPublishedSig)
-                    lastPublishedSig = undefined;
-                this.reportFailedPublish('aggregate', binding.markingId, error);
-            });
+                'aggregate',
+                this.store.publishAggregate!(
+                    binding.markingId,
+                    sets,
+                    binding.token,
+                ),
+                (error) => {
+                    if (signature === lastPublishedSig)
+                        lastPublishedSig = undefined;
+                    this.reportFailedPublish(
+                        'aggregate',
+                        binding.markingId,
+                        error,
+                    );
+                },
+            );
         };
         /**
          * Publish each portion's change against what this textarea last told
@@ -5445,8 +5526,12 @@ export class EzClassifyUI {
         ) => {
             for (const segment of segments) {
                 if (!segment.entryId) continue;
-                const told = local.has(segment.entryId);
-                const previous = local.get(segment.entryId) ?? [];
+                // A portion whose last publish the store rejected is told
+                // again in full, whatever this textarea last sent.
+                const told =
+                    local.has(segment.entryId) &&
+                    !unshared.has(segment.entryId);
+                const previous = told ? (local.get(segment.entryId) ?? []) : [];
                 const categories = [
                     ...new Set(
                         [...previous, ...segment.assertions].map(
@@ -5471,17 +5556,23 @@ export class EzClassifyUI {
                 if (categories.length || !told) {
                     const entryId = segment.entryId;
                     const sent = segment.assertions;
-                    void this.store
-                        .publishAssertions(entryId, sent, binding.token, {
-                            categories,
-                        })
-                        .catch((error: unknown) => {
+                    this.trackShare(
+                        binding.token,
+                        `entry:${entryId}`,
+                        this.store.publishAssertions(
+                            entryId,
+                            sent,
+                            binding.token,
+                            { categories },
+                        ),
+                        (error) => {
                             // The store kept the entry's previous value: the
                             // next change publishes this portion in full.
-                            if (local.get(entryId) === sent)
-                                local.delete(entryId);
+                            unshared.add(entryId);
                             this.reportFailedPublish('portion', entryId, error);
-                        });
+                        },
+                        () => unshared.delete(entryId),
+                    );
                 }
             }
         };
@@ -5613,14 +5704,21 @@ export class EzClassifyUI {
             const sig = signAssertions(assertions);
             if (sig === lastPublishedSig) return;
             lastPublishedSig = sig;
-            this.store
-                .publishAssertions(binding.markingId, assertions, binding.token)
-                .catch((error: unknown) => {
+            this.trackShare(
+                binding.token,
+                'value',
+                this.store.publishAssertions(
+                    binding.markingId,
+                    assertions,
+                    binding.token,
+                ),
+                (error) => {
                     // The store kept its previous value: send this again next
                     // time rather than take it for one the store holds.
                     if (sig === lastPublishedSig) lastPublishedSig = undefined;
                     this.reportFailedPublish('field', binding.markingId, error);
-                });
+                },
+            );
         };
     }
 
@@ -5638,11 +5736,17 @@ export class EzClassifyUI {
             }
             const held = this.store.get(binding.markingId).assertions;
             if (signAssertions(held) === signAssertions(assertions)) return;
-            this.store
-                .publishAssertions(binding.markingId, assertions, binding.token)
-                .catch((error: unknown) =>
+            this.trackShare(
+                binding.token,
+                'value',
+                this.store.publishAssertions(
+                    binding.markingId,
+                    assertions,
+                    binding.token,
+                ),
+                (error) =>
                     this.reportFailedPublish('field', binding.markingId, error),
-                );
+            );
         };
     }
 

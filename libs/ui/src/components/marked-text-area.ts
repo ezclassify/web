@@ -2068,16 +2068,24 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         this.options.onScanCompleteness?.(this.scanComplete);
     }
 
+    /** The not-shared cause changed: derive the field's check state again. */
+    protected override onUnverifiedChanged(): void {
+        super.onUnverifiedChanged();
+        this.updateUnverifiedState();
+    }
+
     /**
-     * The one place the field's check state is derived: the scan failed, or a
-     * marking the engine raised on keeps the reading it had. A failed check
-     * says so in the field's one wording and tells the page; an incomplete scan
-     * that did not fail keeps its own notice.
+     * The one place the field's check state is derived: the scan failed, a
+     * marking the engine raised on keeps the reading it had, or the store
+     * rejected the field's last publish. A failed check says so in the field's
+     * one wording and tells the page; an incomplete scan that did not fail
+     * keeps its own notice.
      */
     private updateUnverifiedState(): void {
         if (!this.scanNotice || this.tornDown) return;
         const failed =
             this.scanFailed ||
+            this.valueNotShared ||
             this.segments.some((segment) => segment.readFailure !== undefined);
         this.setFieldUnverified(failed);
         const message = failed
@@ -2709,6 +2717,10 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
             box.remove();
         }
         this.emitChange();
+    }
+
+    protected override shareAgain(): void {
+        if (this.valueNotShared) this.emitChange();
     }
 
     private emitChange(): void {

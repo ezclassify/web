@@ -93,6 +93,8 @@ export interface InlineMarkingEditorOptions {
      * on screen.
      */
     onBlurCommit?: (outcome: CommitOutcome) => void;
+    /** A commit stored nothing: the draft is the value the editor holds. */
+    onKept?: () => void;
     /**
      * Escape with nothing left for the composer to do (list closed, draft
      * clean): the host cancels the editing session. Explicit sheet Cancel
@@ -672,6 +674,7 @@ export class InlineMarkingEditor {
                 this._appliedFixes.clear();
                 this._reentered = true;
             },
+            kept: () => this.options.onKept?.(),
             store: (reading, commit) => this.store(reading, commit),
         });
     }

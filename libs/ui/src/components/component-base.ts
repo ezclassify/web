@@ -1475,6 +1475,7 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
                 this.recordAppliedFixes([], true);
                 this.refreshFixStatus();
             },
+            kept: () => this.shareAgain(),
             store: (reading, commit) =>
                 this.storeComposerReading(reading, commit),
             siblings: () => this.options.resolveFacetSiblings?.() ?? [],
@@ -1641,6 +1642,10 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
      * Show the field's record of fixes again after it changed without a new
      * value (see ComposerPort.reentered).
      */
+    protected override shareAgain(): void {
+        if (this.valueNotShared) this.onAssertionsChanged();
+    }
+
     protected refreshFixStatus(): void {
         this.updateSuiteStatusMark();
     }

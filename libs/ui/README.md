@@ -754,6 +754,12 @@ to configure, and an unverified result is never shown as a checked one.
 MarkingField, TagInput, MarkedInput and MarkedTextArea all behave this way and
 use these words for any failed check, never the client's own error string.
 
+A field bound to a page marking is also unverified when its value could not be
+shared with the rest of the page: the field keeps what was entered, while the
+banner, rollups and hidden fields still show the value from before. It says so
+the same way, and stops once the value reaches the page. To send it again,
+commit the value as it stands (press Enter in the field) or change it.
+
 Your page can follow it too. The field's host element carries the
 presence-only attribute `data-ezclassify-unverified` while its result is
 unverified, and dispatches a bubbling `ezclassify:unverified-change` event on
