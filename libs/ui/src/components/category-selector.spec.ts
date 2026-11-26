@@ -265,6 +265,36 @@ describe('CategorySelector', () => {
         }
     });
 
+    it('announces a name with replacement patterns in it as written', async () => {
+        const tricky = "Cost $& and $' end";
+        const scheme = engine.getScheme() as unknown as {
+            concepts: Array<{
+                views: Record<string, string>;
+                categories: string[];
+            }>;
+        };
+        scheme.concepts.find((c) => c.categories.includes('f2'))!.views = {
+            default: tricky,
+        };
+        setLocale({ 'a11y.selected': 'Chosen {label}' });
+        try {
+            await init();
+            container
+                .querySelector<HTMLButtonElement>(
+                    '.category-selector-btn[data-category-id="f2"]',
+                )!
+                .click();
+            await new Promise((resolve) => setTimeout(resolve, 50));
+            expect(
+                [...container.querySelectorAll('[aria-live]')]
+                    .map((region) => region.textContent ?? '')
+                    .join(' '),
+            ).toContain(`Chosen ${tricky}`);
+        } finally {
+            resetLocale();
+        }
+    });
+
     it('renders both category modes through DecisionFlow shared native choices', async () => {
         await init();
         const choices = [

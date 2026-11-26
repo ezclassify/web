@@ -1,5 +1,6 @@
 /** Embedded Favorites behavior through the field's real tabbed branding tools. */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { resetLocale, setLocale } from '../i18n';
 import type { SchemePublicView } from '@ezclassify/types';
 import {
     ensureMarkingFavorites,
@@ -677,6 +678,46 @@ describe('current marking and persistence', () => {
         expect(document.activeElement).toBe(outside);
         await open(panel);
         expect(pinned()?.textContent).toBe('Unsave Current Marking');
+    });
+});
+
+describe('favorite names and counts', () => {
+    it('names a removal button for a marking with replacement patterns as written', async () => {
+        const tricky = "A$&B$'C";
+        const panel = mount(
+            makeHost({
+                config: {
+                    load: () => [{ marking: tricky }],
+                    remove: vi.fn(),
+                },
+            }),
+        );
+        await open(panel);
+        expect(
+            document
+                .querySelector('[data-favorite-remove]')
+                ?.getAttribute('aria-label'),
+        ).toBe(`Remove Favorite ${tricky}`);
+    });
+    it('announces how many favorites are available from the page locale', async () => {
+        setLocale({
+            'favorites.available.one': '{count} favori',
+            'favorites.available.other': '{count} favoris',
+        });
+        try {
+            const panel = mount(
+                makeHost({
+                    config: {
+                        load: () => [{ marking: 'A' }, { marking: 'B' }],
+                    },
+                }),
+            );
+            await open(panel);
+            await wait();
+            expect(spokenText()).toContain('2 favoris');
+        } finally {
+            resetLocale();
+        }
     });
 });
 

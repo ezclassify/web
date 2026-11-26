@@ -853,14 +853,14 @@ export class CategorySelector extends ComponentBase {
             this.removeAssertion(conceptId, categoryId);
             announce(
                 this.announcer,
-                t('a11y.deselected').replace('{label}', name),
+                t('a11y.deselected').replace('{label}', () => name),
             );
         } else {
             // addAssertion still enforces at most one item in a single category.
             this.addAssertion(conceptId, categoryId);
             announce(
                 this.announcer,
-                t('a11y.selected').replace('{label}', name),
+                t('a11y.selected').replace('{label}', () => name),
             );
         }
 

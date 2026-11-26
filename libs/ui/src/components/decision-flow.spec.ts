@@ -564,6 +564,73 @@ describe('DecisionFlow', () => {
             .filter(Boolean)
             .join(' | ');
 
+    describe('a choice whose read fails', () => {
+        afterEach(() => {
+            component.destroy();
+            vi.restoreAllMocks();
+        });
+
+        const live = () =>
+            [...document.querySelectorAll('[aria-live]')]
+                .map((el) => el.textContent ?? '')
+                .filter(Boolean)
+                .join(' | ');
+        const pressedOptions = () =>
+            [...container.querySelectorAll('.ez-decision-flow__option')].filter(
+                (el) => el.getAttribute('aria-pressed') === 'true',
+            );
+        const firstDot = () =>
+            container
+                .querySelector('.ez-decision-flow__step-dot')
+                ?.getAttribute('aria-label') ?? '';
+
+        it('is not shown as made, does not move the flow on, and says so once', async () => {
+            await component.init(container, toCtx(engine));
+            await enterFlow(container);
+            const dotBefore = firstDot();
+            vi.spyOn(engine, 'process').mockRejectedValueOnce(
+                new Error('GET https://runtime.example/v1 failed'),
+            );
+            container
+                .querySelector<HTMLButtonElement>('.ez-decision-flow__option')!
+                .click();
+            await vi.waitFor(() =>
+                expect(live()).toBe(
+                    'That choice could not be made. Try again.',
+                ),
+            );
+            expect(pressedOptions()).toHaveLength(0);
+            expect(firstDot()).toBe(dotBefore);
+            expect(
+                container.querySelector('.ez-decision-flow__question-label')
+                    ?.textContent,
+            ).toContain('Scope');
+            expect(component.getAssertions()).toEqual([]);
+            expect(document.body.textContent).not.toContain('runtime.example');
+        });
+
+        it('lets a later successful choice make and move on as usual', async () => {
+            await component.init(container, toCtx(engine));
+            await enterFlow(container);
+            vi.spyOn(engine, 'process').mockRejectedValueOnce(
+                new Error('offline'),
+            );
+            const choose = () =>
+                container
+                    .querySelector<HTMLButtonElement>(
+                        '.ez-decision-flow__option',
+                    )!
+                    .click();
+            choose();
+            await vi.waitFor(() => expect(live()).toMatch(/could not be made/));
+            choose();
+            await vi.waitFor(() =>
+                expect(live()).toMatch(/^Selected .+\. Step 2: Impact$/),
+            );
+            expect(component.getAssertions()).toHaveLength(1);
+        });
+    });
+
     describe('in the host locale', () => {
         afterEach(() => {
             component.destroy();
@@ -627,7 +694,7 @@ describe('DecisionFlow', () => {
 
         it('announces a choice that does not move the flow on by itself, from the locale', async () => {
             setLocale({
-                'flow.selected': 'Choisi : {label}',
+                'a11y.selected': 'Choisi : {label}',
                 'flow.chosenAdvance': 'Étape {n} : {label}',
             });
             await component.init(container, toCtx(engine));
@@ -1116,6 +1183,39 @@ describe('DecisionFlow: multi-select steps', () => {
         flow = new DecisionFlow();
         await flow.init(container, toCtx(mixedEngine));
         await enterFlow(container);
+    });
+
+    it('does not keep a toggled choice whose read fails, and says so', async () => {
+        container
+            .querySelectorAll<HTMLButtonElement>(
+                '.ez-decision-flow__step-dot',
+            )[1]
+            .click();
+        await vi.waitFor(() =>
+            expect(
+                container.querySelector('.ez-decision-flow__question-label')
+                    ?.textContent,
+            ).toContain('Caveat'),
+        );
+        vi.spyOn(mixedEngine, 'process').mockRejectedValueOnce(
+            new Error('offline'),
+        );
+        container
+            .querySelector<HTMLButtonElement>('.ez-decision-flow__option')!
+            .click();
+        await vi.waitFor(() =>
+            expect(
+                [...document.querySelectorAll('[aria-live]')].map(
+                    (el) => el.textContent,
+                ),
+            ).toContain('That choice could not be made. Try again.'),
+        );
+        expect(flow.getAssertions()).toEqual([]);
+        expect(
+            container.querySelectorAll(
+                '.ez-decision-flow__option[aria-checked="true"], .ez-decision-flow__option[aria-pressed="true"]',
+            ),
+        ).toHaveLength(0);
     });
 
     it('asks a single-choice step for its options without its own choice, and a multiple-choice step beside every choice', async () => {

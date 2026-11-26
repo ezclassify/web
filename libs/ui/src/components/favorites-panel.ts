@@ -442,7 +442,11 @@ export class FavoritesPanel {
             this.announcer,
             this._loadFailed
                 ? t('favorites.loadFailed')
-                : `${processed.length} favorite${processed.length === 1 ? '' : 's'} available`,
+                : t(
+                      processed.length === 1
+                          ? 'favorites.available.one'
+                          : 'favorites.available.other',
+                  ).replace('{count}', String(processed.length)),
         );
     }
 
@@ -563,7 +567,7 @@ export class FavoritesPanel {
                     'aria-label',
                     t('favorites.removeEntry').replace(
                         '{marking}',
-                        entry.marking,
+                        () => entry.marking,
                     ),
                 );
                 remove.innerHTML =

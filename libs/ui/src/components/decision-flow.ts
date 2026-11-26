@@ -463,9 +463,12 @@ export class DecisionFlow extends ComponentBase {
         });
     }
 
-    protected override reprocessNow(processEmpty = false): Promise<void> {
+    protected override reprocessNow(
+        processEmpty = false,
+        onFailure?: () => void,
+    ): Promise<void> {
         return this.trackFormEdit(
-            super.reprocessNow(processEmpty),
+            super.reprocessNow(processEmpty, onFailure),
             'formWrite',
         );
     }
@@ -2139,46 +2142,33 @@ export class DecisionFlow extends ComponentBase {
                     this._restoreFocusAfterRender = true;
                     this._lastFocusConceptId = concept.id;
                     this.pick(step, concept.id, () => {
-                        if (concept.textInput)
-                            this.chooseValueConcept(step, concept);
-                        else if (pressed)
-                            this.toggleConcept(
-                                step.categoryId,
-                                concept.id,
-                                true,
-                            );
-                        // A plain choice answers the step, so the flow moves on;
-                        // a value-taking one waits for its value.
-                        else {
+                        // A plain choice answers the step, so the flow moves on
+                        // once the read behind it lands, and says what was
+                        // chosen together with the move (see advanceFrom). A
+                        // value-taking one waits for its value.
+                        if (!concept.textInput && !pressed) {
                             const choice = this.choiceSequence;
                             void this.selectConcept(
                                 step.categoryId,
                                 concept.id,
-                            ).then(
-                                () =>
+                            ).then((stands) => {
+                                if (stands)
                                     void this.advanceFrom(
                                         step.categoryId,
                                         choice,
                                         concept.label,
-                                    ),
-                            );
+                                    );
+                            });
+                            return;
                         }
-                        // A plain choice says what was chosen once it knows
-                        // whether the flow moves on, so one announcement
-                        // carries both facts (see advanceFrom).
-                        if (!concept.textInput && !pressed) return;
-                        announce(
-                            this.announcer,
-                            pressed
-                                ? t('flow.deselected').replace(
-                                      '{label}',
-                                      () => concept.label,
-                                  )
-                                : t('flow.selected').replace(
-                                      '{label}',
-                                      () => concept.label,
-                                  ),
-                        );
+                        const made = concept.textInput
+                            ? this.chooseValueConcept(step, concept)
+                            : this.toggleConcept(
+                                  step.categoryId,
+                                  concept.id,
+                                  true,
+                              );
+                        this.announceChoice(made, concept.label, pressed);
                     });
                 },
             });
@@ -2521,6 +2511,7 @@ export class DecisionFlow extends ComponentBase {
                 a.conceptId === concept.id && a.categoryId === step.categoryId,
         );
         if (!complete && index < 0) return;
+        const before = this.heldChoices();
         this.beginUserEdit();
         this.editedCategory = step.categoryId;
         // Restore focus to this field after the DOM rebuild that follows reprocess().
@@ -2541,7 +2532,7 @@ export class DecisionFlow extends ComponentBase {
         } else {
             this.assertions = this.assertions.filter((_, i) => i !== index);
         }
-        this.reprocess();
+        void this.readChoice(before);
     }
 
     /**
@@ -2550,7 +2541,11 @@ export class DecisionFlow extends ComponentBase {
      * single-choice step it replaces the step's other choice. Pressing it again
      * un-chooses it.
      */
-    private chooseValueConcept(step: StepDef, concept: ConceptDef): void {
+    private chooseValueConcept(
+        step: StepDef,
+        concept: ConceptDef,
+    ): Promise<boolean> {
+        const before = this.heldChoices();
         const held = this.assertions.some(
             (a) =>
                 a.categoryId === step.categoryId && a.conceptId === concept.id,
@@ -2561,9 +2556,10 @@ export class DecisionFlow extends ComponentBase {
         if (held || pendingHere) {
             // A second press withdraws the choice.
             if (pendingHere) this.pendingText = null;
-            if (held) this.toggleConcept(step.categoryId, concept.id, true);
-            else this.render();
-            return;
+            if (held)
+                return this.toggleConcept(step.categoryId, concept.id, true);
+            this.render();
+            return Promise.resolve(true);
         }
         this._focusValueField = true;
         this.pendingText = {
@@ -2576,11 +2572,11 @@ export class DecisionFlow extends ComponentBase {
             : [];
         if (replaced.length === 0) {
             this.render();
-            return;
+            return Promise.resolve(true);
         }
         for (const previous of replaced)
             this.assertions = this.pickerPort.remove(this.assertions, previous);
-        this.reprocess();
+        return this.readChoice(before);
     }
 
     private renderCheckboxOptions(step: StepDef, optionsEl: HTMLElement): void {
@@ -2631,26 +2627,14 @@ export class DecisionFlow extends ComponentBase {
                     this._restoreFocusAfterRender = true;
                     this._lastFocusConceptId = concept.id;
                     this.pick(step, concept.id, () => {
-                        if (concept.textInput)
-                            this.chooseValueConcept(step, concept);
-                        else
-                            this.toggleConcept(
-                                step.categoryId,
-                                concept.id,
-                                isChecked,
-                            );
-                        announce(
-                            this.announcer,
-                            isChecked
-                                ? t('flow.deselected').replace(
-                                      '{label}',
-                                      () => concept.label,
-                                  )
-                                : t('flow.selected').replace(
-                                      '{label}',
-                                      () => concept.label,
-                                  ),
-                        );
+                        const made = concept.textInput
+                            ? this.chooseValueConcept(step, concept)
+                            : this.toggleConcept(
+                                  step.categoryId,
+                                  concept.id,
+                                  isChecked,
+                              );
+                        this.announceChoice(made, concept.label, isChecked);
                     });
                 },
             });
@@ -2740,7 +2724,7 @@ export class DecisionFlow extends ComponentBase {
             return;
         announce(
             this.announcer,
-            t('flow.selected').replace('{label}', () => chosen),
+            t('a11y.selected').replace('{label}', () => chosen),
         );
     }
 
@@ -3210,7 +3194,8 @@ export class DecisionFlow extends ComponentBase {
     private selectConcept(
         categoryId: string,
         conceptId: string,
-    ): Promise<void> {
+    ): Promise<boolean> {
+        const before = this.heldChoices();
         if (this.pendingText?.categoryId === categoryId)
             this.pendingText = null;
         for (const previous of this.assertions.filter(
@@ -3222,7 +3207,59 @@ export class DecisionFlow extends ComponentBase {
             conceptId,
             categoryId,
         });
-        return this.reprocessNow();
+        return this.readChoice(before);
+    }
+
+    /** What a choice changes, kept so a read that fails can put it back. */
+    private heldChoices(): {
+        assertions: Assertion[];
+        pendingText: PendingText | null;
+    } {
+        return { assertions: this.assertions, pendingText: this.pendingText };
+    }
+
+    /**
+     * Read the facts a choice left in place. When the read does not land the
+     * choice was not made: the facts and the pending value go back to what they
+     * were, the step shows that, and the author is told, once for the attempt.
+     *
+     * @returns Whether the choice stands
+     */
+    private async readChoice(
+        before: ReturnType<DecisionFlow['heldChoices']>,
+    ): Promise<boolean> {
+        let failed = false;
+        await this.reprocessNow(false, () => {
+            failed = true;
+        });
+        if (!failed) return true;
+        if (this._destroyed) return false;
+        this.assertions = before.assertions;
+        this.pendingText = before.pendingText;
+        this.render();
+        announce(this.announcer, t('flow.choiceFailed'));
+        return false;
+    }
+
+    /**
+     * Say a choice was made once the read behind it has landed; a read that did
+     * not land has said so itself.
+     */
+    private announceChoice(
+        made: Promise<boolean>,
+        label: string,
+        removed: boolean,
+    ): void {
+        void made.then((stands) => {
+            if (!stands || this._destroyed) return;
+            announce(
+                this.announcer,
+                t(removed ? 'a11y.deselected' : 'a11y.selected').replace(
+                    '{label}',
+                    () => label,
+                ),
+            );
+        });
     }
 
     /**
@@ -3234,12 +3271,13 @@ export class DecisionFlow extends ComponentBase {
         categoryId: string,
         conceptId: string,
         wasChecked: boolean,
-    ): void {
+    ): Promise<boolean> {
+        const before = this.heldChoices();
         const ref = { conceptId, categoryId };
         this.assertions = wasChecked
             ? this.pickerPort.remove(this.assertions, ref)
             : this.pickerPort.add(this.assertions, ref);
-        this.reprocess();
+        return this.readChoice(before);
     }
 }
 

@@ -73,19 +73,25 @@ describe('announceMatchCount', () => {
             return 0;
         });
         const announcer = document.createElement('div');
-        announceMatchCount(announcer, visible, 'alp', 'rule');
+        announceMatchCount(announcer, visible, 'alp', {
+            singular: 'rule',
+            plural: 'rules',
+        });
         return announcer.textContent ?? '';
     }
 
     it('says nothing without a query', () => {
         const announcer = document.createElement('div');
-        announceMatchCount(announcer, 2, '', 'rule');
+        announceMatchCount(announcer, 2, '', {
+            singular: 'rule',
+            plural: 'rules',
+        });
         expect(announcer.textContent).toBe('');
     });
 
     it('says how many match, none, one or several, in English by default', () => {
         expect(said(0)).toBe('No rules match "alp"');
-        expect(said(1)).toBe('1 rule match');
+        expect(said(1)).toBe('1 rule matches');
         expect(said(3)).toBe('3 rules match');
     });
 

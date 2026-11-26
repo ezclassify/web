@@ -23,16 +23,23 @@ import {
     type MaybePromise,
 } from '@ezclassify/types';
 
-const GUIDEBOOK_DEFAULTS = {
-    rule: { singular: 'rule', plural: 'rules' },
-    category: { singular: 'category', plural: 'categories' },
-    guide: { singular: 'guide', plural: 'guides' },
-};
+/** The nouns the page's locale gives the chrome when a guide names none. */
+function guidebookDefaults() {
+    return {
+        rule: { singular: t('noun.rule.one'), plural: t('noun.rule.other') },
+        category: {
+            singular: t('noun.category.one'),
+            plural: t('noun.category.other'),
+        },
+        guide: { singular: t('noun.guide.one'), plural: t('noun.guide.other') },
+    };
+}
 import {
     ReadOnlyComponentBase,
     type ComponentEngineSource,
     type ComponentOptions,
 } from './component-base-readonly';
+import { t } from '../i18n';
 import guidebookCss from './guidebook.css?inline';
 import {
     renderStructuralTree,
@@ -484,13 +491,10 @@ export class Guidebook extends ReadOnlyComponentBase {
             }
         }
         const vocab = combineVocabularies(this.views);
-        announceMatchCount(
-            this.announcer,
-            totalVisible,
-            query,
-            vocab.rule.singular.toLowerCase(),
-            vocab.rule.plural.toLowerCase(),
-        );
+        announceMatchCount(this.announcer, totalVisible, query, {
+            singular: vocab.rule.singular.toLowerCase(),
+            plural: vocab.rule.plural.toLowerCase(),
+        });
     }
 
     /**
@@ -605,7 +609,7 @@ export class Guidebook extends ReadOnlyComponentBase {
  * name.
  */
 function combineVocabularies(views: GuideStructuralView[]): ResolvedVocabulary {
-    return resolveVocabulary(views[0]?.vocabulary, GUIDEBOOK_DEFAULTS);
+    return resolveVocabulary(views[0]?.vocabulary, guidebookDefaults());
 }
 
 /**

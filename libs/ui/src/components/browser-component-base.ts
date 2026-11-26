@@ -278,11 +278,9 @@ export function announceMatchCount(
     announcer: HTMLElement,
     visible: number,
     query: string,
-    itemLabel: string,
-    pluralLabel?: string,
+    item: { singular: string; plural: string },
 ): void {
     if (!query) return;
-    const plural = pluralLabel ?? `${itemLabel}s`;
     const text = t(
         visible === 0
             ? 'search.matchCount.none'
@@ -291,8 +289,8 @@ export function announceMatchCount(
               : 'search.matchCount.other',
     )
         .replace('{count}', String(visible))
-        .replace('{item}', () => itemLabel)
-        .replace('{items}', () => plural)
+        .replace('{item}', () => item.singular)
+        .replace('{items}', () => item.plural)
         .replace('{query}', () => query);
     announce(announcer, text);
 }

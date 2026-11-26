@@ -48,10 +48,13 @@ import guideHelperCss from './guide-helper.css?inline';
 import { dismissStatusMarkPopover } from './status-mark';
 import { markingTarget } from './marking-target';
 
-const GUIDE_HELPER_DEFAULTS = {
-    rule: { singular: 'rule', plural: 'rules' },
-    guide: { singular: 'guide', plural: 'guides' },
-};
+/** The nouns the page's locale gives the chrome when a guide names none. */
+function guideHelperDefaults() {
+    return {
+        rule: { singular: t('noun.rule.one'), plural: t('noun.rule.other') },
+        guide: { singular: t('noun.guide.one'), plural: t('noun.guide.other') },
+    };
+}
 
 /**
  * Tell a resolved value apart from a pending one. The adapter contract types
@@ -227,7 +230,7 @@ export class GuideChecklist extends ReadOnlyComponentBase {
     private get vocab(): ResolvedVocabulary {
         return resolveVocabulary(
             this.views[this.activeGuideIndex],
-            GUIDE_HELPER_DEFAULTS,
+            guideHelperDefaults(),
         );
     }
 
