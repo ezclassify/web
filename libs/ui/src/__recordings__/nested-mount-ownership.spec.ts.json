@@ -527,42 +527,6 @@
             "method": "POST",
             "statusCode": 200
         },
-        "443370f492822cf4ccfa40db592b0a2c2fef6e872cf426fcf4d824241307f84a": {
-            "body": {
-                "resolution": {
-                    "artifacts": [
-                        {
-                            "id": "ref-scheme-1",
-                            "kind": "scheme",
-                            "version": "1.0.0"
-                        }
-                    ],
-                    "contextId": "ref-scheme-1",
-                    "requestedVersion": "0.0.0",
-                    "resolvedVersion": "1.0.0"
-                },
-                "result": {
-                    "appliedFixes": [],
-                    "assertions": [
-                        {
-                            "categoryId": "level",
-                            "conceptId": "HIGH",
-                            "confidence": "certain",
-                            "source": "aggregate"
-                        }
-                    ],
-                    "errors": [],
-                    "notices": [],
-                    "proposedFixes": [],
-                    "rendered": "HIGH",
-                    "valid": true,
-                    "warnings": []
-                }
-            },
-            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
-            "method": "POST",
-            "statusCode": 200
-        },
         "493f6c531d090f4be1b75809c94c90d8ad83b012082a3cf1d48144b360ef7cdb": {
             "body": {
                 "resolution": {

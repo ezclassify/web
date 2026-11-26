@@ -125,49 +125,6 @@
             "method": "POST",
             "statusCode": 200
         },
-        "9ea4ca6fcac14960a37015e80365d3a2cb6b11fd38fb9e07a355078d71179dbc": {
-            "body": {
-                "resolution": {
-                    "artifacts": [
-                        { "id": "test", "kind": "scheme", "version": "1.0.0" }
-                    ],
-                    "contextId": "test",
-                    "requestedVersion": "0.0.0",
-                    "resolvedVersion": "1.0.0"
-                },
-                "result": {
-                    "appliedFixes": [],
-                    "assertions": [
-                        {
-                            "categoryId": "level",
-                            "conceptId": "HIGH",
-                            "confidence": "certain",
-                            "source": "parse"
-                        }
-                    ],
-                    "assessment": {
-                        "collapsed": [],
-                        "conflicts": [],
-                        "emitted": [
-                            { "categoryId": "level", "conceptId": "HIGH" }
-                        ],
-                        "omitted": [],
-                        "unrepresentable": []
-                    },
-                    "errors": [],
-                    "inputWasValid": true,
-                    "notices": [],
-                    "proposedFixes": [],
-                    "rendered": "HIGH",
-                    "renders": {},
-                    "valid": true,
-                    "warnings": []
-                }
-            },
-            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
-            "method": "POST",
-            "statusCode": 200
-        },
         "ce677b56dd6d765d697d7c849cff5239444aa0fbad012c3a6a3fd7601ad9aa4c": {
             "body": {
                 "id": "test",

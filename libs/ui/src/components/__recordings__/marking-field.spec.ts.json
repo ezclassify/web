@@ -3174,60 +3174,6 @@
             "method": "POST",
             "statusCode": 200
         },
-        "4811640be7456871d8382880f894fdec95d8324a32ef31bc680fd76d7f27f2b3": {
-            "body": {
-                "resolution": {
-                    "artifacts": [
-                        {
-                            "id": "mf-fav-test",
-                            "kind": "scheme",
-                            "version": "1.0.0"
-                        }
-                    ],
-                    "contextId": "mf-fav-test",
-                    "requestedVersion": "0.0.0",
-                    "resolvedVersion": "1.0.0"
-                },
-                "result": {
-                    "appliedFixes": [],
-                    "assertions": [
-                        {
-                            "categoryId": "level",
-                            "conceptId": "S",
-                            "confidence": "certain",
-                            "source": "parse"
-                        },
-                        {
-                            "categoryId": "caveat",
-                            "conceptId": "NF",
-                            "confidence": "certain",
-                            "source": "parse"
-                        }
-                    ],
-                    "assessment": {
-                        "collapsed": [],
-                        "conflicts": [],
-                        "emitted": [
-                            { "categoryId": "level", "conceptId": "S" },
-                            { "categoryId": "caveat", "conceptId": "NF" }
-                        ],
-                        "omitted": [],
-                        "unrepresentable": []
-                    },
-                    "errors": [],
-                    "inputWasValid": true,
-                    "notices": [],
-                    "proposedFixes": [],
-                    "rendered": "SECRET//NOFORN",
-                    "renders": {},
-                    "valid": true,
-                    "warnings": []
-                }
-            },
-            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
-            "method": "POST",
-            "statusCode": 200
-        },
         "482989c13e329ebd193ddd08066def4b63de02a2148cfa058eb0f9a276247e41": {
             "body": {
                 "resolution": {
@@ -4664,31 +4610,6 @@
             },
             "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
-            "statusCode": 200
-        },
-        "63ca1df112a4b55e21bb57b72af9558e028316285891375bac5e4e8490391cf4": {
-            "body": {
-                "resolution": {
-                    "artifacts": [
-                        {
-                            "id": "mf-test",
-                            "kind": "scheme",
-                            "version": "1.0.0"
-                        }
-                    ],
-                    "contextId": "mf-test",
-                    "requestedVersion": "0.0.0",
-                    "resolvedVersion": "1.0.0"
-                },
-                "result": {
-                    "categoryId": "level",
-                    "conceptId": "U",
-                    "lines": ["Level: Unclassified"],
-                    "name": "Unclassified"
-                }
-            },
-            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
-            "method": "GET",
             "statusCode": 200
         },
         "645b3e50327d8499badd4f8598f945360f3cc4761f729518a438292200168bd4": {
@@ -6939,74 +6860,6 @@
             "method": "POST",
             "statusCode": 200
         },
-        "a01e87c5027d98f86fe13a38b9181a6bffe7f850e24e203b24c968e061532eb1": {
-            "body": {
-                "resolution": {
-                    "artifacts": [
-                        {
-                            "id": "mf-test",
-                            "kind": "scheme",
-                            "version": "1.0.0"
-                        }
-                    ],
-                    "contextId": "mf-test",
-                    "requestedVersion": "0.0.0",
-                    "resolvedVersion": "1.0.0"
-                },
-                "result": {
-                    "appliedFixes": [],
-                    "assertions": [
-                        {
-                            "categoryId": "level",
-                            "conceptId": "S",
-                            "confidence": "certain",
-                            "source": "parse"
-                        },
-                        {
-                            "categoryId": "caveat",
-                            "conceptId": "NF",
-                            "confidence": "certain",
-                            "source": "parse"
-                        },
-                        {
-                            "categoryId": "caveat",
-                            "conceptId": "SI",
-                            "confidence": "certain",
-                            "source": "parse"
-                        },
-                        {
-                            "categoryId": "caveat",
-                            "conceptId": "TK",
-                            "confidence": "certain",
-                            "source": "parse"
-                        }
-                    ],
-                    "assessment": {
-                        "collapsed": [],
-                        "conflicts": [],
-                        "emitted": [
-                            { "categoryId": "level", "conceptId": "S" },
-                            { "categoryId": "caveat", "conceptId": "NF" },
-                            { "categoryId": "caveat", "conceptId": "SI" },
-                            { "categoryId": "caveat", "conceptId": "TK" }
-                        ],
-                        "omitted": [],
-                        "unrepresentable": []
-                    },
-                    "errors": [],
-                    "inputWasValid": true,
-                    "notices": [],
-                    "proposedFixes": [],
-                    "rendered": "SECRET//NOFORN/SI/TK",
-                    "renders": {},
-                    "valid": true,
-                    "warnings": []
-                }
-            },
-            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
-            "method": "POST",
-            "statusCode": 200
-        },
         "a29ae89530b113d7f2401c5c3ec52de81477e54e2647356d81f8cff7da9e1914": {
             "body": {
                 "resolution": {
@@ -8874,31 +8727,6 @@
             "method": "POST",
             "statusCode": 200
         },
-        "bf56eefbfc1fac786a843bd6a250d94458185fa04fd4c22e9c8ba759f1995747": {
-            "body": {
-                "resolution": {
-                    "artifacts": [
-                        {
-                            "id": "mf-test",
-                            "kind": "scheme",
-                            "version": "1.0.0"
-                        }
-                    ],
-                    "contextId": "mf-test",
-                    "requestedVersion": "0.0.0",
-                    "resolvedVersion": "1.0.0"
-                },
-                "result": {
-                    "categoryId": "level",
-                    "conceptId": "S",
-                    "lines": ["Level: Secret"],
-                    "name": "Secret"
-                }
-            },
-            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
         "c0000a77a04f20186ceeebb405d0818a1b13ccebae0386d3dde025081dd56805": {
             "body": {
                 "resolution": {
@@ -9157,31 +8985,6 @@
             },
             "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
-            "statusCode": 200
-        },
-        "c5ede8ea34a5474d9a63de44bb8f6adca0adcebcfb67b1ffdda08cb66ce499f2": {
-            "body": {
-                "resolution": {
-                    "artifacts": [
-                        {
-                            "id": "mf-test",
-                            "kind": "scheme",
-                            "version": "1.0.0"
-                        }
-                    ],
-                    "contextId": "mf-test",
-                    "requestedVersion": "0.0.0",
-                    "resolvedVersion": "1.0.0"
-                },
-                "result": {
-                    "categoryId": "caveat",
-                    "conceptId": "SPECAT",
-                    "lines": ["Caveat: Special Category"],
-                    "name": "Special Category"
-                }
-            },
-            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
-            "method": "GET",
             "statusCode": 200
         },
         "c64e3529353fec9a9f208765df893c79b22badfe117a3a320bfda3f984af8293": {
