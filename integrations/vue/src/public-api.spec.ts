@@ -27,7 +27,7 @@ import {
     EzClassify,
     EzClassifyBanner,
     useEzClassify,
-    useEzClassifyCheckFailed,
+    useEzClassifyUnverified,
     useEzClassifyFacet,
     useEzClassifyState,
     useEzClassifyUI,
@@ -123,7 +123,7 @@ describe('public API: entry points', () => {
         expect(typeof useEzClassify).toBe('function');
         expect(typeof useEzClassifyState).toBe('function');
         expect(typeof useEzClassifyFacet).toBe('function');
-        expect(typeof useEzClassifyCheckFailed).toBe('function');
+        expect(typeof useEzClassifyUnverified).toBe('function');
     });
 
     it('exposes a banner that binds instance presentation to the scanner', async () => {

@@ -220,8 +220,20 @@ describe('the result row', () => {
         expect(row.getAttribute('aria-busy')).toBe('false');
         // The open list covers the note, so the result row says it too.
         expect(row.textContent).toContain('could not be checked');
-        // Politely announced, once.
+        // Politely announced, once, with the words, however many keystrokes
+        // fail after it.
+        const spoken = vi.spyOn(view, 'announce');
+        await type('SECRET noforn x');
+        await type('SECRET noforn xy');
+        expect(
+            spoken.mock.calls.filter(([text]) =>
+                /could not be checked/.test(text),
+            ),
+        ).toHaveLength(0);
         expect(view.announcer.getAttribute('aria-live')).toBe('polite');
+        expect(view.announcer.textContent).toBe(
+            'This text could not be checked. The result shown may be out of date.',
+        );
         down = false;
         await type('SECRET noforn ');
         expect(view.note.hidden).toBe(true);

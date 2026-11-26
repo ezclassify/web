@@ -25,92 +25,12 @@ import {
     typeText,
     wait,
 } from './composer-harness';
-import { connectDemoContext } from '../../../../../test-support/demo-runtime';
-
-async function createContext() {
-    const concept = (
-        id: string,
-        label: string,
-        category: string,
-        position: number,
-    ) => ({
-        id,
-        name: label.charAt(0) + label.slice(1).toLowerCase(),
-        views: { default: label },
-        categories: [category],
-        parents: [],
-        aliases: [],
-        position,
-        rank: position,
-    });
-    const context = await connectDemoContext({
-        draft: {
-            scheme: {
-                scheme: {
-                    id: 'composer-contract',
-                    version: '1.0.0',
-                    name: 'Composer Contract',
-                    description: 'Composer Contract test fixture.',
-                    data: {
-                        concepts: [
-                            concept('U', 'UNCLASSIFIED', 'level', 1),
-                            concept('S', 'SECRET', 'level', 2),
-                            concept('NF', 'NOFORN', 'caveat', 1),
-                            concept('OC', 'ORCON', 'caveat', 2),
-                        ],
-                        categories: [
-                            {
-                                id: 'level',
-                                label: 'Level',
-                                required: false,
-                                single: true,
-                                rollup: 'max',
-                                position: 1,
-                            },
-                            {
-                                id: 'caveat',
-                                label: 'Caveat',
-                                required: false,
-                                single: false,
-                                rollup: 'union',
-                                position: 2,
-                            },
-                        ],
-                    },
-                    rules: [],
-                    embedded_marking: [
-                        { pattern: '\\(([^)]+)\\)', template: '({marking}) ' },
-                    ],
-                    render: {
-                        default: 'default',
-                        formats: [
-                            {
-                                id: 'default',
-                                surface: 'marking',
-                                mode: 'inline',
-                                separator: '//',
-                                fields: [
-                                    { category: 'level', separator: '/' },
-                                    { category: 'caveat', separator: '/' },
-                                ],
-                            },
-                        ],
-                    },
-                },
-            },
-        },
-    });
-    // A runtime that goes away: every read of text fails until it is back.
-    const read = context.scheme.process.bind(context.scheme);
-    context.scheme.process = ((...args: Parameters<typeof read>) =>
-        runtimeDown
-            ? Promise.reject(new Error('runtime unreachable'))
-            : read(...args)) as typeof read;
-    return context;
-}
+import { createUnverifiableContext } from '../../../test-fixtures/unverifiable-context';
 
 /** Whether the runtime answers: set by a spec that needs a failed check. */
-let runtimeDown = false;
+const runtime = { down: false };
+
+const createContext = () => createUnverifiableContext(runtime);
 
 type Kind = 'tags' | 'marking' | 'marked-input' | 'marked-textarea';
 const KINDS: Kind[] = ['tags', 'marking', 'marked-input', 'marked-textarea'];
@@ -200,7 +120,7 @@ async function key(field: Field, name: string): Promise<KeyboardEvent> {
 }
 
 beforeEach(() => {
-    runtimeDown = false;
+    runtime.down = false;
     root = document.createElement('div');
     document.body.appendChild(root);
     Element.prototype.scrollIntoView = vi.fn();
@@ -439,17 +359,19 @@ describe.each(['tags', 'marking'] as const)(
             other.id = 'other';
             root.appendChild(other);
             const events: boolean[] = [];
-            field.host.addEventListener('ezclassify:check-change', (event) =>
-                events.push((event as CustomEvent).detail.failed),
+            field.host.addEventListener(
+                'ezclassify:unverified-change',
+                (event) =>
+                    events.push((event as CustomEvent).detail.unverified),
             );
-            runtimeDown = true;
+            runtime.down = true;
             await type(field, 'sec');
             await wait(50);
-            expect(
-                field.host.hasAttribute('data-ezclassify-check-failed'),
-            ).toBe(true);
+            expect(field.host.hasAttribute('data-ezclassify-unverified')).toBe(
+                true,
+            );
             expect(events).toEqual([true]);
-            expect(other.hasAttribute('data-ezclassify-check-failed')).toBe(
+            expect(other.hasAttribute('data-ezclassify-unverified')).toBe(
                 false,
             );
             const note = root.querySelector('.ez-composer-note') as HTMLElement;
@@ -462,30 +384,57 @@ describe.each(['tags', 'marking'] as const)(
                     ?.querySelector('.ez-composer__result')
                     ?.getAttribute('aria-busy'),
             ).toBe('false');
-            runtimeDown = false;
+            runtime.down = false;
             await type(field, 'secret zzz');
             await wait(50);
-            expect(
-                field.host.hasAttribute('data-ezclassify-check-failed'),
-            ).toBe(false);
+            expect(field.host.hasAttribute('data-ezclassify-unverified')).toBe(
+                false,
+            );
             expect(events).toEqual([true, false]);
             expect(note.hidden).toBe(true);
         });
     },
 );
 
+describe('two real fields on one page', () => {
+    it('never share one unverified state', async () => {
+        root.innerHTML = `<input id="a" data-ezclassify-controller="marking"><input id="b" data-ezclassify-controller="marking">`;
+        forms = new EzClassifyUI(asContext((await createContext()) as never), {
+            root,
+        });
+        await wait();
+        const [editorA] = root.querySelectorAll<HTMLTextAreaElement>(
+            '.marking-field-host',
+        );
+        editorA.focus();
+        runtime.down = true;
+        typeText(editorA, 'sec');
+        await wait(100);
+        expect(
+            document
+                .getElementById('a')!
+                .hasAttribute('data-ezclassify-unverified'),
+        ).toBe(true);
+        expect(
+            document
+                .getElementById('b')!
+                .hasAttribute('data-ezclassify-unverified'),
+        ).toBe(false);
+    });
+});
+
 describe.each(['marked-input', 'marked-textarea'] as const)(
     'a failed read of the typed marking in %s',
     (kind) => {
         it('is reported on its own host', async () => {
             const field = await mountField(kind);
-            runtimeDown = true;
+            runtime.down = true;
             await type(field, 'secret zzz');
             await leave(field.input());
             await wait(400);
-            expect(
-                field.host.hasAttribute('data-ezclassify-check-failed'),
-            ).toBe(true);
+            expect(field.host.hasAttribute('data-ezclassify-unverified')).toBe(
+                true,
+            );
         });
     },
 );

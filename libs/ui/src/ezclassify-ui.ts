@@ -1150,7 +1150,7 @@ export class EzClassifyUI {
                 : undefined;
             return this.seedMarkingHost(id, host, readNative).catch((error) => {
                 if (mountedField() === component)
-                    component?.showFailedStoreSeed?.(error);
+                    component?.showFailedStoreSeed?.();
                 throw error;
             });
         };

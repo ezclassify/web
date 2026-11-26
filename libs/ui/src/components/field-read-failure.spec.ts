@@ -3,12 +3,12 @@
  *
  * A read that raises (a part whose whole could not be resolved, a dropped
  * connection) never leaves a field unenhanced: the field mounts, shows the
- * thrown message where its errors go, and reads again when its whole changes.
- * While the whole is not a valid marking the engine reports each part as not
- * compared with it; the part shows that as a warning, never as an error, and it
- * clears once the whole is valid and the part reads again. No part is reported
- * as exceeding a whole that is not valid, and the report returns once the whole
- * is fixed.
+ * failed-check note (never the client's own error string) where its errors go,
+ * and reads again when its whole changes. While the whole is not a valid
+ * marking the engine reports each part as not compared with it; the part shows
+ * that as a warning, never as an error, and it clears once the whole is valid
+ * and the part reads again. No part is reported as exceeding a whole that is
+ * not valid, and the report returns once the whole is fixed.
  */
 import { asContext } from '../../test-fixtures/as-context';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -21,7 +21,10 @@ const wait = (ms = 80) => new Promise((r) => setTimeout(r, ms));
 /** A whole that reads but breaks a rule. */
 const INVALID_WHOLE = 'INTERNAL//FINANCIAL INFORMATION';
 const VALID_WHOLE = 'RESTRICTED';
-const THROWN = 'Cannot resolve processing context: the test says so.';
+/** What a failed read throws, and the one wording the field shows instead. */
+const RAISED = 'Cannot resolve processing context: the test says so.';
+const THROWN =
+    'This text could not be checked. The result shown may be out of date.';
 /** What the engine says of a part it could not compare with its whole. */
 const UNVERIFIED = 'Unable to compare with invalid whole.';
 
@@ -72,9 +75,9 @@ async function engineContext() {
     };
     const real = scheme.process.bind(scheme);
     scheme.process = (...args: unknown[]) => {
-        if (failing && partOfSent(args) !== undefined) throw new Error(THROWN);
+        if (failing && partOfSent(args) !== undefined) throw new Error(RAISED);
         if (failingText !== null && args[0] === failingText)
-            throw new Error(THROWN);
+            throw new Error(RAISED);
         return real(...args);
     };
     const scan = ctx.scheme.scan.bind(ctx.scheme);
@@ -165,7 +168,7 @@ const PART_FIELDS: Array<[string, string]> = [
 ];
 
 describe.each(PART_FIELDS)('a %s part', (_name, markup) => {
-    it('mounts when its first read throws, shows the message, and reads again when the whole changes', async () => {
+    it('mounts when its first read throws, shows the failed-check note instead of the raw message, and reads again when the whole changes', async () => {
         failing = true;
         await mount(markup, 'CONFIDENTIAL');
         const host = document.getElementById('host')!;
@@ -257,7 +260,7 @@ describe('a MarkedInput part', () => {
 });
 
 describe('a MarkedInput', () => {
-    it('mounts when its first read throws, shows the message, and reads again on the next edit', async () => {
+    it('mounts when its first read throws, shows the failed-check note instead of the raw message, and reads again on the next edit', async () => {
         failingText = 'R';
         await mount(
             '<div class="ez-test-field"><input type="text" id="host" data-ezclassify-controller="marked-input" value="(R) Title"></div>',
@@ -291,7 +294,7 @@ describe('a MarkedTextArea part', () => {
         return field.getSegments();
     }
 
-    it('mounts when a mark’s first read throws, flags that mark with the message, and reads it again when the whole changes', async () => {
+    it('mounts when a mark’s first read throws, flags that mark with the failed-check note, and reads it again when the whole changes', async () => {
         failing = true;
         await mount(MARKUP, 'CONFIDENTIAL');
         await wait(300);

@@ -740,34 +740,42 @@ rewrites that portion's mark and no other.
 Read-only views report state and do not judge it. `banner` shows the marking,
 or its empty state when there is nothing to render, and never a rule error.
 
-## When a check fails
+## When a result is unverified
 
-A field reads the text typed into it through your runtime. If that read fails
-(the runtime is unreachable, times out, or answers with an error or a body the
-client cannot read), the field keeps the last result it has and does not blank
-it. It also says so: under the field a note reads "This text could not be
-checked. The result shown may be out of date.", announced politely to screen
-readers, and the result stays dimmed as not current. The note goes away when a
-later check of the current text lands. There is nothing to configure, and a
-field with a failed check is never shown as a checked one.
+A field reads the text typed into it through your runtime. If that read cannot
+be completed (the runtime is unreachable, times out, or answers with an error or
+a body the client cannot read), the result the field shows has not been
+verified for the current text. The field keeps the last result it has and does
+not blank it. It also says so in its own message area: "This text could not be
+checked. The result shown may be out of date." The note is announced politely
+to screen readers, once per failure, and the result stays dimmed as not
+current. It goes away when a check of the current text lands. There is nothing
+to configure, and an unverified result is never shown as a checked one.
+MarkingField, TagInput, MarkedInput and MarkedTextArea all behave this way and
+use these words for any failed check, never the client's own error string.
 
 Your page can follow it too. The field's host element carries the
-presence-only attribute `data-ezclassify-check-failed` while its last check
-failed, and dispatches a bubbling `ezclassify:check-change` event on each
-change, with `detail.failed` set to the new state. Each field reports on its
-own host, so two fields never share a state. MarkingField, TagInput, MarkedInput
-and MarkedTextArea all report it.
+presence-only attribute `data-ezclassify-unverified` while its result is
+unverified, and dispatches a bubbling `ezclassify:unverified-change` event on
+each change, with `detail.unverified` set to the new state. Destroying a field
+that is unverified fires the event once more with `unverified: false`. Each
+field reports on its own host, so two fields never share a state.
 
 ```ts
+import type { UnverifiedChangeDetail } from '@ezclassify/ui';
+
 const field = document.getElementById('summary')!;
-field.addEventListener('ezclassify:check-change', (event) => {
-    submit.disabled = (event as CustomEvent<{ failed: boolean }>).detail.failed;
+field.addEventListener('ezclassify:unverified-change', (event) => {
+    const { unverified } = (event as CustomEvent<UnverifiedChangeDetail>)
+        .detail;
+    submit.disabled = unverified;
 });
 ```
 
-`watchCheckFailed(id, listener)` follows one field by its DOM id, calling the
-listener with the current state at once and then on each change. It returns a
-function that stops following.
+`watchUnverified(id, listener)` follows one field by its DOM id, calling the
+listener with the current state at once and then on each change, even for a
+field enhanced later. It returns a function that stops following.
+`isUnverified(id)` reads the state once.
 
 ## Native choice controls
 

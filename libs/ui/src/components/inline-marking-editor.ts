@@ -152,7 +152,7 @@ export interface InlineMarkingEditorOptions {
      * Told whenever the last check of the editor's text starts or stops
      * failing, and once more (false) when the editor goes away.
      */
-    onCheckFailed?: (failed: boolean) => void;
+    onUnverified?: (failed: boolean) => void;
     /** False disables the active row's definition line. */
     tooltips?: boolean;
     /** Concept view property to use for row detail. */
@@ -305,7 +305,7 @@ export class InlineMarkingEditor {
         this.chevron.setAttribute('aria-controls', this.view.list.id);
         this.unsubscribeChevron = this.controller.subscribe((s) => {
             this.chevron.setAttribute('aria-expanded', String(s.open));
-            this.options.onCheckFailed?.(s.checkFailed);
+            this.options.onUnverified?.(s.unverified);
         });
         // Outside the display layer the host keeps hidden from assistive
         // technology, so both are heard and seen.
@@ -334,7 +334,7 @@ export class InlineMarkingEditor {
     destroy(): void {
         this.destroyed = true;
         this.unsubscribeChevron?.();
-        this.options.onCheckFailed?.(false);
+        this.options.onUnverified?.(false);
         this.view?.destroy();
         this.controller?.dispose();
         this.container.innerHTML = '';

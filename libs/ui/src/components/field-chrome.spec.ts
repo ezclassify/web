@@ -515,6 +515,43 @@ describe('a field wrapped in its host label', () => {
         expect(field.hasAttribute('aria-label')).toBe(false);
     });
 
+    it('reads the label like a name: no spaces inside inline text, hidden parts left out', () => {
+        const label = document.createElement('label');
+        label.innerHTML =
+            'Mark<b>ing</b> <span hidden>secret</span><span aria-hidden="true">x</span><span style="display: none">y</span><div>second\n   line</div>';
+        const wrap = document.createElement('div');
+        const field = document.createElement('input');
+        wrap.append(field);
+        label.append(wrap);
+        document.body.append(label);
+        mountFieldChrome(wrap, { placement: 'inline' });
+        expect(field.getAttribute('aria-label')).toBe('Marking second line');
+    });
+
+    it('keeps every label the control has when another one names it too', () => {
+        const { field } = wrapped('input');
+        field.id = 'shared';
+        const other = document.createElement('label');
+        other.htmlFor = 'shared';
+        other.textContent = 'Also named';
+        document.body.append(other);
+        // The other label is read when the wrapping label next changes.
+        field.closest('label')!.append(' now');
+        return Promise.resolve().then(() => {
+            expect(field.getAttribute('aria-label')).toBe(
+                'Marking now Also named',
+            );
+        });
+    });
+
+    it('does not take a name the page sets after mount', async () => {
+        const { label, field } = wrapped('input');
+        field.setAttribute('aria-label', 'Set by the page');
+        label.firstChild!.nodeValue = 'Changed ';
+        await Promise.resolve();
+        expect(field.getAttribute('aria-label')).toBe('Set by the page');
+    });
+
     it('leaves a control the page named itself alone', () => {
         const label = document.createElement('label');
         const wrap = document.createElement('div');

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import {
     EzClassifyBannerComponent,
-    injectEzClassifyCheckFailed,
+    injectEzClassifyUnverified,
     injectEzClassifyFacet,
 } from '@ezclassify/angular';
 
@@ -32,6 +32,6 @@ describe('Angular public API', () => {
 
     it('exports the component-library facet adapter', () => {
         expect(typeof injectEzClassifyFacet).toBe('function');
-        expect(typeof injectEzClassifyCheckFailed).toBe('function');
+        expect(typeof injectEzClassifyUnverified).toBe('function');
     });
 });

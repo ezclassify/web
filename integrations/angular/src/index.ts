@@ -21,7 +21,7 @@ export {
     injectEzClassifyUI,
 } from './lib/ezclassify.directive';
 export type { EzClassifyDirectiveOptions } from './lib/ezclassify.directive';
-export { injectEzClassifyCheckFailed } from './lib/inject-ezclassify-check-failed';
+export { injectEzClassifyUnverified } from './lib/inject-ezclassify-unverified';
 export { injectEzClassifyFacet } from './lib/inject-ezclassify-facet';
 export type { InjectEzClassifyFacetReturn } from './lib/inject-ezclassify-facet';
 export {

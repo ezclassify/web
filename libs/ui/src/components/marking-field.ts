@@ -737,8 +737,8 @@ export class MarkingField extends ComposerFieldBase {
      * A read that raised wrote nothing, so the write the guard waits for never
      * lands: release it here, or the field would stay mid-commit for good.
      */
-    protected override showReadFailure(error: unknown): void {
-        super.showReadFailure(error);
+    protected override showReadFailure(): void {
+        super.showReadFailure();
         this._committing = false;
     }
 

@@ -1143,14 +1143,14 @@ export class DecisionFlow extends ComponentBase {
                     ),
                 ),
             );
-        } catch (error) {
+        } catch {
             if (
                 this._destroyed ||
                 sequence !== this.judgeSequence ||
                 inputKey !== this.proofInputKey()
             )
                 return;
-            this.showReadFailure(error);
+            this.showReadFailure();
         }
     }
 

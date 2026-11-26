@@ -3047,3 +3047,133 @@ describe('MarkedInput favorites', () => {
         expect(root.querySelector('.inline-editor-input')).toBeNull();
     });
 });
+
+describe('MarkedInput when its text could not be checked', () => {
+    const NOTE =
+        'This text could not be checked. The result shown may be out of date.';
+    const UNVERIFIED = 'data-ezclassify-unverified';
+
+    async function mountField(down: { value: boolean }) {
+        const container = document.createElement('div');
+        root.appendChild(container);
+        const native = document.createElement('input');
+        native.type = 'text';
+        container.appendChild(native);
+        const ctx = await createTestContext();
+        const realProcess = ctx.scheme.process.bind(ctx.scheme);
+        vi.spyOn(ctx.scheme, 'process').mockImplementation(((
+            ...args: Parameters<typeof realProcess>
+        ) =>
+            down.value
+                ? Promise.reject(new Error('socket hang up'))
+                : realProcess(...args)) as typeof realProcess);
+        const field = new MarkedInput();
+        await field.init(container, ctx, {});
+        return { field, native, container };
+    }
+
+    const reportText = (container: HTMLElement) => container.textContent ?? '';
+
+    it('says so in the field, never with the client error, and tells the page; the next read that lands clears both', async () => {
+        const down = { value: true };
+        const { field, native, container } = await mountField(down);
+        const heard: boolean[] = [];
+        native.addEventListener('ezclassify:unverified-change', (event) =>
+            heard.push((event as CustomEvent).detail.unverified),
+        );
+        native.value = '(U) quarterly report';
+        field.setValue('(U) quarterly report');
+        await wait(150);
+        expect(native.hasAttribute(UNVERIFIED)).toBe(true);
+        expect(reportText(container)).toContain(NOTE);
+        expect(reportText(container)).not.toContain('socket hang up');
+        expect(heard).toEqual([true]);
+        // A second failed read does not announce it again: one live region
+        // holds the words.
+        field.setValue('(U) quarterly report!');
+        await wait(150);
+        const spoken = () =>
+            [...root.querySelectorAll('[aria-live="polite"]')].filter((el) =>
+                el.textContent?.includes(NOTE),
+            );
+        expect(spoken()).toHaveLength(1);
+        expect(heard).toEqual([true]);
+        down.value = false;
+        field.setValue('(U) quarterly report');
+        await wait(150);
+        expect(native.hasAttribute(UNVERIFIED)).toBe(false);
+        expect(reportText(container)).not.toContain(NOTE);
+        expect(heard).toEqual([true, false]);
+        field.destroy();
+    });
+
+    it('reports the field and its open editor together: one does not clear the other, and only a real change is announced', async () => {
+        const down = { value: true };
+        const { field, native } = await mountField(down);
+        const heard: boolean[] = [];
+        native.addEventListener('ezclassify:unverified-change', (event) =>
+            heard.push((event as CustomEvent).detail.unverified),
+        );
+        const editor = field as unknown as {
+            setEditorUnverified(unverified: boolean): void;
+        };
+        // The editor alone.
+        editor.setEditorUnverified(true);
+        editor.setEditorUnverified(true);
+        expect(heard).toEqual([true]);
+        // The field's own read fails too; the editor then recovers.
+        field.setValue('(U) quarterly report');
+        await wait(150);
+        editor.setEditorUnverified(false);
+        expect(native.hasAttribute(UNVERIFIED)).toBe(true);
+        expect(heard).toEqual([true]);
+        // The field recovers last.
+        down.value = false;
+        field.setValue('(U) quarterly report');
+        await wait(150);
+        expect(native.hasAttribute(UNVERIFIED)).toBe(false);
+        expect(heard).toEqual([true, false]);
+        field.destroy();
+    });
+
+    it('an external write whose read fails is unverified too, and clears with the next write that reads', async () => {
+        const down = { value: true };
+        const { field, native } = await mountField(down);
+        field.setAssertions([
+            {
+                categoryId: 'level',
+                conceptId: 'U',
+                confidence: 'certain',
+                source: 'user',
+            },
+        ]);
+        await wait(150);
+        expect(native.hasAttribute(UNVERIFIED)).toBe(true);
+        down.value = false;
+        field.setAssertions([]);
+        await wait(100);
+        expect(native.hasAttribute(UNVERIFIED)).toBe(false);
+        field.destroy();
+    });
+
+    it('never reports on another field', async () => {
+        const first = await mountField({ value: true });
+        const second = await mountField({ value: false });
+        first.field.setValue('(U) quarterly report');
+        await wait(150);
+        expect(first.native.hasAttribute(UNVERIFIED)).toBe(true);
+        expect(second.native.hasAttribute(UNVERIFIED)).toBe(false);
+        first.field.destroy();
+        second.field.destroy();
+    });
+
+    it('lets go of the host when it is destroyed while unverified', async () => {
+        const { field, native } = await mountField({ value: true });
+        field.setValue('(U) quarterly report');
+        await wait(150);
+        expect(native.hasAttribute(UNVERIFIED)).toBe(true);
+        field.destroy();
+        await wait(50);
+        expect(native.hasAttribute(UNVERIFIED)).toBe(false);
+    });
+});

@@ -126,7 +126,7 @@ export const defaultLocale = {
     'composer.nothingMore': 'Nothing more to add here',
     'composer.noReading': 'This does not read as one marking.',
     'composer.readFailed': 'This could not be read just now. Try again.',
-    'composer.checkFailed':
+    'composer.unverified':
         'This text could not be checked. The result shown may be out of date.',
     'composer.didYouMean': 'Did you mean {label}?',
     'composer.needs': 'Needs',

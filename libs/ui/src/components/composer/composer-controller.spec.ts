@@ -1342,7 +1342,7 @@ describe('a failed check of the typed text', () => {
         failReads((text) => text.includes('NOFORN'));
         await typed(c, 'SECRET NOFORN');
         const s = c.snapshot();
-        expect(s.checkFailed).toBe(true);
+        expect(s.unverified).toBe(true);
         expect(s.reading).toBe(before);
         expect(s.stale).toBe(true);
         expect(s.checking).toBe(false);
@@ -1366,7 +1366,7 @@ describe('a failed check of the typed text', () => {
         release();
         await pending;
         expect(c.snapshot().checking).toBe(false);
-        expect(c.snapshot().checkFailed).toBe(false);
+        expect(c.snapshot().unverified).toBe(false);
     });
 
     it('clears when a later check of the current text lands', async () => {
@@ -1375,17 +1375,17 @@ describe('a failed check of the typed text', () => {
         let down = true;
         failReads(() => down);
         await typed(c, 'SECRET');
-        expect(c.snapshot().checkFailed).toBe(true);
+        expect(c.snapshot().unverified).toBe(true);
         // Still failed, and not announced again, while typing goes on.
         await typed(c, 'SECRET NOFORN');
-        expect(c.snapshot().checkFailed).toBe(true);
+        expect(c.snapshot().unverified).toBe(true);
         expect(
             announced.filter((t) => /could not be checked/.test(t)),
         ).toHaveLength(1);
         down = false;
         await typed(c, 'SECRET NOFORN ');
         const s = c.snapshot();
-        expect(s.checkFailed).toBe(false);
+        expect(s.unverified).toBe(false);
         expect(s.stale).toBe(false);
     });
 
@@ -1410,9 +1410,45 @@ describe('a failed check of the typed text', () => {
         settles[0]();
         await first;
         const s = c.snapshot();
-        expect(s.checkFailed).toBe(false);
+        expect(s.unverified).toBe(false);
         expect(s.stale).toBe(false);
         expect(s.reading?.rendered).toBe('SECRET');
+    });
+
+    it('is not flagged over text that was already checked, even when re-checking it fails', async () => {
+        const c = controller();
+        await c.open();
+        await typed(c, 'SECRET');
+        let down = false;
+        failReads(() => down);
+        down = true;
+        await typed(c, 'SECRET NOFORN');
+        expect(c.snapshot().unverified).toBe(true);
+        // Back to the text that was checked: its reading is current.
+        await typed(c, 'SECRET');
+        const s = c.snapshot();
+        expect(s.stale).toBe(false);
+        expect(s.unverified).toBe(false);
+        expect(s.checking).toBe(false);
+    });
+
+    it('is never busy before a read is issued, after a reset while closed, or when no read followed a sync', async () => {
+        const c = controller();
+        expect(c.snapshot().checking).toBe(false);
+        await c.open();
+        c.close();
+        c.syncCommitted();
+        expect(c.snapshot().checking).toBe(false);
+        // A dirty draft whose only read failed holds no reading; a committed
+        // change then issues no read, and nothing is in flight.
+        failReads(() => true);
+        await typed(c, 'SECRET');
+        port.value = {
+            assertions: [assertion(CONCEPTS[0])],
+            rendered: 'UNCLASSIFIED',
+        };
+        c.syncCommitted();
+        expect(c.snapshot().checking).toBe(false);
     });
 
     it('clears when the draft is read again after the runtime is back', async () => {
@@ -1421,11 +1457,11 @@ describe('a failed check of the typed text', () => {
         let down = true;
         failReads(() => down);
         await typed(c, 'SECRET');
-        expect(c.snapshot().checkFailed).toBe(true);
+        expect(c.snapshot().unverified).toBe(true);
         down = false;
         c.syncCommitted();
         await c.settle();
-        expect(c.snapshot().checkFailed).toBe(false);
+        expect(c.snapshot().unverified).toBe(false);
     });
 });
 

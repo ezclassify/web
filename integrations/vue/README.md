@@ -273,21 +273,21 @@ saves needs an `id` on its field. The store's `valid` and `errors` describe the
 marking itself, not whole-versus-parts coverage. The whole MarkingField owns
 that contextual comparison and displays its errors and proposed fixes.
 
-## When a Check Fails
+## When a Result Is Unverified
 
-A field that cannot check the text typed into it (the runtime is unreachable,
-times out, or answers badly) keeps its last result and says so itself, under
-the field. To react beside it, `useEzClassifyCheckFailed(id)` returns a ref
-that is true while the field with that DOM id has a failed check. Each field
-reports for itself.
+A field that cannot complete the check of the text typed into it (the runtime is
+unreachable, times out, or answers badly) keeps its last result, marks it as
+unverified and says so itself, in its own message area. To react beside it,
+`useEzClassifyUnverified(id)` returns a ref that is true while the field with that DOM id is unverified. The id may be a ref or getter. Each field reports for itself, and a field that is
+not enhanced yet reads false until it is.
 
 ```vue
 <script setup lang="ts">
-const failed = useEzClassifyCheckFailed('summary');
+const unverified = useEzClassifyUnverified('summary');
 </script>
 
 <template>
-    <button :disabled="failed">Save</button>
+    <button :disabled="unverified">Save</button>
 </template>
 ```
 

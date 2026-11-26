@@ -657,10 +657,10 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
     }
 
     /** @internal */
-    showFailedStoreSeed(error: unknown): void {
+    showFailedStoreSeed(): void {
         if (!this.readInitialValueFromStore || this._destroyed) return;
         this.failedRead = this.readStoreSeedText();
-        this.showReadFailure(error);
+        this.showReadFailure();
     }
 
     /**
@@ -977,8 +977,8 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
                     result.warnings,
                 );
             })
-            .catch((error: unknown) => {
-                if (current()) this.showReadFailure(error);
+            .catch(() => {
+                if (current()) this.showReadFailure();
             });
     }
 
@@ -1104,9 +1104,9 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
         };
 
         // A read that raises leaves the marking as it was and says why.
-        const failed = (error: unknown) => {
+        const failed = () => {
             if (seq !== this._reprocessSeq || this._destroyed) return;
-            this.showReadFailure(error);
+            this.showReadFailure();
         };
 
         // Single process() call with pre-built assertions: skips the parse stage
@@ -1128,8 +1128,8 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
                 read(asked),
                 (settled) => read(statedAssertions(settled.assertions)),
             );
-        } catch (error) {
-            failed(error);
+        } catch {
+            failed();
             return Promise.resolve();
         }
 

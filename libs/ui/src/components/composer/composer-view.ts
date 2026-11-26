@@ -1391,11 +1391,11 @@ export class ComposerView {
             this.note.hidden = false;
             this.note.textContent = this.controller.problemText(s.problem);
             ids.push(this.note.id);
-        } else if (s.checkFailed) {
+        } else if (s.unverified) {
             // The text could not be checked: the result shown, if any, is for
             // older text. Announced once by the controller when it starts.
             this.note.hidden = false;
-            this.note.textContent = t('composer.checkFailed');
+            this.note.textContent = t('composer.unverified');
             ids.push(this.note.id);
         } else {
             this.note.hidden = true;
@@ -1416,7 +1416,7 @@ export class ComposerView {
         this.paintResultRow(s);
         // The open list covers the note under the field, and the result it
         // shows is the one that may be out of date: say so there as well.
-        if (s.checkFailed) this.appendProblems([], t('composer.checkFailed'));
+        if (s.unverified) this.appendProblems([], t('composer.unverified'));
     }
 
     private paintResultRow(s: ComposerSnapshot): void {

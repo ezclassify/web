@@ -248,6 +248,10 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
     /** A text area's chrome pins to its first line, top right. */
 
     private nativeTextarea!: HTMLTextAreaElement;
+
+    protected enhancedElement(): Element | null {
+        return this.nativeTextarea ?? null;
+    }
     private nativeEditor: ReturnType<typeof bindNativeTextEditor> | null = null;
     private restoreScanAriaInvalid: string | null | undefined;
 
@@ -1275,7 +1279,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
 
     private teardown(): void {
         this.tornDown = true;
-        this.reportCheckFailed(false);
+        this.releaseUnverified();
         this.pickerCommittedState = null;
         this.pendingEntryStates = null;
         if (this.syncTimer) clearTimeout(this.syncTimer);
@@ -1428,7 +1432,6 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
             this.activeSegmentIndex = -1;
             this.scanComplete = true;
             this.scanFailed = false;
-            this.reportCheckFailed(false);
             this.renderDisplay();
             this.updateStatusMark();
             this.syncHiddenFields();
@@ -1458,7 +1461,6 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
             if (isCurrent() && this.lastScannedText === text) {
                 this.lastScannedText = previousScannedText;
                 this.scanFailed = true;
-                this.reportCheckFailed(true);
                 // Fail closed: a scan that never answered read none of this
                 // text. The portions committed before stay, and the field says
                 // the text is unchecked until a scan reads all of it.
@@ -1575,13 +1577,10 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                     try {
                         const result = await readMarking(embedded[idx]);
                         return { idx, result };
-                    } catch (error) {
-                        readFailures.set(
-                            idx,
-                            error instanceof Error
-                                ? error.message
-                                : String(error),
-                        );
+                    } catch {
+                        // The reason is the failed check, in the field's one
+                        // wording, not the client's error string.
+                        readFailures.set(idx, t('composer.unverified'));
                         return null;
                     }
                 }),
@@ -1763,11 +1762,6 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                     this.proposedFixesBySegment.set(segment, proposals);
             }
         });
-        // A marking the engine raised on stays as it was read before and says
-        // why; the page hears that its text was not fully checked.
-        this.reportCheckFailed(
-            this.segments.some((segment) => segment.readFailure !== undefined),
-        );
         // An edit that extends the end of a mark and also changes its body
         // can replace the store span. Its unchanged start still anchors the
         // local correction record. The history drops any fixes whose marking
@@ -1954,6 +1948,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
      * text, on the field's single status mark.
      */
     private updateStatusMark(): void {
+        this.updateUnverifiedState();
         setStatusMarkGroups(this.chrome.status, this.markGroups());
         const text = this.textarea.value;
         const findings = this.segments.flatMap(
@@ -2067,10 +2062,31 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
      * set itself is left alone.
      */
     private reportScanCompleteness(): void {
+        this.updateUnverifiedState();
         if (this.scanComplete === this.reportedScanComplete) return;
         this.reportedScanComplete = this.scanComplete;
-        this.showScanNotice(!this.scanComplete);
         this.options.onScanCompleteness?.(this.scanComplete);
+    }
+
+    /**
+     * The one place the field's check state is derived: the scan failed, or a
+     * marking the engine raised on keeps the reading it had. A failed check
+     * says so in the field's one wording and tells the page; an incomplete scan
+     * that did not fail keeps its own notice.
+     */
+    private updateUnverifiedState(): void {
+        if (!this.scanNotice || this.tornDown) return;
+        const failed =
+            this.scanFailed ||
+            this.segments.some((segment) => segment.readFailure !== undefined);
+        this.setFieldUnverified(failed);
+        const message = failed
+            ? t('composer.unverified')
+            : this.scanComplete
+              ? null
+              : t('mark.scanIncomplete');
+        if (message === this.scanValidity) return;
+        this.showScanNotice(message);
     }
 
     /**
@@ -2078,18 +2094,18 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
      * validity, `aria-invalid`, the visible notice that describes it, and one
      * polite announcement when the error appears.
      */
-    private showScanNotice(show: boolean): void {
+    private showScanNotice(message: string | null): void {
         const describedBy = (
             this.textarea.getAttribute('aria-describedby') ?? ''
         )
             .split(/\s+/)
             .filter((id) => id && id !== this.scanNotice.id);
-        if (show) {
+        if (message !== null) {
             if (this.restoreScanAriaInvalid === undefined)
                 this.restoreScanAriaInvalid =
                     this.nativeTextarea.getAttribute('aria-invalid');
             this.nativeTextarea.setAttribute('aria-invalid', 'true');
-            this.scanValidity = t('mark.scanIncomplete');
+            this.scanValidity = message;
             this.textarea.setCustomValidity(this.scanValidity);
             this.textarea.setAttribute('aria-invalid', 'true');
             this.scanNotice.lastElementChild!.textContent = this.scanValidity;
@@ -2097,7 +2113,6 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
             describedBy.push(this.scanNotice.id);
             // Spoken a frame later so the live region registers the change; an
             // error that cleared in the meantime is not spoken at all.
-            const message = this.scanValidity;
             this.scanAnnouncer.textContent = '';
             requestAnimationFrame(() => {
                 if (this.scanValidity === message && !this.tornDown)

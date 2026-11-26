@@ -18,8 +18,7 @@
  * exported names and option shapes. It exists only to remove duplication.
  */
 
-import { getMountHost } from '../mount-host-registry';
-import { setCheckFailed } from '../field-check';
+import { unverifiedHostOf, setUnverified } from '../unverified';
 import type {
     Assertion,
     Change,
@@ -940,7 +939,12 @@ export abstract class MarkedFieldBase<
                 focusTarget: this.wrap,
                 isFieldChrome: (node) => this.isFieldChrome(node),
                 root: this.container,
-                onCheckFailed: (failed) => this.reportCheckFailed(failed),
+                // A picker that is not the field's current one (a superseded open)
+                // has no say in what the page hears.
+                onUnverified: (failed) => {
+                    if (!this.picker || this.picker === picker)
+                        this.setEditorUnverified(failed);
+                },
             },
         );
         if (openSeq !== this.pickerOpenSeq) {
@@ -981,13 +985,39 @@ export abstract class MarkedFieldBase<
         };
     }
 
+    /** The element this field enhances, for a field built without a mount. */
+    protected abstract enhancedElement(): Element | null;
+
+    private fieldUnverified = false;
+    private editorUnverified = false;
+
     /**
-     * Tell the page whether the last check of this field's text failed (see
-     * field-check.ts), on the host the page authored.
+     * Whether the field's own read of its text failed. The field owns the state
+     * the page hears: this and the open editor's are combined in one place, so
+     * neither can clear the other's failure.
      */
-    protected reportCheckFailed(failed: boolean): void {
-        const host = getMountHost(this.container);
-        if (host) setCheckFailed(host, failed);
+    protected setFieldUnverified(failed: boolean): void {
+        this.fieldUnverified = failed;
+        this.publishUnverified();
+    }
+
+    /** Whether the open editor's check of its draft failed. */
+    protected setEditorUnverified(failed: boolean): void {
+        this.editorUnverified = failed;
+        this.publishUnverified();
+    }
+
+    /** Clear both parts when the field goes away. */
+    protected releaseUnverified(): void {
+        this.fieldUnverified = false;
+        this.editorUnverified = false;
+        this.publishUnverified();
+    }
+
+    private publishUnverified(): void {
+        const host = unverifiedHostOf(this.container, this.enhancedElement());
+        if (host)
+            setUnverified(host, this.fieldUnverified || this.editorUnverified);
     }
 
     protected destroyPicker(): void {

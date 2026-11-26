@@ -62,7 +62,7 @@ import {
     renderViewRefused,
 } from '../render-refusal';
 import { getMountHost } from '../mount-host-registry';
-import { setCheckFailed } from '../field-check';
+import { unverifiedHostOf, setUnverified } from '../unverified';
 import { schemeChangeWords, type ChangeWords } from './status-mark';
 import type { MarkingUndo } from './marking-undo';
 import { assertWritesScopes, viewOutputOf } from '../format-resolver';
@@ -107,7 +107,7 @@ export interface ComponentInstance {
     /** @internal Keep the native draft during reflection of its baseline. */
     readonly preservesNativeDraft?: boolean;
     /** @internal Report a failed read when the field relies on its store seed. */
-    showFailedStoreSeed?(error: unknown): void;
+    showFailedStoreSeed?(): void;
     /**
      * Reflect a canonical store result without discarding text that has no
      * assertion identity.
@@ -661,7 +661,7 @@ export abstract class ReadOnlyComponentBase
         this.setup();
         // Errors from the initial value arrived before setup() built the
         // field's own wrapper, so the list could only follow the mount then.
-        if (initFailure !== null) this.showReadFailure(initFailure);
+        if (initFailure !== null) this.showReadFailure();
         this.placeRuleErrors();
 
         // Write the accepted value, retaining the exact source when it needs correction.
@@ -850,13 +850,13 @@ export abstract class ReadOnlyComponentBase
         let result: ValidateResult | ProcessResult;
         try {
             result = await this.readHeld(value);
-        } catch (error) {
+        } catch {
             // A field torn down while its value was read has nothing to show.
             if (seq !== this.valueReadSeq || this.abandoned) return;
             // Nothing was read, so the marking the field holds stays as it
             // was and nothing is published; the field says why instead.
             this.failedRead = value;
-            this.showReadFailure(error);
+            this.showReadFailure();
             return;
         }
         // Nor does it publish what the read found: its runtime, and the
@@ -888,12 +888,12 @@ export abstract class ReadOnlyComponentBase
 
     /**
      * Tell the page whether this field's last check of its text failed: the
-     * attribute and event on the host the page authored (see field-check.ts).
+     * attribute and event on the host the page authored (see unverified.ts).
      * One field's state is never another's, because each stamps its own host.
      */
-    protected reportCheckFailed(failed: boolean): void {
-        const host = getMountHost(this.container) ?? this.enhancedInput;
-        if (host) setCheckFailed(host, failed);
+    protected reportUnverified(failed: boolean): void {
+        const host = unverifiedHostOf(this.container, this.enhancedInput);
+        if (host) setUnverified(host, failed);
     }
 
     /** Whether the field's last read of its own value failed. */
@@ -1063,14 +1063,12 @@ export abstract class ReadOnlyComponentBase
     }
 
     /**
-     * Show why the field's value could not be read, in place of its errors. The
-     * message is the one the read raised, as plain text.
+     * Say that the field's value could not be read, in place of its errors, in
+     * the field's one failed-check wording.
      */
-    protected showReadFailure(error: unknown): void {
+    protected showReadFailure(): void {
         this.showRuleErrors(
-            this.options.facetOf
-                ? this.facetReport()
-                : readFailureReport(error),
+            this.options.facetOf ? this.facetReport() : readFailureReport(),
         );
     }
 

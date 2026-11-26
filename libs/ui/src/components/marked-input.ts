@@ -86,6 +86,10 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
 
     protected override options: MarkedInputOptions = {};
     private nativeInput!: HTMLInputElement;
+
+    protected enhancedElement(): Element | null {
+        return this.nativeInput ?? null;
+    }
     private releaseInputEditor: (() => void) | null = null;
 
     /** Readability alias for the owned wrapping editor. */
@@ -541,7 +545,7 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
             // cleared, which on a classification field is a data-integrity
             // failure.
             ++this.scanSeq;
-            this.reportCheckFailed(false);
+            this.setFieldUnverified(false);
             this.rendered = '';
             this.valid = true;
             this.errors = [];
@@ -565,7 +569,7 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
             assessment?: RenderAssessment;
         }) => {
             if (mySeq !== this.scanSeq) return;
-            this.reportCheckFailed(false);
+            this.setFieldUnverified(false);
             // The engine could not write these facts, so its text is the
             // refusal marker: the host keeps its value and the field says why.
             if (renderViewRefused(result)) {
@@ -612,10 +616,10 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
 
         void Promise.resolve(result)
             .then(apply)
-            .catch((error: unknown) => {
+            .catch(() => {
                 if (mySeq !== this.scanSeq) return;
-                this.showReport(readFailureReport(error));
-                this.reportCheckFailed(true);
+                this.showReport(readFailureReport());
+                this.setFieldUnverified(true);
             });
     }
 
@@ -702,7 +706,7 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
         this.stopTextToolsEdges?.();
         this.stopTextToolsEdges = null;
         this.destroyed = true;
-        this.reportCheckFailed(false);
+        this.releaseUnverified();
         if (!this.host || !this.wrap) return;
         this.disconnectThemeObserver();
         cleanupTooltipForRoot(this.container);
@@ -915,7 +919,7 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
         if (!mark) ++this.scanSeq;
 
         if (!mark) {
-            this.reportCheckFailed(false);
+            this.setFieldUnverified(false);
             this.assertions = [];
             this.rendered = '';
             this.valid = true;
@@ -977,12 +981,12 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
                     ),
                 );
             }
-        } catch (error) {
+        } catch {
             // The engine raised instead of reading the mark. Leave the
             // assertions and rendered value as they were and say why.
             if (mySeq === this.scanSeq && mark === this.getMarkString()) {
-                this.showReport(readFailureReport(error));
-                this.reportCheckFailed(true);
+                this.showReport(readFailureReport());
+                this.setFieldUnverified(true);
             }
             return;
         }
@@ -990,7 +994,7 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
         // A host can replace the marking while the picker holds the field.
         // In that case it cannot start a newer scan to supersede this one.
         if (mySeq !== this.scanSeq || mark !== this.getMarkString()) return;
-        this.reportCheckFailed(false);
+        this.setFieldUnverified(false);
 
         // A refused write is the engine's marker, so the field keeps the text
         // it holds. What the engine read from the mark is still what the
