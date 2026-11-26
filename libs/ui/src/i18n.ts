@@ -76,6 +76,7 @@ export const defaultLocale = {
     'flow.stepOf': 'Step {n} of {total}, {label}',
     'flow.stepAnnounce': 'Step {n}: {label}',
     'flow.selected': 'Selected {label}',
+    'flow.chosenAdvance': 'Selected {choice}. Step {n}: {label}',
     'flow.deselected': 'Deselected {label}',
     'flow.missing': 'Missing:',
     'flow.notSet': 'not set',
@@ -84,6 +85,9 @@ export const defaultLocale = {
     'flow.dotOptional': 'optional, {notSet}',
     'flow.dotRequired': 'required, {notSet}',
     'flow.stepState': '{label}: {state}',
+    'search.matchCount.none': 'No {items} match "{query}"',
+    'search.matchCount.one': '{count} {item} match',
+    'search.matchCount.other': '{count} {items} match',
     'flow.writeFailed':
         'The marking could not be written just now. Change a choice to try again.',
     'flow.includedBy': 'Included by {choice}',

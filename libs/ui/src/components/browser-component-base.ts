@@ -283,10 +283,17 @@ export function announceMatchCount(
 ): void {
     if (!query) return;
     const plural = pluralLabel ?? `${itemLabel}s`;
-    const text =
+    const text = t(
         visible === 0
-            ? `No ${plural} match "${query}"`
-            : `${visible} ${visible === 1 ? itemLabel : plural} match`;
+            ? 'search.matchCount.none'
+            : visible === 1
+              ? 'search.matchCount.one'
+              : 'search.matchCount.other',
+    )
+        .replace('{count}', String(visible))
+        .replace('{item}', () => itemLabel)
+        .replace('{items}', () => plural)
+        .replace('{query}', () => query);
     announce(announcer, text);
 }
 

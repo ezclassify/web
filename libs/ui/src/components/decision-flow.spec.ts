@@ -557,6 +557,13 @@ describe('DecisionFlow', () => {
         expect(dots.length).toBe(2);
     });
 
+    /** What the page's live regions hold now. */
+    const spokenNow = () =>
+        [...document.querySelectorAll('[aria-live]')]
+            .map((el) => el.textContent ?? '')
+            .filter(Boolean)
+            .join(' | ');
+
     describe('in the host locale', () => {
         afterEach(() => {
             component.destroy();
@@ -603,49 +610,51 @@ describe('DecisionFlow', () => {
             ).toMatch(/^Étape 1 sur 2, .* = facultatif, vide$/);
         });
 
-        it('announces a choice and a step change from the locale', async () => {
+        it('announces a choice that moves the flow on as one sentence from the locale', async () => {
             setLocale({
-                'flow.selected': 'Choisi : {label}',
-                'flow.stepAnnounce': 'Étape {n} : {label}',
+                'flow.chosenAdvance': 'Choisi : {choice}. Étape {n} : {label}',
             });
             await component.init(container, toCtx(engine));
             await enterFlow(container);
-            // Run each announcement as it is made, so a later one cannot hide it.
-            vi.stubGlobal(
-                'requestAnimationFrame',
-                (cb: FrameRequestCallback) => {
-                    cb(0);
-                    return 0;
-                },
+            container
+                .querySelector<HTMLButtonElement>('.ez-decision-flow__option')!
+                .click();
+            // What a screen reader is left holding once the frame has run.
+            await vi.waitFor(() =>
+                expect(spokenNow()).toMatch(/^Choisi : .+\. Étape 2 : Impact$/),
             );
-            const spoken: string[] = [];
-            const watch = new MutationObserver(() => {
-                for (const el of document.querySelectorAll('[aria-live]'))
-                    if (el.textContent) spoken.push(el.textContent);
+        });
+
+        it('announces a choice that does not move the flow on by itself, from the locale', async () => {
+            setLocale({
+                'flow.selected': 'Choisi : {label}',
+                'flow.chosenAdvance': 'Étape {n} : {label}',
             });
-            watch.observe(document.body, {
-                subtree: true,
-                childList: true,
-                characterData: true,
-            });
-            try {
-                container
-                    .querySelector<HTMLButtonElement>(
-                        '.ez-decision-flow__option',
-                    )!
-                    .click();
-                await vi.waitFor(() => {
-                    expect(spoken.some((t) => t.startsWith('Choisi : '))).toBe(
-                        true,
-                    );
-                    expect(spoken.some((t) => t.startsWith('Étape 2 : '))).toBe(
-                        true,
-                    );
-                });
-            } finally {
-                vi.unstubAllGlobals();
-                watch.disconnect();
-            }
+            await component.init(container, toCtx(engine));
+            await enterFlow(container);
+            // The last step has nowhere to go on to.
+            container
+                .querySelector<HTMLButtonElement>('.ez-decision-flow__option')!
+                .click();
+            await vi.waitFor(() => expect(spokenNow()).toMatch(/^Étape 2/));
+            container
+                .querySelector<HTMLButtonElement>('.ez-decision-flow__option')!
+                .click();
+            await vi.waitFor(() => expect(spokenNow()).toMatch(/^Choisi : /));
+        });
+
+        it('announces a move to a step from the locale', async () => {
+            setLocale({ 'flow.stepAnnounce': 'Étape {n} : {label}' });
+            await component.init(container, toCtx(engine));
+            await enterFlow(container);
+            container
+                .querySelector<HTMLButtonElement>(
+                    '[aria-label="Next step"], .ez-decision-flow__nav-btn--end',
+                )!
+                .click();
+            await vi.waitFor(() =>
+                expect(spokenNow()).toBe('Étape 2 : Impact'),
+            );
         });
 
         it('says which steps are missing from the locale', async () => {

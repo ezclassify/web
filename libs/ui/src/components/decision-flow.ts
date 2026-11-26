@@ -2159,9 +2159,14 @@ export class DecisionFlow extends ComponentBase {
                                     void this.advanceFrom(
                                         step.categoryId,
                                         choice,
+                                        concept.label,
                                     ),
                             );
                         }
+                        // A plain choice says what was chosen once it knows
+                        // whether the flow moves on, so one announcement
+                        // carries both facts (see advanceFrom).
+                        if (!concept.textInput && !pressed) return;
                         announce(
                             this.announcer,
                             pressed
@@ -2672,9 +2677,13 @@ export class DecisionFlow extends ComponentBase {
      * keeps the keyboard on the dots; any other move focuses the destination's
      * first selected item in render order, otherwise its first usable item.
      */
-    private goToStep(index: number, from: 'dot' | 'step' = 'step'): void {
+    private goToStep(
+        index: number,
+        from: 'dot' | 'step' = 'step',
+        chosen?: string,
+    ): boolean {
         const steps = this.steps;
-        if (index < 0 || index >= steps.length) return;
+        if (index < 0 || index >= steps.length) return false;
         this.pendingText = null;
         this.openingBeforeOptions = false;
         this.currentStep = index;
@@ -2689,21 +2698,29 @@ export class DecisionFlow extends ComponentBase {
                     `.ez-decision-flow__step-dot[data-index="${index}"]`,
                 )
                 ?.focus();
+        // A choice that moved the flow on is one announcement, so the second
+        // fact does not replace the first in the live region.
         announce(
             this.announcer,
-            t('flow.stepAnnounce')
+            t(chosen === undefined ? 'flow.stepAnnounce' : 'flow.chosenAdvance')
+                .replace('{choice}', () => chosen ?? '')
                 .replace('{n}', () => String(index + 1))
                 .replace('{label}', () => steps[index].label ?? ''),
         );
+        return true;
     }
 
     /**
      * After a positive choice settles, move on unless a later user choice
-     * replaced that intent or the author moved to another step.
+     * replaced that intent or the author moved to another step. The choice is
+     * announced here, with the move when there is one.
+     *
+     * @param chosen - The label of the option chosen
      */
     private async advanceFrom(
         categoryId: string,
         choice: number,
+        chosen: string,
     ): Promise<void> {
         // Which step comes next is the engine's answer for the new marking: a
         // choice can bring steps or take them away. Wait for the options it
@@ -2714,14 +2731,17 @@ export class DecisionFlow extends ComponentBase {
             await loading.catch(() => {});
             if (loading === this.optionsLoading) break;
         }
+        if (this._destroyed || choice !== this.choiceSequence) return;
         if (
-            this._destroyed ||
-            !this.open ||
-            this._currentCategoryId !== categoryId ||
-            choice !== this.choiceSequence
+            this.open &&
+            this._currentCategoryId === categoryId &&
+            this.goToStep(this.currentStep + 1, 'step', chosen)
         )
             return;
-        this.goToStep(this.currentStep + 1);
+        announce(
+            this.announcer,
+            t('flow.selected').replace('{label}', () => chosen),
+        );
     }
 
     /**
