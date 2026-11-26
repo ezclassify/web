@@ -439,3 +439,62 @@ describe.each(['select', 'selector', 'checklist'] as const)(
         });
     },
 );
+
+describe('a field torn down while its value is not shared', () => {
+    it('stops following the page: its watch is released and a later commit reaches nothing of it', async () => {
+        const store = { refuse: true };
+        root.innerHTML = `<input type="hidden" id="doc" data-ezclassify-marking>
+            <label for="f">Marking</label>
+            <input id="f" data-ezclassify-controller="marking" data-ezclassify-bound-to="doc">`;
+        const context = await createUnverifiableContext({ down: false });
+        const ready = new Promise((resolve) =>
+            root.addEventListener('ezclassify:ready', resolve, { once: true }),
+        );
+        forms = new EzClassifyUI(asContext(context as never), { root });
+        await ready;
+        await wait();
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+        refuseStorePublishes(forms, store);
+
+        // Every store watch opened from here on, and whether it is still held.
+        const held = new Set<number>();
+        const subscribe = forms.store.subscribe.bind(forms.store);
+        let opened = 0;
+        vi.spyOn(forms.store, 'subscribe').mockImplementation(((
+            ...args: Parameters<typeof subscribe>
+        ) => {
+            const id = opened++;
+            held.add(id);
+            const stop = subscribe(...args);
+            return () => {
+                held.delete(id);
+                stop();
+            };
+        }) as typeof subscribe);
+
+        const host = document.getElementById('f') as HTMLInputElement;
+        const editor = root.querySelector<HTMLTextAreaElement>(
+            '.marking-field-host',
+        )!;
+        editor.focus();
+        typeText(editor, 'secret');
+        await wait(120);
+        press(editor, 'Enter');
+        await wait(400);
+        expect(host.hasAttribute('data-ezclassify-unverified')).toBe(true);
+        expect(held.size).toBeGreaterThan(0);
+
+        const recheck = vi.spyOn(
+            forms as unknown as { recheckShare(owner: object): void },
+            'recheckShare',
+        );
+        host.remove();
+        await wait(300);
+        store.refuse = false;
+        await forms.store.publishRendered('doc', 'SECRET');
+        await wait(100);
+
+        expect(recheck).not.toHaveBeenCalled();
+        expect(held.size).toBe(0);
+    });
+});

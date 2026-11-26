@@ -1750,6 +1750,42 @@ describe('DecisionFlow: text_input steps', () => {
         );
     });
 
+    it('keeps the typed text and the facts it replaced when the read of a typed value fails, and says so once', async () => {
+        toValueStep();
+        await settle();
+        const questionBefore = container.querySelector(
+            '.ez-decision-flow__question-label',
+        )?.textContent;
+        const factsBefore = flow.getAssertions();
+        const live = () =>
+            [...document.querySelectorAll('[aria-live]')]
+                .map((el) => el.textContent ?? '')
+                .filter(Boolean)
+                .join(' | ');
+
+        vi.spyOn(tiEngine, 'process').mockRejectedValueOnce(
+            new Error('GET https://runtime.example/v1 failed'),
+        );
+        valueField().value = 'Jones';
+        valueField().dispatchEvent(new Event('input'));
+        await vi.waitFor(() =>
+            expect(live()).toBe('That choice could not be made. Try again.'),
+        );
+        await settle();
+
+        expect(flow.getAssertions()).toEqual(factsBefore);
+        expect(valueField().value).toBe('Jones');
+        expect(
+            container.querySelector('.ez-decision-flow__question-label')
+                ?.textContent,
+        ).toBe(questionBefore);
+        expect(document.body.textContent).not.toContain('runtime.example');
+        expect(
+            live().split('That choice could not be made. Try again.').length -
+                1,
+        ).toBe(1);
+    });
+
     it('an optional value step left empty does not block the flow', async () => {
         container
             .querySelectorAll<HTMLButtonElement>('.ez-decision-flow__option')[0]

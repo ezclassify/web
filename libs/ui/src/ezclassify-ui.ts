@@ -2337,6 +2337,8 @@ export class EzClassifyUI {
             this.mounted.delete(host);
         }
 
+        this.releaseShares(host);
+
         // Per-field maps.
         this.fieldAssertions.delete(input);
         this.lastValidated.delete(input);
@@ -5211,6 +5213,24 @@ export class EzClassifyUI {
     }
 
     /**
+     * Release everything a field's publishes hold: the store watches of its
+     * channels that are not shared, and the channels themselves, so a publish
+     * that settles after the field is gone starts none again.
+     *
+     * @param owner - The field's element
+     */
+    private releaseShares(owner: object): void {
+        const channels = this.shareStates.get(owner);
+        if (!channels) return;
+        for (const state of channels.values()) {
+            state.stop?.();
+            state.stop = undefined;
+        }
+        channels.clear();
+        this.shareStates.delete(owner);
+    }
+
+    /**
      * Forget a field's portion channels whose portion is gone.
      *
      * @param owner - The field's element
@@ -6242,6 +6262,8 @@ export class EzClassifyUI {
         // Clear the boundary marker synchronously so a StrictMode remount can't
         // resolve a stale owner mid-teardown.
         this.root.removeAttribute(MOUNT_ROOT_ATTR);
+        this.autocompleters.forEach((_c, el) => this.releaseShares(el));
+        this.mounted.forEach((_c, el) => this.releaseShares(el));
         tearingDownRuntime(() =>
             this.autocompleters.forEach((c) => this.destroySafely(c)),
         );
