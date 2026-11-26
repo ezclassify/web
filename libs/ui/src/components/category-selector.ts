@@ -367,6 +367,7 @@ export class CategorySelector extends ComponentBase {
     }
 
     protected setup(): void {
+        this.retryShareOnLeave();
         const _opts = this.options as CategorySelectorOptions;
 
         // Build category rows. A bound categoryId (facet-of usage) is that one

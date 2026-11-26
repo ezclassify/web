@@ -777,6 +777,25 @@ describe('SingleSelect', () => {
         expect(detail.textContent).toContain('Level: L1');
         component.destroy();
     });
+    it('activating the chosen card again sends the value only while it is not shared', async () => {
+        await component.init(container, toCtx(engine), { mode: 'cards' });
+        const cards = container.querySelectorAll<HTMLElement>('.select-card');
+        cards[0].click();
+        await demoRuntimeSettled();
+        const resend = vi.spyOn(
+            component as unknown as { onAssertionsChanged(): void },
+            'onAssertionsChanged',
+        );
+
+        cards[0].click();
+        expect(resend).not.toHaveBeenCalled();
+
+        component.setShareFailed(true);
+        cards[0].click();
+        expect(resend).toHaveBeenCalledTimes(1);
+        component.destroy();
+    });
+
     it('fills cards from authority-mandated colors (render.color_from)', async () => {
         // No host colorMap: the mandated per-concept color drives each card.
         const coloredEngine = await makeColoredEngine();

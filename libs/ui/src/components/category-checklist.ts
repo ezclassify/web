@@ -140,6 +140,7 @@ export class CategoryChecklist extends ComponentBase {
     }
 
     protected setup(): void {
+        this.retryShareOnLeave();
         const opts = this.options as CategoryChecklistOptions;
 
         if (!opts.categoryId) {

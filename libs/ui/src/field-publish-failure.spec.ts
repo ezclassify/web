@@ -54,6 +54,22 @@ interface Page {
     commit(): Promise<void>;
 }
 
+/** Reject the store's publishes while `store.refuse` is set. */
+function refuseStorePublishes(ui: EzClassifyUI, store: { refuse: boolean }) {
+    const failure = new Error('runtime unreachable');
+    for (const method of [
+        'publishAssertions',
+        'publishRendered',
+        'publishAggregate',
+    ] as const) {
+        const real = (ui.store[method] as (...a: unknown[]) => unknown).bind(
+            ui.store,
+        );
+        vi.spyOn(ui.store, method).mockImplementation(((...args: unknown[]) =>
+            store.refuse ? Promise.reject(failure) : real(...args)) as never);
+    }
+}
+
 /**
  * Mount one field bound to the page marking `doc`, with publishes to the store
  * rejected until `store.refuse` is cleared.
@@ -77,19 +93,7 @@ async function mountBound(kind: Kind): Promise<Page> {
         errors.mock.calls
             .map((call) => String(call[0]))
             .filter((line) => line.includes('the previous value stands'));
-    const failure = new Error('runtime unreachable');
-    const ui = forms;
-    for (const method of [
-        'publishAssertions',
-        'publishRendered',
-        'publishAggregate',
-    ] as const) {
-        const real = (ui.store[method] as (...a: unknown[]) => unknown).bind(
-            ui.store,
-        );
-        vi.spyOn(ui.store, method).mockImplementation(((...args: unknown[]) =>
-            store.refuse ? Promise.reject(failure) : real(...args)) as never);
-    }
+    refuseStorePublishes(forms!, store);
     const host = document.getElementById('f') as
         HTMLInputElement | HTMLTextAreaElement;
     const events: boolean[] = [];
@@ -252,3 +256,74 @@ describe('a MarkingField that failed a check and could not share its value', () 
         expect(page.events).toEqual([true, false]);
     });
 });
+
+describe.each(['select', 'selector', 'checklist'] as const)(
+    '%s control whose value the store could not take',
+    (kind) => {
+        async function mountChoice() {
+            root.innerHTML = `<input type="hidden" id="doc" data-ezclassify-marking>
+            <div id="f" data-ezclassify-controller="${kind}"
+                 data-ezclassify-facet-of="doc"
+                 data-ezclassify-category="${kind === 'checklist' ? 'caveat' : 'level'}"></div>`;
+            const context = await createUnverifiableContext({ down: false });
+            const ready = new Promise((resolve) =>
+                root.addEventListener('ezclassify:ready', resolve, {
+                    once: true,
+                }),
+            );
+            forms = new EzClassifyUI(asContext(context as never), { root });
+            await ready;
+            await wait();
+            const store = { refuse: true };
+            vi.spyOn(console, 'error').mockImplementation(() => {});
+            refuseStorePublishes(forms, store);
+            return { store };
+        }
+
+        it('stays unverified until the held value is sent again when focus leaves', async () => {
+            const { store } = await mountChoice();
+            const host = document.getElementById('f')!;
+            const choose = async () => {
+                if (kind === 'select') {
+                    const select =
+                        root.querySelector<HTMLSelectElement>('select')!;
+                    select.value = 'S';
+                    select.dispatchEvent(
+                        new Event('change', { bubbles: true }),
+                    );
+                } else if (kind === 'selector') {
+                    root.querySelector<HTMLElement>(
+                        '.category-selector-btn[data-concept-id="S"]',
+                    )!.click();
+                } else {
+                    root.querySelector<HTMLElement>(
+                        '.category-checklist-checkbox[data-concept-id="NF"]',
+                    )!.click();
+                }
+                await wait(250);
+            };
+            const concept = kind === 'checklist' ? 'NF' : 'S';
+            const unverified = () =>
+                host.hasAttribute('data-ezclassify-unverified');
+
+            await choose();
+            expect(
+                forms!.store.get('doc').assertions.map((a) => a.conceptId),
+            ).not.toContain(concept);
+            expect(unverified()).toBe(true);
+
+            store.refuse = false;
+            const control = root.querySelector<HTMLElement>(
+                'select, .category-selector-btn, .category-checklist-checkbox, [data-concept-id]',
+            )!;
+            control.focus();
+            control.blur();
+            await wait(250);
+
+            expect(
+                forms!.store.get('doc').assertions.map((a) => a.conceptId),
+            ).toContain(concept);
+            expect(unverified()).toBe(false);
+        });
+    },
+);

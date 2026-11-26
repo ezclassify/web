@@ -116,6 +116,7 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
      */
     private feedsUndo = true;
     private releaseUndo: (() => void) | null = null;
+    private releaseRetryOnLeave: (() => void) | null = null;
     /** Puts back the value the field held when the edit in progress began. */
     private editStart: (() => Promise<void>) | null = null;
     /** The value the field last settled on, as {@link valueSignature}. */
@@ -456,6 +457,24 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
         };
     }
 
+    /**
+     * Send the value a choice control holds again when focus leaves it while
+     * the store has not taken it, so a failed publish can be retried without
+     * choosing another value. A control with nothing unshared sends nothing.
+     */
+    protected retryShareOnLeave(): void {
+        this.releaseRetryOnLeave?.();
+        const container = this.container;
+        const onLeave = (event: FocusEvent) => {
+            const next = event.relatedTarget;
+            if (next instanceof Node && container.contains(next)) return;
+            if (!this._destroyed) this.shareAgain();
+        };
+        container.addEventListener('focusout', onLeave);
+        this.releaseRetryOnLeave = () =>
+            container.removeEventListener('focusout', onLeave);
+    }
+
     protected hasClearValue(): boolean {
         return !!this._lastRendered || this.assertions.length > 0;
     }
@@ -472,6 +491,8 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
         this.undo.end(this);
         this.releaseUndo?.();
         this.releaseUndo = null;
+        this.releaseRetryOnLeave?.();
+        this.releaseRetryOnLeave = null;
         this.undoAnnouncer?.remove();
         this.undoAnnouncer = null;
         this.clearControl?.destroy();
