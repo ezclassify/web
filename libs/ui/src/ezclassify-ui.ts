@@ -5171,6 +5171,8 @@ export class EzClassifyUI {
             return;
         }
         if (state.stop) return;
+        // A runtime or store that is gone has nothing left to follow.
+        if (this._destroyed || destroyedStores.has(this.store)) return;
         state.stop = this.store.subscribe(state.watch, () =>
             queueMicrotask(() => this.recheckShare(owner)),
         );
