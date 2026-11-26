@@ -14,6 +14,7 @@ import type {
 import type { SchemePublicView } from '@ezclassify/types';
 import { schemeOnlyContext } from '../../test-fixtures/context-doubles';
 import { mockRenderFormats } from '../render-format-layout-mock';
+import { resetLocale, setLocale } from '../i18n';
 
 /** Create a minimal mock engine with a multi-select category */
 function createMockEngine(
@@ -1000,6 +1001,45 @@ describe('CategoryChecklist', () => {
 
         const empty = container.querySelector('.category-checklist-empty');
         expect(empty?.textContent).toBe('No matching items.');
+    });
+
+    it('announces choices, select all and clear all in the page locale', async () => {
+        setLocale({
+            'a11y.selected': 'Gewählt: {label}',
+            'a11y.deselected': 'Abgewählt: {label}',
+            'a11y.selectedAll.other': 'Alle {count} gewählt',
+            'a11y.clearedAll': 'Auswahl gelöscht',
+        });
+        try {
+            await init();
+            const said = () =>
+                [...container.querySelectorAll('[aria-live]')]
+                    .map((region) => region.textContent ?? '')
+                    .join(' ');
+            const first = boxes()[0];
+            first.click();
+            await vi.waitFor(() => expect(said()).toMatch(/Gewählt: \S/), {
+                timeout: 1000,
+            });
+            first.click();
+            await vi.waitFor(() => expect(said()).toMatch(/Abgewählt: \S/), {
+                timeout: 1000,
+            });
+            const toggle = container.querySelector<HTMLInputElement>(
+                '.category-checklist-master',
+            )!;
+            toggle.click();
+            await vi.waitFor(() => expect(said()).toContain('Alle 5 gewählt'), {
+                timeout: 1000,
+            });
+            toggle.click();
+            await vi.waitFor(
+                () => expect(said()).toContain('Auswahl gelöscht'),
+                { timeout: 1000 },
+            );
+        } finally {
+            resetLocale();
+        }
     });
 
     it('exposes empty, checked, and mixed states and toggles the category through the adapter', async () => {
