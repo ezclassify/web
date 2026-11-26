@@ -477,3 +477,53 @@ describe('the reserve rule', () => {
         );
     });
 });
+
+describe('a field wrapped in its host label', () => {
+    function wrapped(control: 'input' | 'select' | 'textarea') {
+        const label = document.createElement('label');
+        label.append('Marking ');
+        const wrap = document.createElement('div');
+        const field = document.createElement(control);
+        wrap.append(field);
+        label.append(wrap);
+        document.body.append(label);
+        const chrome = mountFieldChrome(wrap, { placement: 'inline' });
+        const clear = document.createElement('button');
+        clear.setAttribute('aria-label', 'Clear marking');
+        chrome.element.append(clear);
+        return { label, wrap, field, chrome, clear };
+    }
+
+    afterEach(() => document.body.replaceChildren());
+
+    it.each(['input', 'select', 'textarea'] as const)(
+        'names the %s from its label alone, not from the chrome buttons',
+        (control) => {
+            const { field, clear } = wrapped(control);
+            expect(field.getAttribute('aria-label')).toBe('Marking');
+            // The chrome keeps its own accessible names.
+            expect(clear.getAttribute('aria-label')).toBe('Clear marking');
+        },
+    );
+
+    it('follows a label the host rewrites and gives the naming back on destroy', async () => {
+        const { label, field, chrome } = wrapped('input');
+        label.firstChild!.nodeValue = 'Classification ';
+        await Promise.resolve();
+        expect(field.getAttribute('aria-label')).toBe('Classification');
+        chrome.destroy();
+        expect(field.hasAttribute('aria-label')).toBe(false);
+    });
+
+    it('leaves a control the page named itself alone', () => {
+        const label = document.createElement('label');
+        const wrap = document.createElement('div');
+        const field = document.createElement('input');
+        field.setAttribute('aria-label', 'Authored');
+        wrap.append(field);
+        label.append('Marking ', wrap);
+        document.body.append(label);
+        mountFieldChrome(wrap, { placement: 'inline' });
+        expect(field.getAttribute('aria-label')).toBe('Authored');
+    });
+});

@@ -129,6 +129,7 @@ export function mountFieldChrome(
     status.className = 'ez-field-chrome__status';
     element.appendChild(status);
     wrap.appendChild(element);
+    const releaseLabelName = keepChromeOutOfLabelName(wrap);
 
     const fontSource = opts.fontSource;
     const syncFont = () => {
@@ -237,6 +238,7 @@ export function mountFieldChrome(
             destroy() {
                 fontObserver?.disconnect();
                 keyboardRoot.removeEventListener('keydown', onKeydown);
+                releaseLabelName();
                 element.remove();
             },
         };
@@ -293,9 +295,82 @@ export function mountFieldChrome(
             observer?.disconnect();
             if (frame !== undefined) cancelAnimationFrame(frame);
             keyboardRoot.removeEventListener('keydown', onKeydown);
+            releaseLabelName();
             element.remove();
             wrap.style.removeProperty(FIELD_CHROME_INLINE_SIZE);
         },
+    };
+}
+
+/**
+ * The text of `label` outside `wrap`, the way a browser reads a label's own
+ * words: hidden parts and the library's own mounts left out, runs of space
+ * collapsed.
+ */
+function labelTextOutside(label: HTMLElement, wrap: HTMLElement): string {
+    const parts: string[] = [];
+    const walk = (node: Node) => {
+        if (node === wrap) return;
+        if (node.nodeType === Node.TEXT_NODE) parts.push(node.nodeValue ?? '');
+        else if (
+            node instanceof Element &&
+            !node.hasAttribute('hidden') &&
+            // The library's own mount, with its notices and live regions.
+            !node.hasAttribute('data-ezclassify') &&
+            node.getAttribute('aria-hidden') !== 'true' &&
+            !['SCRIPT', 'STYLE'].includes(node.tagName)
+        )
+            node.childNodes.forEach(walk);
+    };
+    label.childNodes.forEach(walk);
+    return parts.join(' ').replace(/\s+/g, ' ').trim();
+}
+
+/**
+ * When a page wraps a field in a `<label>`, the field's wrapper, and the chrome
+ * buttons in it, land inside the label. A browser names the labelled control
+ * from everything in its label, so the control would be announced with
+ * "Enhanced by EzClassify. Clear marking" after its label. The chrome must keep
+ * its own button names, so the control is named from the label's own words
+ * instead: an `aria-label` that follows them. A control the page already named
+ * itself is left alone.
+ *
+ * @param wrap - The field's wrapper
+ * @returns A function that gives the control back its label's naming
+ */
+function keepChromeOutOfLabelName(wrap: HTMLElement): () => void {
+    const label = wrap.closest('label');
+    const control = label?.control;
+    if (
+        !label ||
+        !control ||
+        control.hasAttribute('aria-label') ||
+        control.hasAttribute('aria-labelledby') ||
+        (control instanceof HTMLInputElement && control.type === 'hidden')
+    )
+        return () => {};
+    let named = '';
+    const sync = () => {
+        const text = labelTextOutside(label, wrap);
+        if (text === named) return;
+        named = text;
+        if (text) control.setAttribute('aria-label', text);
+        else control.removeAttribute('aria-label');
+    };
+    sync();
+    const observer =
+        typeof MutationObserver === 'undefined'
+            ? null
+            : new MutationObserver(sync);
+    observer?.observe(label, {
+        childList: true,
+        characterData: true,
+        subtree: true,
+    });
+    return () => {
+        observer?.disconnect();
+        if (named && control.getAttribute('aria-label') === named)
+            control.removeAttribute('aria-label');
     };
 }
 

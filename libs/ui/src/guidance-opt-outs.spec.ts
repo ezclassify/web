@@ -132,7 +132,7 @@ describe('marking action shortcut hints', () => {
             '.marked-input-touch-add',
         )!;
         expect(action).not.toBeNull();
-        expect(action.getAttribute('aria-label')).toBe('Set marking');
+        expect(action.hasAttribute('aria-label')).toBe(false);
         expect(action.querySelector('kbd')?.textContent).toMatch(
             /^(⌘|Ctrl)\+Enter$/,
         );

@@ -599,8 +599,11 @@ export abstract class MarkedFieldBase<
         keycap.className = 'ez-marked-field-shortcut';
         keycap.setAttribute('aria-hidden', 'true');
         keycap.textContent = shortcut;
+        // No aria-label: the keycap is aria-hidden, so the name comes from the
+        // visible label text and always contains it (WCAG 2.5.3, axe
+        // label-content-name-mismatch). An aria-label here would have to
+        // repeat the keycap to match what sighted users read.
         touchAdd.append(keycap, document.createTextNode(` ${label}`));
-        touchAdd.setAttribute('aria-label', label);
         touchAdd.title = `${label} (${shortcut})`;
         touchAdd.setAttribute(
             'aria-keyshortcuts',

@@ -1594,8 +1594,24 @@ describe('MarkedInput', () => {
                 const action =
                     document.querySelector<HTMLButtonElement>(selector)!;
                 expect(action.tagName).toBe('BUTTON');
-                expect(action.getAttribute('aria-label')).toBe(name);
+                // The name comes from the visible label: the keycap is
+                // aria-hidden and an aria-label would fail axe
+                // label-content-name-mismatch against the keycap text.
+                expect(action.hasAttribute('aria-label')).toBe(false);
                 expect(action.textContent).toBe(`${shortcut} ${name}`);
+                expect(
+                    Array.from(action.childNodes)
+                        .filter(
+                            (node) =>
+                                !(
+                                    node instanceof Element &&
+                                    node.getAttribute('aria-hidden') === 'true'
+                                ),
+                        )
+                        .map((node) => node.textContent)
+                        .join('')
+                        .trim(),
+                ).toBe(name);
                 expect(action.getAttribute('aria-keyshortcuts')).toBe(
                     ariaShortcut,
                 );
