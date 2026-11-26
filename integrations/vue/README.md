@@ -273,6 +273,24 @@ saves needs an `id` on its field. The store's `valid` and `errors` describe the
 marking itself, not whole-versus-parts coverage. The whole MarkingField owns
 that contextual comparison and displays its errors and proposed fixes.
 
+## When a Result Is Unverified
+
+A field that cannot complete the check of the text typed into it (the runtime is
+unreachable, times out, or answers badly) keeps its last result, marks it as
+unverified and says so itself, in its own message area. To react beside it,
+`useEzClassifyUnverified(id)` returns a ref that is true while the field with that DOM id is unverified. The id may be a ref or getter. Each field reports for itself, and a field that is
+not enhanced yet reads false until it is.
+
+```vue
+<script setup lang="ts">
+const unverified = useEzClassifyUnverified('summary');
+</script>
+
+<template>
+    <button :disabled="unverified">Save</button>
+</template>
+```
+
 ## Presentation
 
 Presentation defaults go under `options`:

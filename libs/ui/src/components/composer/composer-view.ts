@@ -1391,6 +1391,12 @@ export class ComposerView {
             this.note.hidden = false;
             this.note.textContent = this.controller.problemText(s.problem);
             ids.push(this.note.id);
+        } else if (s.unverified) {
+            // The text could not be checked: the result shown, if any, is for
+            // older text. Announced once by the controller when it starts.
+            this.note.hidden = false;
+            this.note.textContent = t('composer.unverified');
+            ids.push(this.note.id);
         } else {
             this.note.hidden = true;
             this.note.textContent = '';
@@ -1408,6 +1414,9 @@ export class ComposerView {
             parent.appendChild(this.sheetDone);
         this.resultContent.replaceChildren();
         this.paintResultRow(s);
+        // The open list covers the note under the field, and the result it
+        // shows is the one that may be out of date: say so there as well.
+        if (s.unverified) this.appendProblems([], t('composer.unverified'));
     }
 
     private paintResultRow(s: ComposerSnapshot): void {
@@ -1421,7 +1430,10 @@ export class ComposerView {
         // Done that stored nothing points at why.
         if (s.invalid) r.dataset.refused = 'true';
         else delete r.dataset.refused;
-        r.setAttribute('aria-busy', s.stale ? 'true' : 'false');
+        // Busy only while a check is under way: after a failed one nothing is
+        // in flight, and a stuck busy state would hide the result from
+        // assistive technology for good.
+        r.setAttribute('aria-busy', s.checking ? 'true' : 'false');
         const reading = s.reading;
         const label = document.createElement('span');
         label.className = 'ez-composer__result-label';

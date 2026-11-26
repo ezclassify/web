@@ -443,7 +443,10 @@ describe('MarkedTextArea scan that does not read the whole text', () => {
         expect(failure).toHaveBeenCalled();
         failure.mockRestore();
         expect(mark.classList.contains('ez-status-mark--error')).toBe(true);
-        expect(textarea.validationMessage).toBe(t('mark.scanIncomplete'));
+        // A scan that raised is a failed check: the one failed-check wording,
+        // not the incomplete-scan one.
+        expect(textarea.validationMessage).toBe(t('composer.unverified'));
+        expect(textarea.hasAttribute('data-ezclassify-unverified')).toBe(true);
         expect(levelState(ui.store).stale).toBe(true);
         expect(ui.store.getWholeRollup('document').stale).toBe(true);
 
@@ -451,6 +454,7 @@ describe('MarkedTextArea scan that does not read the whole text', () => {
         await type(textarea, '(ST) First.\n(DC) Second.');
         expect(mark.classList.contains('ez-status-mark--error')).toBe(false);
         expect(textarea.validity.valid).toBe(true);
+        expect(textarea.hasAttribute('data-ezclassify-unverified')).toBe(false);
         expect(levelState(ui.store).stale).toBeUndefined();
     });
 

@@ -1096,7 +1096,11 @@ describe('MarkedTextArea reads the text the scan found inside a wrapper', () => 
         expect(process.mock.calls.map(([input]) => input)).not.toContain('<S>');
         const [segment] = field.getSegments();
         expect(segment.valid).toBe(false);
-        expect(segment.readFailure).toContain('without the text inside');
+        // A malformed scan result is a failed check: the one wording, not the
+        // internal reason.
+        expect(segment.readFailure).toBe(
+            'This text could not be checked. The result shown may be out of date.',
+        );
         field.destroy();
     });
 });
@@ -2223,5 +2227,114 @@ describe('MarkedTextArea registered mount hosts in mixed forms', () => {
             forms.store.destroy();
             root.remove();
         }
+    });
+});
+
+describe('MarkedTextArea when its text could not be checked', () => {
+    const NOTE =
+        'This text could not be checked. The result shown may be out of date.';
+    const UNVERIFIED = 'data-ezclassify-unverified';
+
+    async function mountField(down: { scan: boolean; process: boolean }) {
+        const container = document.createElement('div');
+        root.appendChild(container);
+        const ta = document.createElement('textarea');
+        container.appendChild(ta);
+        const ctx = await createTestContext();
+        const realScan = ctx.scheme.scan.bind(ctx.scheme);
+        vi.spyOn(ctx.scheme, 'scan').mockImplementation(
+            async (text, options) => {
+                if (down.scan) throw new Error('API error 503 from POST /scan');
+                return realScan(text, options);
+            },
+        );
+        const realProcess = ctx.scheme.process.bind(ctx.scheme);
+        vi.spyOn(ctx.scheme, 'process').mockImplementation(((
+            ...args: Parameters<typeof realProcess>
+        ) =>
+            down.process
+                ? Promise.reject(new Error('socket hang up'))
+                : realProcess(...args)) as typeof realProcess);
+        // Called directly: no mount host is registered, so the field reports
+        // on the textarea it enhances.
+        const field = new MarkedTextArea();
+        await field.init(container, ctx, {});
+        return { field, ta, container };
+    }
+
+    function edit(ta: HTMLTextAreaElement, text: string): void {
+        ta.value = text;
+        ta.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+
+    const notice = (container: HTMLElement) =>
+        container.querySelector<HTMLElement>('.marked-textarea-scan-notice')!;
+    const live = (container: HTMLElement) =>
+        container.querySelector<HTMLElement>('[role="status"]')!;
+
+    it('says so in the field, once, and tells the page; the next successful scan clears both', async () => {
+        const down = { scan: true, process: false };
+        const { field, ta, container } = await mountField(down);
+        const heard: boolean[] = [];
+        ta.addEventListener('ezclassify:unverified-change', (event) =>
+            heard.push((event as CustomEvent).detail.unverified),
+        );
+        const consoleError = vi
+            .spyOn(console, 'error')
+            .mockImplementation(() => {});
+        edit(ta, '(S) One paragraph.');
+        await waitFor(() => ta.hasAttribute(UNVERIFIED), 1500);
+        await wait(100);
+        expect(notice(container).hidden).toBe(false);
+        expect(notice(container).textContent).toContain(NOTE);
+        expect(notice(container).textContent).not.toContain('503');
+        // Announced politely, once, with the words.
+        expect(live(container).getAttribute('aria-live')).toBe('polite');
+        expect(live(container).textContent).toBe(NOTE);
+        expect(heard).toEqual([true]);
+        // The scan answers again for the same text.
+        down.scan = false;
+        edit(ta, '(S) One paragraph.');
+        await waitFor(() => !ta.hasAttribute(UNVERIFIED), 1500);
+        await wait(100);
+        expect(notice(container).hidden).toBe(true);
+        expect(live(container).textContent).toBe('');
+        expect(heard).toEqual([true, false]);
+        consoleError.mockRestore();
+        field.destroy();
+    });
+
+    it('a marking the engine raised on makes the field unverified, in the one wording', async () => {
+        const down = { scan: false, process: true };
+        const { field, ta, container } = await mountField(down);
+        edit(ta, '(S) One paragraph.');
+        await waitFor(() => ta.hasAttribute(UNVERIFIED), 1500);
+        await wait(100);
+        expect(notice(container).hidden).toBe(false);
+        expect(notice(container).textContent).toContain(NOTE);
+        expect(notice(container).textContent).not.toContain('socket hang up');
+        field.destroy();
+    });
+
+    it('never reports on another field', async () => {
+        const down = { scan: true, process: false };
+        const first = await mountField(down);
+        const second = await mountField({ scan: false, process: false });
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+        edit(first.ta, '(S) One paragraph.');
+        await waitFor(() => first.ta.hasAttribute(UNVERIFIED), 1500);
+        expect(second.ta.hasAttribute(UNVERIFIED)).toBe(false);
+        first.field.destroy();
+        second.field.destroy();
+    });
+
+    it('lets go of the host when it is destroyed while unverified', async () => {
+        const { field, ta } = await mountField({ scan: true, process: false });
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+        edit(ta, '(S) One paragraph.');
+        await waitFor(() => ta.hasAttribute(UNVERIFIED), 1500);
+        field.destroy();
+        await wait(50);
+        expect(ta.hasAttribute(UNVERIFIED)).toBe(false);
     });
 });

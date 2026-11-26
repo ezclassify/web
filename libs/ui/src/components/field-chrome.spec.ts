@@ -477,3 +477,90 @@ describe('the reserve rule', () => {
         );
     });
 });
+
+describe('a field wrapped in its host label', () => {
+    function wrapped(control: 'input' | 'select' | 'textarea') {
+        const label = document.createElement('label');
+        label.append('Marking ');
+        const wrap = document.createElement('div');
+        const field = document.createElement(control);
+        wrap.append(field);
+        label.append(wrap);
+        document.body.append(label);
+        const chrome = mountFieldChrome(wrap, { placement: 'inline' });
+        const clear = document.createElement('button');
+        clear.setAttribute('aria-label', 'Clear marking');
+        chrome.element.append(clear);
+        return { label, wrap, field, chrome, clear };
+    }
+
+    afterEach(() => document.body.replaceChildren());
+
+    it.each(['input', 'select', 'textarea'] as const)(
+        'names the %s from its label alone, not from the chrome buttons',
+        (control) => {
+            const { field, clear } = wrapped(control);
+            expect(field.getAttribute('aria-label')).toBe('Marking');
+            // The chrome keeps its own accessible names.
+            expect(clear.getAttribute('aria-label')).toBe('Clear marking');
+        },
+    );
+
+    it('follows a label the host rewrites and gives the naming back on destroy', async () => {
+        const { label, field, chrome } = wrapped('input');
+        label.firstChild!.nodeValue = 'Classification ';
+        await Promise.resolve();
+        expect(field.getAttribute('aria-label')).toBe('Classification');
+        chrome.destroy();
+        expect(field.hasAttribute('aria-label')).toBe(false);
+    });
+
+    it('reads the label like a name: no spaces inside inline text, hidden parts left out', () => {
+        const label = document.createElement('label');
+        label.innerHTML =
+            'Mark<b>ing</b> <span hidden>secret</span><span aria-hidden="true">x</span><span style="display: none">y</span><div>second\n   line</div>';
+        const wrap = document.createElement('div');
+        const field = document.createElement('input');
+        wrap.append(field);
+        label.append(wrap);
+        document.body.append(label);
+        mountFieldChrome(wrap, { placement: 'inline' });
+        expect(field.getAttribute('aria-label')).toBe('Marking second line');
+    });
+
+    it('keeps every label the control has when another one names it too', () => {
+        const { field } = wrapped('input');
+        field.id = 'shared';
+        const other = document.createElement('label');
+        other.htmlFor = 'shared';
+        other.textContent = 'Also named';
+        document.body.append(other);
+        // The other label is read when the wrapping label next changes.
+        field.closest('label')!.append(' now');
+        return Promise.resolve().then(() => {
+            expect(field.getAttribute('aria-label')).toBe(
+                'Marking now Also named',
+            );
+        });
+    });
+
+    it('does not take a name the page sets after mount', async () => {
+        const { label, field } = wrapped('input');
+        field.setAttribute('aria-label', 'Set by the page');
+        label.firstChild!.nodeValue = 'Changed ';
+        await Promise.resolve();
+        expect(field.getAttribute('aria-label')).toBe('Set by the page');
+    });
+
+    it('leaves a control the page named itself alone', () => {
+        const label = document.createElement('label');
+        const wrap = document.createElement('div');
+        const field = document.createElement('input');
+        field.setAttribute('aria-label', 'Authored');
+        wrap.append(field);
+        label.append('Marking ', wrap);
+        document.body.append(label);
+        mountFieldChrome(wrap, { placement: 'inline' });
+        expect(field.getAttribute('aria-label')).toBe('Authored');
+    });
+});

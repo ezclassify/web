@@ -18,6 +18,7 @@
  * exported names and option shapes. It exists only to remove duplication.
  */
 
+import { unverifiedHostOf, setUnverified } from '../unverified';
 import type {
     Assertion,
     Change,
@@ -599,8 +600,11 @@ export abstract class MarkedFieldBase<
         keycap.className = 'ez-marked-field-shortcut';
         keycap.setAttribute('aria-hidden', 'true');
         keycap.textContent = shortcut;
+        // No aria-label: the keycap is aria-hidden, so the name comes from the
+        // visible label text and always contains it (WCAG 2.5.3, axe
+        // label-content-name-mismatch). An aria-label here would have to
+        // repeat the keycap to match what sighted users read.
         touchAdd.append(keycap, document.createTextNode(` ${label}`));
-        touchAdd.setAttribute('aria-label', label);
         touchAdd.title = `${label} (${shortcut})`;
         touchAdd.setAttribute(
             'aria-keyshortcuts',
@@ -935,6 +939,12 @@ export abstract class MarkedFieldBase<
                 focusTarget: this.wrap,
                 isFieldChrome: (node) => this.isFieldChrome(node),
                 root: this.container,
+                // A picker that is not the field's current one (a superseded open)
+                // has no say in what the page hears.
+                onUnverified: (failed) => {
+                    if (!this.picker || this.picker === picker)
+                        this.setEditorUnverified(failed);
+                },
             },
         );
         if (openSeq !== this.pickerOpenSeq) {
@@ -973,6 +983,41 @@ export abstract class MarkedFieldBase<
             marking: this.wrapRendered(picker.getRendered().trim()).trimEnd(),
             assertions: picker.getAssertions(),
         };
+    }
+
+    /** The element this field enhances, for a field built without a mount. */
+    protected abstract enhancedElement(): Element | null;
+
+    private fieldUnverified = false;
+    private editorUnverified = false;
+
+    /**
+     * Whether the field's own read of its text failed. The field owns the state
+     * the page hears: this and the open editor's are combined in one place, so
+     * neither can clear the other's failure.
+     */
+    protected setFieldUnverified(failed: boolean): void {
+        this.fieldUnverified = failed;
+        this.publishUnverified();
+    }
+
+    /** Whether the open editor's check of its draft failed. */
+    protected setEditorUnverified(failed: boolean): void {
+        this.editorUnverified = failed;
+        this.publishUnverified();
+    }
+
+    /** Clear both parts when the field goes away. */
+    protected releaseUnverified(): void {
+        this.fieldUnverified = false;
+        this.editorUnverified = false;
+        this.publishUnverified();
+    }
+
+    private publishUnverified(): void {
+        const host = unverifiedHostOf(this.container, this.enhancedElement());
+        if (host)
+            setUnverified(host, this.fieldUnverified || this.editorUnverified);
     }
 
     protected destroyPicker(): void {

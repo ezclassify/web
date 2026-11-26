@@ -346,6 +346,19 @@ shared client. Each `<EzClassify>` releases its store when it unmounts. Closing
 an individual control releases its UI subscriptions while the rest of the form
 keeps its store and client.
 
+## When a Result Is Unverified
+
+A field that cannot complete the check of the text typed into it (the runtime is
+unreachable, times out, or answers badly) keeps its last result, marks it as
+unverified and says so itself, in its own message area. To react beside it,
+`useEzClassifyUnverified(id)` is true while the field with that DOM id is unverified. Each field reports for itself, and a field that is
+not enhanced yet reads false until it is.
+
+```tsx
+const unverified = useEzClassifyUnverified('summary');
+return <button disabled={unverified}>Save</button>;
+```
+
 ## Presentation
 
 Control options choose colors, tooltips and favorites. Omit `format` to use

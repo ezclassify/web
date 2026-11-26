@@ -24,6 +24,8 @@
  */
 export { EzClassifyUI } from './ezclassify-ui';
 export type { ControllerName } from './element-scanner';
+export { isUnverified, watchUnverified } from './unverified';
+export type { UnverifiedChangeDetail } from './unverified';
 export type { EzClassifyAttributes } from './added-attributes';
 export {
     getDefaultStyles,

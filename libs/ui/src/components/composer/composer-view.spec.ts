@@ -194,6 +194,53 @@ describe('the result row', () => {
         expect(resultValue()).toBe('SECRET//NOFORN');
     });
 
+    it('says the text could not be checked, keeps the old result dimmed and is no longer busy', async () => {
+        mount();
+        input.focus();
+        await type('SECRET');
+        const read = port.read.bind(port);
+        let down = true;
+        port.read = async (text, base) => {
+            if (down) throw new Error('network down');
+            return read(text, base);
+        };
+        await type('SECRET noforn');
+        const row = openSurface()!.querySelector(
+            '.ez-composer__result',
+        ) as HTMLElement;
+        expect(view.note.hidden).toBe(false);
+        expect(view.note.textContent).toBe(
+            'This text could not be checked. The result shown may be out of date.',
+        );
+        expect(input.getAttribute('aria-describedby')).toContain(view.note.id);
+        // The held result is still there, marked as not current, and nothing
+        // is in flight, so the row must not stay busy.
+        expect(resultValue()).toBe('SECRET');
+        expect(row.dataset.stale).toBe('true');
+        expect(row.getAttribute('aria-busy')).toBe('false');
+        // The open list covers the note, so the result row says it too.
+        expect(row.textContent).toContain('could not be checked');
+        // Politely announced, once, with the words, however many keystrokes
+        // fail after it.
+        const spoken = vi.spyOn(view, 'announce');
+        await type('SECRET noforn x');
+        await type('SECRET noforn xy');
+        expect(
+            spoken.mock.calls.filter(([text]) =>
+                /could not be checked/.test(text),
+            ),
+        ).toHaveLength(0);
+        expect(view.announcer.getAttribute('aria-live')).toBe('polite');
+        expect(view.announcer.textContent).toBe(
+            'This text could not be checked. The result shown may be out of date.',
+        );
+        down = false;
+        await type('SECRET noforn ');
+        expect(view.note.hidden).toBe(true);
+        expect(input.getAttribute('aria-describedby')).toBeNull();
+        expect(row.dataset.stale).toBeUndefined();
+    });
+
     it('in an additive field, shows the marking already held with the unread text after it, not the fragment alone', async () => {
         port.value = {
             assertions: [assertion(CONCEPTS[1]), assertion(CONCEPTS[2])],

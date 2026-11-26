@@ -109,15 +109,13 @@ export function ruleErrorsFrom(
 }
 
 /**
- * The report for a value the field could not read at all: the engine (or the
- * connection to it) raised instead of answering. The field still mounts and
- * shows what it typed; this puts the reason where its errors go.
- *
- * @param error - What the read threw
+ * The report for a value the field could not read at all: the runtime (or the
+ * connection to it) failed instead of answering. The field still mounts and
+ * shows what it typed; this puts the one failed-check wording where its errors
+ * go. The client's own error string is never shown.
  */
-export function readFailureReport(error: unknown): RuleErrorReport {
-    const message = error instanceof Error ? error.message : String(error);
-    return { messages: [message], fixes: [], warnings: [] };
+export function readFailureReport(): RuleErrorReport {
+    return { messages: [t('composer.unverified')], fixes: [], warnings: [] };
 }
 
 /**

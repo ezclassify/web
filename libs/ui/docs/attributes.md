@@ -221,6 +221,21 @@ in tests and CSS but must not set them by hand.
 | `data-ezclassify-invalid`    | `ezclassify-ui`                     | runtime  | presence-only; stamped on a mount container whose value is invalid, and on a hidden marking host whose marking could not be written.                                             | internal |
 | `data-ezclassify-for`        | `coverage-action`                   | runtime  | the id of the whole a `.ez-coverage-action` control acts on; stamped on that control, which sits beside the whole's field.                                                       | internal |
 
+### Reading a field's state from the page (public)
+
+The runtime stamps this on a field's host element for the page to read. Unlike
+the attributes above it is part of the supported surface: read it in CSS or
+script, never set it by hand.
+
+| Attribute                    | Audience | Values                                                                                                                                                                                                                                                                                                            |
+| ---------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `data-ezclassify-unverified` | page     | presence-only; stamped on a field's host element while the result it shows has not been verified for its current text, because the last check could not be completed (the runtime was unreachable, timed out or answered badly). Cleared when a check of the current text lands, and when the field is destroyed. |
+
+Each change fires `ezclassify:unverified-change` on the host, bubbling, with
+`detail: { unverified: boolean }`; destroying an unverified field fires it once
+with `unverified: false`. MarkingField, TagInput, MarkedInput and MarkedTextArea
+all report it, each on its own host.
+
 ### Enhancement status mark (runtime element, not an attribute)
 
 Each enhanced input and textarea carries one `.ez-status-mark` element inside

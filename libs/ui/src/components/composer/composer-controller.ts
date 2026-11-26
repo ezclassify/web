@@ -295,6 +295,15 @@ export interface ComposerSnapshot {
     readonly reading: ComposerReading | null;
     /** True when `reading` belongs to an older text than `text`. */
     readonly stale: boolean;
+    /**
+     * True while the last check of the text failed and no later check has
+     * landed: whatever `reading` shows may not describe `text`. A failure stays
+     * until a check of the then-current text answers, so a result for older
+     * text never looks like a checked one.
+     */
+    readonly unverified: boolean;
+    /** True while a request to read the current `text` is in flight. */
+    readonly checking: boolean;
     readonly mode: 'ranked' | 'browse';
     readonly groups: ComposerGroup[];
     /** Navigable rows in display order; `activeIndex` indexes this. */
@@ -484,6 +493,18 @@ export class ComposerController {
      * outside, under an unchanged text makes the old reading wrong.
      */
     private readingKey = '';
+    /**
+     * The key of the read that failed, until a read lands or the draft is
+     * thrown away. Only the newest request records one: an older request that
+     * fails after a newer one started says nothing about the current text.
+     */
+    private failedKey: string | null = null;
+    /**
+     * The request under way: its sequence number and the key of the text it
+     * reads. It is the current request only while no newer read, reset or
+     * adopted reading bumped {@link readSeq}.
+     */
+    private inFlight: { seq: number; key: string } | null = null;
     /**
      * The reading came from a structural edit (a rule fix), not from the text,
      * so the draft is dirty even when its text matches the stored rendering:
@@ -747,6 +768,7 @@ export class ComposerController {
         this.caret = this.text.length;
         this.reading = null;
         this.readingKey = '';
+        this.failedKey = null;
         this.invalid = false;
         this.problem = null;
         this.activeIndex = -1;
@@ -802,8 +824,10 @@ export class ComposerController {
             this.invalid = false;
             this.problem = null;
         }
+        // The read starts first so the snapshot already says it is in flight.
+        const run = this.read();
         this.emit();
-        return this.read();
+        return run;
     }
 
     /**
@@ -873,18 +897,36 @@ export class ComposerController {
         const key = this.readKey();
         const base = this.currentBase();
         const seq = ++this.readSeq;
+        this.inFlight = { seq, key };
         const run = (async () => {
             let reading: ComposerReading;
             try {
                 reading = await this.port.read(text, base);
             } catch {
                 // A transient failure (network, abort) keeps the last reading
-                // rather than blanking the result row for one keystroke.
+                // rather than blanking the result row for one keystroke, and
+                // says so: the reading no longer describes the text. A request
+                // that was replaced by a newer one says nothing about it.
+                if (seq === this.readSeq) {
+                    this.inFlight = null;
+                    // A reading already made for exactly this text still
+                    // describes it: nothing is out of date.
+                    if (this.readingKey !== key) {
+                        const already = this.isUnverified();
+                        this.failedKey = key;
+                        this.emit();
+                        // Once per failure, not on every keystroke that fails.
+                        if (!already)
+                            this.announceText(t('composer.unverified'));
+                    } else this.emit();
+                }
                 return;
             }
             if (seq !== this.readSeq) return;
+            this.inFlight = null;
             this.reading = reading;
             this.readingKey = key;
+            this.failedKey = null;
             this.refreshGated();
             this.arm();
             this.emit();
@@ -894,6 +936,11 @@ export class ComposerController {
         this.pendingRead = run;
         await run;
         if (this.pendingRead === run) this.pendingRead = null;
+    }
+
+    /** Whether the last check failed and no reading describes the text. */
+    private isUnverified(): boolean {
+        return this.failedKey !== null && this.readingKey !== this.readKey();
     }
 
     /** Wait until the reading belongs to the current text. */
@@ -1531,6 +1578,11 @@ export class ComposerController {
             token,
             reading: this.reading,
             stale: this.readingKey !== this.readKey(),
+            unverified: this.isUnverified(),
+            checking:
+                this.inFlight !== null &&
+                this.inFlight.seq === this.readSeq &&
+                this.inFlight.key === this.readKey(),
             mode: built.mode,
             groups: built.groups,
             rows: built.rows,
@@ -1751,6 +1803,7 @@ export class ComposerController {
         this.readSeq++;
         this.reading = reading;
         this.readingKey = this.readKey();
+        this.failedKey = null;
         this.structural = true;
         void this.refreshOffered();
         this.refreshGated();
@@ -1885,8 +1938,9 @@ export class ComposerController {
         this.showMore = false;
         this.invalid = false;
         this.problem = null;
+        const run = this.read();
         this.emit();
-        await this.read();
+        await run;
     }
 
     /**
@@ -1938,7 +1992,7 @@ export class ComposerController {
                         ? this.describeProblem(reading)
                         : {
                               fragment: this.text.trim(),
-                              rule: t('composer.readFailed'),
+                              rule: t('composer.unverified'),
                           }),
             );
         }

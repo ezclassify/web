@@ -341,6 +341,18 @@ saves needs an `id` on its field. The store's `valid` and `errors` describe the
 marking itself, not whole-versus-parts coverage. The whole MarkingField owns
 that contextual comparison and displays its errors and proposed fixes.
 
+## When a Result Is Unverified
+
+A field that cannot complete the check of the text typed into it (the runtime is
+unreachable, times out, or answers badly) keeps its last result, marks it as
+unverified and says so itself, in its own message area. To react beside it,
+`injectEzClassifyUnverified(id)` returns a signal that is true while the field with that DOM id is unverified. Call it from an injection context. The id may be a signal. Each field reports for itself, and a field that is
+not enhanced yet reads false until it is.
+
+```ts
+readonly unverified = injectEzClassifyUnverified('summary');
+```
+
 ## Presentation
 
 Omit `format` to use the Context's whole and part defaults. A control may use

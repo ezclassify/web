@@ -129,6 +129,7 @@ export function mountFieldChrome(
     status.className = 'ez-field-chrome__status';
     element.appendChild(status);
     wrap.appendChild(element);
+    const releaseLabelName = keepChromeOutOfLabelName(wrap);
 
     const fontSource = opts.fontSource;
     const syncFont = () => {
@@ -237,6 +238,7 @@ export function mountFieldChrome(
             destroy() {
                 fontObserver?.disconnect();
                 keyboardRoot.removeEventListener('keydown', onKeydown);
+                releaseLabelName();
                 element.remove();
             },
         };
@@ -293,9 +295,115 @@ export function mountFieldChrome(
             observer?.disconnect();
             if (frame !== undefined) cancelAnimationFrame(frame);
             keyboardRoot.removeEventListener('keydown', onKeydown);
+            releaseLabelName();
             element.remove();
             wrap.style.removeProperty(FIELD_CHROME_INLINE_SIZE);
         },
+    };
+}
+
+/**
+ * The visible text under `node`, the way a browser reads it for a name: text
+ * runs join without inserted spaces (`Mark<b>ing</b>` is "Marking"), a block
+ * boundary or line break is a space, and what is hidden (`hidden`,
+ * `aria-hidden`, `display: none`, `visibility: hidden`) or is `skip` (the
+ * field's own wrapper) is left out. The library's own mounts are left out too.
+ */
+function visibleText(node: Node, skip: Element): string {
+    if (node.nodeType === Node.TEXT_NODE) return node.nodeValue ?? '';
+    if (!(node instanceof Element) || node === skip) return '';
+    if (
+        node.hasAttribute('hidden') ||
+        node.getAttribute('aria-hidden') === 'true' ||
+        node.hasAttribute('data-ezclassify') ||
+        ['SCRIPT', 'STYLE'].includes(node.tagName)
+    )
+        return '';
+    const style = getComputedStyle(node);
+    if (style.display === 'none' || style.visibility === 'hidden') return '';
+    if (node.tagName === 'BR') return ' ';
+    const inner = Array.from(node.childNodes)
+        .map((child) => visibleText(child, skip))
+        .join('');
+    const inline =
+        style.display === 'inline' ||
+        style.display === 'contents' ||
+        style.display.startsWith('inline-') ||
+        style.display === '';
+    return inline ? inner : ` ${inner} `;
+}
+
+/** The words of every label a control has, apart from the field's wrapper. */
+function labelWords(control: HTMLElement, wrap: Element): string {
+    const labels = (control as HTMLInputElement).labels;
+    if (!labels) return '';
+    return Array.from(labels)
+        .map((label) => visibleText(label, wrap).replace(/\s+/g, ' ').trim())
+        .filter(Boolean)
+        .join(' ');
+}
+
+/**
+ * When a page wraps a field in a `<label>`, the field's wrapper, and the chrome
+ * buttons in it, land inside the label. A browser names the labelled control
+ * from everything in its label, so the control would be announced with
+ * "Enhanced by EzClassify. Clear marking" after its label. The chrome must keep
+ * its own button names, so the control is named from its labels' own words
+ * instead (all of them, when another `<label for>` names it too): an
+ * `aria-label` that follows them. The attribute is only ever touched while it
+ * holds what this wrote; a name the page set itself, before or after, is left
+ * alone.
+ *
+ * @param wrap - The field's wrapper
+ * @returns A function that gives the control back its label's naming
+ */
+function keepChromeOutOfLabelName(wrap: HTMLElement): () => void {
+    const label = wrap.closest('label');
+    const control = label?.control;
+    if (
+        !label ||
+        !control ||
+        control.hasAttribute('aria-label') ||
+        control.hasAttribute('aria-labelledby') ||
+        (control instanceof HTMLInputElement && control.type === 'hidden')
+    )
+        return () => {};
+    let written: string | null = null;
+    const sync = () => {
+        const current = control.getAttribute('aria-label');
+        // The page named the control since: its name stands.
+        if (current !== written) return;
+        if (control.hasAttribute('aria-labelledby')) return;
+        const words = labelWords(control, wrap);
+        if (words === (written ?? '')) return;
+        written = words || null;
+        if (words) control.setAttribute('aria-label', words);
+        else control.removeAttribute('aria-label');
+    };
+    sync();
+    const observer =
+        typeof MutationObserver === 'undefined'
+            ? null
+            : new MutationObserver((records) => {
+                  // The field's own chrome changes constantly and is not
+                  // part of what the label says.
+                  if (records.some((record) => !wrap.contains(record.target)))
+                      sync();
+              });
+    for (const each of Array.from(
+        (control as HTMLInputElement).labels ?? [label],
+    ))
+        observer?.observe(each, {
+            childList: true,
+            characterData: true,
+            subtree: true,
+            attributes: true,
+            attributeFilter: ['hidden', 'aria-hidden', 'style', 'class'],
+        });
+    return () => {
+        observer?.disconnect();
+        if (written && control.getAttribute('aria-label') === written)
+            control.removeAttribute('aria-label');
     };
 }
 
