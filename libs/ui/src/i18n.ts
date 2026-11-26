@@ -108,6 +108,8 @@ export const defaultLocale = {
 
     'a11y.suggestionAdded': '{label} added',
     'a11y.suggestionRemoved': '{label} removed',
+    'a11y.selected': 'Selected {label}',
+    'a11y.deselected': 'Deselected {label}',
     'a11y.composer.count': '{count} suggestions',
     'a11y.composer.countOne': '1 suggestion',
     'a11y.composer.savesAs': 'Saves as {rendered}',

@@ -9,6 +9,7 @@ import type { SchemePublicView } from '@ezclassify/types';
 import { schemeOnlyContext } from '../../test-fixtures/context-doubles';
 import { mockRenderFormats } from '../render-format-layout-mock';
 import { EzClassifyUI } from '../ezclassify-ui';
+import { resetLocale, setLocale } from '../i18n';
 import { VanillaEzClassifyStore } from '../store/ezclassify-store';
 
 /** Create a minimal mock engine with configurable categories and concepts */
@@ -233,6 +234,36 @@ describe('CategorySelector', () => {
             opts as CategorySelectorOptions,
         );
     }
+
+    it('announces a selection and a deselection in the page locale', async () => {
+        setLocale({
+            'a11y.selected': 'Gewählt: {label}',
+            'a11y.deselected': 'Abgewählt: {label}',
+        });
+        try {
+            await init();
+            const button = container.querySelector<HTMLButtonElement>(
+                '.category-selector-btn[data-category-id="f2"]',
+            )!;
+            const name = button.dataset.conceptId!;
+            const said = () =>
+                [...container.querySelectorAll('[aria-live]')].map(
+                    (region) => region.textContent ?? '',
+                );
+            button.click();
+            await new Promise((resolve) => setTimeout(resolve, 50));
+            expect(said().join(' ')).toMatch(/Gewählt: \S/);
+            container
+                .querySelector<HTMLButtonElement>(
+                    `.category-selector-btn[data-concept-id="${name}"]`,
+                )!
+                .click();
+            await new Promise((resolve) => setTimeout(resolve, 50));
+            expect(said().join(' ')).toMatch(/Abgewählt: \S/);
+        } finally {
+            resetLocale();
+        }
+    });
 
     it('renders both category modes through DecisionFlow shared native choices', async () => {
         await init();

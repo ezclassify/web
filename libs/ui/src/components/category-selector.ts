@@ -850,11 +850,17 @@ export class CategorySelector extends ComponentBase {
 
         if (isSelected) {
             this.removeAssertion(conceptId, categoryId);
-            announce(this.announcer, `Deselected ${name}`);
+            announce(
+                this.announcer,
+                t('a11y.deselected').replace('{label}', name),
+            );
         } else {
             // addAssertion still enforces at most one item in a single category.
             this.addAssertion(conceptId, categoryId);
-            announce(this.announcer, `Selected ${name}`);
+            announce(
+                this.announcer,
+                t('a11y.selected').replace('{label}', name),
+            );
         }
 
         // Re-focus after render
