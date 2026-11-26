@@ -618,11 +618,13 @@ export function observeFieldTheme(
         '(prefers-color-scheme: dark)',
     );
     const onSchemeChange = () => sync();
-    scheme?.addEventListener('change', onSchemeChange);
+    // A MediaQueryList without addEventListener (an old engine, a page's own
+    // stand-in) still has the attribute observer.
+    scheme?.addEventListener?.('change', onSchemeChange);
     return {
         disconnect: () => {
             observer.disconnect();
-            scheme?.removeEventListener('change', onSchemeChange);
+            scheme?.removeEventListener?.('change', onSchemeChange);
         },
     };
 }

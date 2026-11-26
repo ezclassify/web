@@ -757,7 +757,7 @@ describe('MarkedInput', () => {
         expect(edge()).toEqual(['3px', 'dashed', 'rgb(1, 2, 3)', '5px']);
     });
 
-    it('disconnects its theme MutationObserver on destroy (no observer leak)', async () => {
+    it('stops following its theme on destroy (no observer leak)', async () => {
         const engine = await createTestEngine();
         root.innerHTML = `
       <input type="text" id="field" data-ezclassify-controller="marked-input">
@@ -767,11 +767,11 @@ describe('MarkedInput', () => {
 
         const inputEl = editingField('field') as HTMLTextAreaElement;
         const comp = forms.components.get(nativeField(inputEl)) as unknown as {
-            _themeObserver: MutationObserver | null;
+            _themeObserver: { disconnect(): void } | null;
         };
         const observer = comp._themeObserver;
         // The theme observer must have been installed on mount.
-        expect(observer).toBeInstanceOf(MutationObserver);
+        expect(observer?.disconnect).toBeTypeOf('function');
         const disconnectSpy = vi.spyOn(observer!, 'disconnect');
 
         forms.destroy();
