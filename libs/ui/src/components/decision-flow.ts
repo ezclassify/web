@@ -337,6 +337,8 @@ export class DecisionFlow extends ComponentBase {
     private rendering = false;
     private catalogChangedDuringPress = false;
     private pendingText: PendingText | null = null;
+    /** The last choice did not land; its note shows until the next one does. */
+    private choiceFailed = false;
     private ruleFixesInput: string | null = null;
     private focusAfterRuleFix = false;
     /** True while a committed store state is being applied. */
@@ -651,6 +653,7 @@ export class DecisionFlow extends ComponentBase {
     protected setup(): void {
         this.injectComponentStyles(choiceButtonCss);
         this.injectComponentStyles(decisionFlowCss);
+        this.retryShareOnLeave();
 
         const listed = this.listedScopes();
         const categoryIds = this.resolveCategoryOrder(listed);
@@ -2039,6 +2042,14 @@ export class DecisionFlow extends ComponentBase {
         )
             this.hideBlockReason();
         q.appendChild(this.explanation.element);
+        if (this.choiceFailed) {
+            // Not a live region: the failure is announced once, separately.
+            const note = document.createElement('div');
+            note.className =
+                'ez-decision-flow__problem ez-decision-flow__choice-failed';
+            note.textContent = t('flow.choiceFailed');
+            q.appendChild(note);
+        }
         this.stepEl.appendChild(q);
     }
 
@@ -2669,6 +2680,7 @@ export class DecisionFlow extends ComponentBase {
         const steps = this.steps;
         if (index < 0 || index >= steps.length) return false;
         this.pendingText = null;
+        this.choiceFailed = false;
         this.openingBeforeOptions = false;
         this.currentStep = index;
         this.furthestStep = Math.max(this.furthestStep, index);
@@ -3229,6 +3241,8 @@ export class DecisionFlow extends ComponentBase {
         before: ReturnType<DecisionFlow['heldChoices']>,
     ): Promise<boolean> {
         let failed = false;
+        this.choiceFailed = false;
+        this.stepEl.querySelector('.ez-decision-flow__choice-failed')?.remove();
         await this.reprocessNow(false, () => {
             failed = true;
         });
@@ -3236,6 +3250,7 @@ export class DecisionFlow extends ComponentBase {
         if (this._destroyed) return false;
         this.assertions = before.assertions;
         this.pendingText = before.pendingText;
+        this.choiceFailed = true;
         this.render();
         announce(this.announcer, t('flow.choiceFailed'));
         return false;

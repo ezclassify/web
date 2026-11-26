@@ -300,6 +300,50 @@ describe('a MarkingField publish that a newer publish to its marking superseded'
     });
 });
 
+describe('a MarkingField publish that resolved without the store holding its value', () => {
+    it('is not shared when the page replaced the marking in the meantime with a value the field cannot read', async () => {
+        root.innerHTML = `<input type="hidden" id="doc" data-ezclassify-marking>
+            <label for="f">Marking</label>
+            <input id="f" data-ezclassify-controller="marking" data-ezclassify-bound-to="doc">`;
+        const context = await createUnverifiableContext({ down: false });
+        const read = context.scheme.process.bind(context.scheme);
+        context.scheme.process = ((...args: Parameters<typeof read>) =>
+            JSON.stringify(args).includes('UNCLASSIFIED')
+                ? Promise.reject(new Error('runtime unreachable'))
+                : read(...args)) as typeof read;
+        const ready = new Promise((resolve) =>
+            root.addEventListener('ezclassify:ready', resolve, { once: true }),
+        );
+        forms = new EzClassifyUI(asContext(context as never), { root });
+        await ready;
+        await wait();
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+        const store = forms.store;
+        // The field's publish settles later and commits nothing.
+        const sent = vi
+            .spyOn(store, 'publishAssertions')
+            .mockImplementation(
+                () => new Promise((resolve) => setTimeout(resolve, 200)),
+            );
+        const host = document.getElementById('f')!;
+        const editor = root.querySelector<HTMLTextAreaElement>(
+            '.marking-field-host',
+        )!;
+        editor.focus();
+        typeText(editor, 'secret');
+        await wait(120);
+        press(editor, 'Enter');
+        await vi.waitFor(() => expect(sent).toHaveBeenCalled(), {
+            timeout: 2000,
+        });
+        await store.publishRendered('doc', 'UNCLASSIFIED').catch(() => {});
+        await wait(500);
+
+        expect(editor.value).toBe('SECRET');
+        expect(host.hasAttribute('data-ezclassify-unverified')).toBe(true);
+    });
+});
+
 describe('a MarkingField that failed a check and could not share its value', () => {
     it('stays unverified while either holds: a check that lands does not clear a stale store', async () => {
         const page = await mountBound('marking');
@@ -439,6 +483,55 @@ describe.each(['select', 'selector', 'checklist'] as const)(
         });
     },
 );
+
+describe('a decision flow whose value the store could not take', () => {
+    it('stays unverified until the held value is sent again when focus leaves', async () => {
+        root.innerHTML = `<input type="hidden" id="doc" data-ezclassify-marking>
+            <div id="f" data-ezclassify-controller="decisionflow"
+                 data-ezclassify-bound-to="doc"
+                 data-ezclassify-decisionflow-categories='["level"]'></div>`;
+        const context = await createUnverifiableContext({ down: false });
+        const ready = new Promise((resolve) =>
+            root.addEventListener('ezclassify:ready', resolve, { once: true }),
+        );
+        forms = new EzClassifyUI(asContext(context as never), { root });
+        await ready;
+        await wait();
+        const refuse = { refuse: true };
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+        refuseStorePublishes(forms, refuse);
+        const host = document.getElementById('f')!;
+        const option = () =>
+            root.querySelector<HTMLElement>(
+                '.ez-decision-flow__option[data-concept-id="S"]',
+            )!;
+        option().click();
+        await wait(300);
+
+        expect(
+            forms.store.get('doc').assertions.map((a) => a.conceptId),
+        ).not.toContain('S');
+        expect(host.hasAttribute('data-ezclassify-unverified')).toBe(true);
+        expect(
+            [...root.querySelectorAll('.ez-validation-errors')]
+                .map((n) => n.textContent)
+                .join(' '),
+        ).toContain(`${NOT_SHARED} Leave the field to try again.`);
+
+        refuse.refuse = false;
+        const control = root.querySelector<HTMLElement>(
+            '.ez-decision-flow__option',
+        )!;
+        control.focus();
+        control.blur();
+        await wait(300);
+
+        expect(
+            forms.store.get('doc').assertions.map((a) => a.conceptId),
+        ).toContain('S');
+        expect(host.hasAttribute('data-ezclassify-unverified')).toBe(false);
+    });
+});
 
 describe('a field torn down while its value is not shared', () => {
     it('stops following the page: its watch is released and a later commit reaches nothing of it', async () => {

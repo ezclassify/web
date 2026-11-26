@@ -5122,10 +5122,6 @@ export class EzClassifyUI {
             this.shareStates.set(owner, channels);
         }
         const seq = ++this.shareSeq;
-        // The marking as it stands now: a publish that resolves with the store
-        // still holding exactly this committed nothing (a newer publish to the
-        // same marking superseded it and did not land either).
-        const before = options.watch ? this.store.get(options.watch) : null;
         const previous = channels.get(channel);
         const state: ShareChannel = {
             seq,
@@ -5137,12 +5133,11 @@ export class EzClassifyUI {
         channels.set(channel, state);
         const settle = (rejected: boolean) => {
             if (channels.get(channel) !== state) return;
+            // A publish that resolved without the store holding the field's
+            // value was superseded by a newer one that did not land either;
+            // the field is not shared, whatever replaced the marking's state.
             if (rejected) state.failed = state.holds?.() !== true;
-            else
-                state.failed =
-                    !!options.watch &&
-                    this.store.get(options.watch) === before &&
-                    state.holds?.() === false;
+            else state.failed = state.holds?.() === false;
             this.watchShare(owner, channel, state);
             this.reportShare(owner);
         };

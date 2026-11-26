@@ -609,6 +609,63 @@ describe('DecisionFlow', () => {
             expect(document.body.textContent).not.toContain('runtime.example');
         });
 
+        it('shows the failure beside the options, announces it once, and clears it when a choice lands', async () => {
+            await component.init(container, toCtx(engine));
+            await enterFlow(container);
+            const note = () =>
+                container.querySelector<HTMLElement>(
+                    '.ez-decision-flow__choice-failed',
+                );
+            vi.spyOn(engine, 'process').mockRejectedValueOnce(
+                new Error('offline'),
+            );
+            const choose = () =>
+                container
+                    .querySelector<HTMLButtonElement>(
+                        '.ez-decision-flow__option',
+                    )!
+                    .click();
+            choose();
+            await vi.waitFor(() =>
+                expect(note()?.textContent).toBe(
+                    'That choice could not be made. Try again.',
+                ),
+            );
+            expect(note()!.hasAttribute('role')).toBe(false);
+            expect(note()!.closest('[aria-live]')).toBeNull();
+            expect(
+                live().split('That choice could not be made.').length - 1,
+            ).toBe(1);
+
+            choose();
+            await vi.waitFor(() => expect(note()).toBeNull());
+            expect(component.getAssertions()).toHaveLength(1);
+        });
+
+        it('clears the failure when the author moves to another step', async () => {
+            await component.init(container, toCtx(engine));
+            await enterFlow(container);
+            vi.spyOn(engine, 'process').mockRejectedValueOnce(
+                new Error('offline'),
+            );
+            container
+                .querySelector<HTMLButtonElement>('.ez-decision-flow__option')!
+                .click();
+            await vi.waitFor(() =>
+                expect(
+                    container.querySelector('.ez-decision-flow__choice-failed'),
+                ).not.toBeNull(),
+            );
+            container
+                .querySelector<HTMLElement>(
+                    '.ez-decision-flow__step-dot[data-index="1"]',
+                )!
+                .click();
+            expect(
+                container.querySelector('.ez-decision-flow__choice-failed'),
+            ).toBeNull();
+        });
+
         it('lets a later successful choice make and move on as usual', async () => {
             await component.init(container, toCtx(engine));
             await enterFlow(container);
@@ -1758,7 +1815,7 @@ describe('DecisionFlow: text_input steps', () => {
         )?.textContent;
         const factsBefore = flow.getAssertions();
         const live = () =>
-            [...document.querySelectorAll('[aria-live]')]
+            [...container.querySelectorAll('[aria-live]')]
                 .map((el) => el.textContent ?? '')
                 .filter(Boolean)
                 .join(' | ');
