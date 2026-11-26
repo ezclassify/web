@@ -63,6 +63,10 @@ export interface ComposerPortField {
     suggestions(live?: readonly Assertion[]): Promise<Suggestion[]>;
     gated(query: string, live: readonly Assertion[]): Promise<Suggestion[]>;
     committed(): ComposerCommitted;
+    /** See ComposerPort.reentered. */
+    reentered?(): void;
+    /** See ComposerPort.kept. */
+    kept?(): void;
     store: ComposerPort['store'];
     /**
      * For a field that holds one category of a larger marking (a facet): what
@@ -227,6 +231,8 @@ export function createComposerPort(field: ComposerPortField): ComposerPort {
         suggestions: (live) => field.suggestions(live),
         gated: (query, live) => field.gated(query, live),
         committed: () => field.committed(),
+        reentered: () => field.reentered?.(),
+        kept: () => field.kept?.(),
         store: (reading, commit) => field.store(owned(reading), commit),
         separators: () => {
             const format = field

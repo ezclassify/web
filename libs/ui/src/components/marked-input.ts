@@ -1170,7 +1170,7 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
         const hasSelection = selStart >= 0 && selStart !== selEnd;
 
         this.clearSegmentHover();
-        this.display.innerHTML = '';
+        this.clearDisplay();
 
         // Append a text run, wrapping any part inside the active selection in
         // a highlight span (same shape as MarkedTextArea.renderDisplay).
@@ -1245,6 +1245,7 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
                         valid: this.valid,
                         errors: this.errors,
                         warnings: this.warnings,
+                        marking: mark,
                     },
                     () => {
                         if (!this.picker && this.canChangeMarking(v))
@@ -1420,7 +1421,8 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
                 onChange: () => this.onPickerChange(),
                 onExit: (_direction, fromSheet) => {
                     if (!this.finishPicker()) return;
-                    if (!fromSheet) this.input.focus();
+                    if (fromSheet) this.returnFocusToMark(0);
+                    else this.input.focus();
                     const afterMark =
                         this.markEnd +
                         (this.input.value[this.markEnd] === ' ' ? 1 : 0);
@@ -1527,7 +1529,9 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
         if (this.picker) {
             // Commit path: fixes the engine applied inside the editor belong
             // to the committed value, so they join the field's mark record.
-            // (Escape-cancel never reaches here and discards them.)
+            // (Escape-cancel never reaches here and discards them.) A value
+            // the user entered again starts the record over.
+            if (this.picker.reentered()) this.appliedFixHistory.clear();
             this.recordMarkFixes(
                 this.picker.getAssertions(),
                 this.picker.getAppliedFixes(),
@@ -1666,6 +1670,10 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
     }
 
     /** Caret target just past the marking (one space accounted for). */
+    protected editedMarkStart(): number | null {
+        return 0;
+    }
+
     protected captureCaretTarget(): number {
         if (this.picker && usesPhoneMarkingActions(this.input))
             return this.markEnd;
@@ -1723,6 +1731,10 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
         } finally {
             this._inSelectionChange = false;
         }
+    }
+
+    protected override shareAgain(): void {
+        if (this.valueNotShared) this.emitChange();
     }
 
     private emitChange(): void {

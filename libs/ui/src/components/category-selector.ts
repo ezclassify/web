@@ -13,6 +13,7 @@
  * grouped under the scope's label when they fall in more than one.
  */
 
+import { t } from '../i18n';
 import {
     suspendNativeChoiceFallback,
     useAuthoredChoiceLabel,
@@ -309,23 +310,19 @@ export class CategorySelector extends ComponentBase {
                 this.fixApplyAbort?.abort();
                 const abort = new AbortController();
                 this.fixApplyAbort = abort;
-                this.categoryReport = { ...this.categoryReport, fixes: [] };
-                this.refreshFacetRefusal();
-                const failed = (error: unknown) => {
+                // The fix buttons stay until the fix lands: the store's
+                // commit judges the marking again and replaces them. One that
+                // fails leaves the value, and the buttons, as they were.
+                const failed = () => {
                     if (!this._destroyed && !abort.signal.aborted)
-                        announce(
-                            this.announcer,
-                            error instanceof Error
-                                ? error.message
-                                : String(error),
-                        );
+                        announce(this.announcer, t('composer.actionFailed'));
                 };
                 try {
                     void Promise.resolve(fullTarget(fix, abort.signal)).catch(
                         failed,
                     );
-                } catch (error) {
-                    failed(error);
+                } catch {
+                    failed();
                 }
                 return;
             }
@@ -370,6 +367,7 @@ export class CategorySelector extends ComponentBase {
     }
 
     protected setup(): void {
+        this.retryShareOnLeave();
         const _opts = this.options as CategorySelectorOptions;
 
         // Build category rows. A bound categoryId (facet-of usage) is that one
@@ -853,11 +851,17 @@ export class CategorySelector extends ComponentBase {
 
         if (isSelected) {
             this.removeAssertion(conceptId, categoryId);
-            announce(this.announcer, `Deselected ${name}`);
+            announce(
+                this.announcer,
+                t('a11y.deselected').replace('{label}', () => name),
+            );
         } else {
             // addAssertion still enforces at most one item in a single category.
             this.addAssertion(conceptId, categoryId);
-            announce(this.announcer, `Selected ${name}`);
+            announce(
+                this.announcer,
+                t('a11y.selected').replace('{label}', () => name),
+            );
         }
 
         // Re-focus after render

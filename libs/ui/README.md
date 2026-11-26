@@ -754,6 +754,16 @@ to configure, and an unverified result is never shown as a checked one.
 MarkingField, TagInput, MarkedInput and MarkedTextArea all behave this way and
 use these words for any failed check, never the client's own error string.
 
+A field bound to a page marking is also unverified while its value has not
+reached the rest of the page: the field keeps what was entered, while the
+banner, rollups and hidden fields still show the value from before. It says
+"Your entry is kept, but it has not reached the rest of the page yet." The note
+goes away when the page holds the field's value, or, for a MarkedTextArea with
+several portions, when its own next send lands. MarkingField, TagInput,
+CategorySelector, SingleSelect, CategoryChecklist and DecisionFlow send the
+value again when the user leaves them, and changing it sends it too. MarkedInput
+and MarkedTextArea send it again when a marking is confirmed in their editor.
+
 Your page can follow it too. The field's host element carries the
 presence-only attribute `data-ezclassify-unverified` while its result is
 unverified, and dispatches a bubbling `ezclassify:unverified-change` event on

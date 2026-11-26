@@ -9,6 +9,7 @@ import type { SchemePublicView } from '@ezclassify/types';
 import { schemeOnlyContext } from '../../test-fixtures/context-doubles';
 import { mockRenderFormats } from '../render-format-layout-mock';
 import { EzClassifyUI } from '../ezclassify-ui';
+import { resetLocale, setLocale } from '../i18n';
 import { VanillaEzClassifyStore } from '../store/ezclassify-store';
 
 /** Create a minimal mock engine with configurable categories and concepts */
@@ -233,6 +234,66 @@ describe('CategorySelector', () => {
             opts as CategorySelectorOptions,
         );
     }
+
+    it('announces a selection and a deselection in the page locale', async () => {
+        setLocale({
+            'a11y.selected': 'Gewählt: {label}',
+            'a11y.deselected': 'Abgewählt: {label}',
+        });
+        try {
+            await init();
+            const button = container.querySelector<HTMLButtonElement>(
+                '.category-selector-btn[data-category-id="f2"]',
+            )!;
+            const name = button.dataset.conceptId!;
+            const said = () =>
+                [...container.querySelectorAll('[aria-live]')].map(
+                    (region) => region.textContent ?? '',
+                );
+            button.click();
+            await new Promise((resolve) => setTimeout(resolve, 50));
+            expect(said().join(' ')).toMatch(/Gewählt: \S/);
+            container
+                .querySelector<HTMLButtonElement>(
+                    `.category-selector-btn[data-concept-id="${name}"]`,
+                )!
+                .click();
+            await new Promise((resolve) => setTimeout(resolve, 50));
+            expect(said().join(' ')).toMatch(/Abgewählt: \S/);
+        } finally {
+            resetLocale();
+        }
+    });
+
+    it('announces a name with replacement patterns in it as written', async () => {
+        const tricky = "Cost $& and $' end";
+        const scheme = engine.getScheme() as unknown as {
+            concepts: Array<{
+                views: Record<string, string>;
+                categories: string[];
+            }>;
+        };
+        scheme.concepts.find((c) => c.categories.includes('f2'))!.views = {
+            default: tricky,
+        };
+        setLocale({ 'a11y.selected': 'Chosen {label}' });
+        try {
+            await init();
+            container
+                .querySelector<HTMLButtonElement>(
+                    '.category-selector-btn[data-category-id="f2"]',
+                )!
+                .click();
+            await new Promise((resolve) => setTimeout(resolve, 50));
+            expect(
+                [...container.querySelectorAll('[aria-live]')]
+                    .map((region) => region.textContent ?? '')
+                    .join(' '),
+            ).toContain(`Chosen ${tricky}`);
+        } finally {
+            resetLocale();
+        }
+    });
 
     it('renders both category modes through DecisionFlow shared native choices', async () => {
         await init();
@@ -549,7 +610,7 @@ describe('CategorySelector', () => {
         outside.remove();
     });
 
-    it.each(['local', 'dependent', 'stale', 'outside'])(
+    it.each(['local', 'dependent', 'stale', 'outside', 'failed'])(
         'applies a canonical whole %s remedy through the associated store while retaining captured values',
         async (choice) => {
             const scheme = engine.getScheme();
@@ -768,6 +829,38 @@ describe('CategorySelector', () => {
                     expect(
                         store.get('canonical-whole').assertions,
                     ).toContainEqual(expect.objectContaining(newerDate));
+                    return;
+                }
+                if (choice === 'failed') {
+                    // The store's publish fails, saying where it went.
+                    const publish = vi
+                        .spyOn(store, 'publishAssertions')
+                        .mockRejectedValueOnce(
+                            new Error(
+                                'POST https://runtime.example/v1/process failed',
+                            ),
+                        );
+                    actions()[0].click();
+                    await vi.waitFor(() => expect(publish).toHaveBeenCalled());
+                    await new Promise((resolve) => setTimeout(resolve, 50));
+                    const said = [
+                        ...container.querySelectorAll('[aria-live]'),
+                    ].map((region) => region.textContent ?? '');
+                    expect(said).toContain(
+                        'That change could not be applied. Try again.',
+                    );
+                    expect(said.join(' ')).not.toContain('runtime.example');
+                    expect(
+                        actions().map((button) => button.textContent),
+                    ).toEqual([
+                        'Remove Option X',
+                        'Remove Option Y and Country',
+                    ]);
+                    expect(
+                        store
+                            .get('canonical-whole')
+                            .assertions.map((fact) => fact.conceptId),
+                    ).toEqual(expect.arrayContaining(['c4', 'c5', 'country']));
                     return;
                 }
                 const action = actions()[choice === 'local' ? 0 : 1];

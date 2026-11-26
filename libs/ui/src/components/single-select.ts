@@ -185,6 +185,7 @@ export class SingleSelect extends ComponentBase {
     }
 
     protected setup(): void {
+        this.retryShareOnLeave();
         // Identify the primary category: explicit categoryId > first matching single-select category
         const singleCategory = this.resolveCategory(
             this.options.categoryId,
@@ -1059,7 +1060,7 @@ export class SingleSelect extends ComponentBase {
             this.selectEntry(entry);
             if (this.announcer)
                 announce(this.announcer, `Selected ${entry.name}`);
-        }
+        } else this.shareAgain();
         // Repeated activation of a selected radio keeps both value and focus.
         this.focusCard(index);
     }

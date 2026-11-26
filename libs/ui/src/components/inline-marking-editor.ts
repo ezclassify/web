@@ -55,6 +55,7 @@ import {
 import { t } from '../i18n';
 import {
     ComposerController,
+    commitSettled,
     statedAssertions,
     type CommitOutcome,
     type ComposerCommit,
@@ -88,9 +89,12 @@ export interface InlineMarkingEditorOptions {
     ) => void;
     /**
      * Focus left the editor and the composer committed; the host closes the
-     * editor unless the outcome is 'invalid', which keeps the draft on screen.
+     * editor unless the outcome is 'invalid' or 'failed', which keep the draft
+     * on screen.
      */
     onBlurCommit?: (outcome: CommitOutcome) => void;
+    /** A commit stored nothing: the draft is the value the editor holds. */
+    onKept?: () => void;
     /**
      * Escape with nothing left for the composer to do (list closed, draft
      * clean): the host cancels the editing session. Explicit sheet Cancel
@@ -183,6 +187,8 @@ export class InlineMarkingEditor {
     private view!: ComposerView;
     /** Fixes the engine applied during this session, deduplicated by rule. */
     private readonly _appliedFixes = new AppliedFixHistory();
+    /** See {@link reentered}. */
+    private _reentered = false;
     private readonly _conceptDescriber = createConceptDescriber({
         engine: () => this.engine,
         options: () => this.options,
@@ -454,6 +460,16 @@ export class InlineMarkingEditor {
     }
 
     /**
+     * Whether the user entered the value again in this session and committed
+     * the same text (see ComposerPort.reentered): the host's record of the
+     * fixes behind the value it holds no longer describes it and starts over,
+     * with only {@link getAppliedFixes} after it.
+     */
+    reentered(): boolean {
+        return this._reentered;
+    }
+
+    /**
      * Focus the input that owns the edit: the sheet's own while the phone sheet
      * is open, so a host that focuses the editor after mounting it does not
      * pull focus out of the sheet and the on-screen keyboard with it.
@@ -503,7 +519,7 @@ export class InlineMarkingEditor {
         // Leaving the marking is a commit boundary: the same commit as blur.
         e.preventDefault();
         void this.controller.commit().then((outcome) => {
-            if (outcome !== 'invalid') this.options.onExit?.(direction);
+            if (commitSettled(outcome)) this.options.onExit?.(direction);
         });
     }
 
@@ -654,6 +670,11 @@ export class InlineMarkingEditor {
                 assertions: this.assertions,
                 rendered: this.rendered,
             }),
+            reentered: () => {
+                this._appliedFixes.clear();
+                this._reentered = true;
+            },
+            kept: () => this.options.onKept?.(),
             store: (reading, commit) => this.store(reading, commit),
         });
     }

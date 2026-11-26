@@ -116,6 +116,7 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
      */
     private feedsUndo = true;
     private releaseUndo: (() => void) | null = null;
+    private releaseRetryOnLeave: (() => void) | null = null;
     /** Puts back the value the field held when the edit in progress began. */
     private editStart: (() => Promise<void>) | null = null;
     /** The value the field last settled on, as {@link valueSignature}. */
@@ -456,6 +457,29 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
         };
     }
 
+    /**
+     * Send the value a choice control holds again when focus leaves it while
+     * the store has not taken it, so a failed publish can be retried without
+     * choosing another value. A control with nothing unshared sends nothing.
+     */
+    protected retryShareOnLeave(): void {
+        this.releaseRetryOnLeave?.();
+        const container = this.container;
+        const onLeave = (event: FocusEvent) => {
+            const next = event.relatedTarget;
+            if (next instanceof Node && container.contains(next)) return;
+            if (!this._destroyed) this.shareAgain();
+        };
+        container.addEventListener('focusout', onLeave);
+        this.releaseRetryOnLeave = () =>
+            container.removeEventListener('focusout', onLeave);
+    }
+
+    /** A choice control that sends its value again when focus leaves it. */
+    protected override shareRetryHint(): string | null {
+        return this.releaseRetryOnLeave ? t('share.retryLeave') : null;
+    }
+
     protected hasClearValue(): boolean {
         return !!this._lastRendered || this.assertions.length > 0;
     }
@@ -472,6 +496,8 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
         this.undo.end(this);
         this.releaseUndo?.();
         this.releaseUndo = null;
+        this.releaseRetryOnLeave?.();
+        this.releaseRetryOnLeave = null;
         this.undoAnnouncer?.remove();
         this.undoAnnouncer = null;
         this.clearControl?.destroy();
@@ -824,13 +850,11 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
                             )
                                 return apply(fix, new AbortController().signal);
                         })
-                        .catch((error: unknown) => {
+                        .catch(() => {
                             if (!this._destroyed && this.undoAnnouncer)
                                 announce(
                                     this.undoAnnouncer,
-                                    error instanceof Error
-                                        ? error.message
-                                        : String(error),
+                                    t('composer.actionFailed'),
                                 );
                         });
                 }
@@ -999,8 +1023,13 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
      *
      * @param processEmpty - Evaluate empty category selections through the
      *   engine so its defaults apply; text controls may still clear to blank.
+     * @param onFailure - Called instead of showing the read failure when the
+     *   read raises, for a caller that reports the failure its own way
      */
-    protected reprocessNow(processEmpty = false): Promise<void> {
+    protected reprocessNow(
+        processEmpty = false,
+        onFailure?: () => void,
+    ): Promise<void> {
         // Sequence guard: if another reprocess fires before this one completes,
         // the stale result is discarded (only the latest mutation wins).
         const seq = ++this._reprocessSeq;
@@ -1106,7 +1135,8 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
         // A read that raises leaves the marking as it was and says why.
         const failed = () => {
             if (seq !== this._reprocessSeq || this._destroyed) return;
-            this.showReadFailure();
+            if (onFailure) onFailure();
+            else this.showReadFailure();
         };
 
         // Single process() call with pre-built assertions: skips the parse stage
@@ -1467,6 +1497,11 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
                 assertions: this.assertions,
                 rendered: this._lastRendered,
             }),
+            reentered: () => {
+                this.recordAppliedFixes([], true);
+                this.refreshFixStatus();
+            },
+            kept: () => this.shareAgain(),
             store: (reading, commit) =>
                 this.storeComposerReading(reading, commit),
             siblings: () => this.options.resolveFacetSiblings?.() ?? [],
@@ -1612,10 +1647,37 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
         reading: ComposerReading,
         commit: ComposerCommit,
     ): Promise<void> {
+        const assertions = this.assertions;
+        const fixes = this._appliedFixes.snapshot();
         this.beginUserEdit();
         this.assertions = statedAssertions(this.heldFacts(reading.assertions));
         this.recordAppliedFixes(reading.appliedFixes, commit.replaces);
-        await this.reprocessNow();
+        let failed = false;
+        await this.reprocessNow(false, () => {
+            failed = true;
+        });
+        if (!failed) return;
+        // Nothing was stored: the field holds what it held, with its record
+        // of fixes, and the composer keeps the draft and says why.
+        this.assertions = assertions;
+        this._appliedFixes.restore(fixes);
+        throw new Error('[ezclassify] The marking could not be stored.');
+    }
+
+    /**
+     * Publish the value the field holds again while the store has not taken it,
+     * through the field's ordinary change.
+     */
+    protected override shareAgain(): void {
+        if (this.valueNotShared) this.onAssertionsChanged();
+    }
+
+    /**
+     * Show the field's record of fixes again after it changed without a new
+     * value (see ComposerPort.reentered).
+     */
+    protected refreshFixStatus(): void {
+        this.updateSuiteStatusMark();
     }
 
     /** Darken a hex color */

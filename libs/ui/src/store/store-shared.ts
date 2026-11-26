@@ -25,6 +25,12 @@ export const storeWarnings = new WeakMap<EzClassifyState, Warning[]>();
 export const reflectingNativeSeed = new WeakSet<EzClassifyState>();
 
 /**
+ * Stores that have been torn down. A publish to one rejects by design, and is
+ * not a failure anyone needs told about: the page that held it is going away.
+ */
+export const destroyedStores = new WeakSet<object>();
+
+/**
  * Canonical empty `EzClassifyState`. Identity is not stable across calls; copy
  * if mutating.
  */

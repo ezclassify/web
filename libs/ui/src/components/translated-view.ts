@@ -264,12 +264,13 @@ export class TranslatedView implements ComponentInstance {
             this.showResult(envelope.result);
         } catch (error) {
             if (seq !== this.readSeq || this.destroyed) return;
-            const message =
-                error instanceof Error ? error.message : String(error);
+            // The raw error is for the developer; it is unlocalized and can
+            // carry the runtime URL, so the view shows the localized note only.
+            console.error('[TranslatedView] translate failed:', error);
             this.rendered = '';
             this.markingEl.textContent = '';
             this.markingEl.removeAttribute('aria-invalid');
-            this.noteEl.textContent = `${t('translate.failed')} ${message}`;
+            this.noteEl.textContent = t('translate.failed');
             this.clearLists();
             this.setStatus('error');
         }

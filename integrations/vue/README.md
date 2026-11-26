@@ -277,7 +277,8 @@ that contextual comparison and displays its errors and proposed fixes.
 
 A field that cannot complete the check of the text typed into it (the runtime is
 unreachable, times out, or answers badly) keeps its last result, marks it as
-unverified and says so itself, in its own message area. To react beside it,
+unverified and says so itself, in its own message area. A field is unverified
+too while the value entered in it has not reached the rest of the page. To react beside it,
 `useEzClassifyUnverified(id)` returns a ref that is true while the field with that DOM id is unverified. The id may be a ref or getter. Each field reports for itself, and a field that is
 not enhanced yet reads false until it is.
 

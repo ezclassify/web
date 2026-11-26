@@ -140,6 +140,7 @@ export class CategoryChecklist extends ComponentBase {
     }
 
     protected setup(): void {
+        this.retryShareOnLeave();
         const opts = this.options as CategoryChecklistOptions;
 
         if (!opts.categoryId) {
@@ -698,13 +699,19 @@ export class CategoryChecklist extends ComponentBase {
                     this.addAssertion(concept.id, this.categoryId);
                     announce(
                         this.announcer,
-                        `Selected ${concept.views['default'] ?? concept.name}`,
+                        t('a11y.selected').replace(
+                            '{label}',
+                            () => concept.views['default'] ?? concept.name,
+                        ),
                     );
                 } else {
                     this.removeAssertion(concept.id, this.categoryId);
                     announce(
                         this.announcer,
-                        `Deselected ${concept.views['default'] ?? concept.name}`,
+                        t('a11y.deselected').replace(
+                            '{label}',
+                            () => concept.views['default'] ?? concept.name,
+                        ),
                     );
                 }
                 this.updateCount();
@@ -759,7 +766,14 @@ export class CategoryChecklist extends ComponentBase {
             ),
             ...authored,
         ]);
-        announce(this.announcer, `Selected all ${available.length} items`);
+        announce(
+            this.announcer,
+            t(
+                available.length === 1
+                    ? 'a11y.selectedAll.one'
+                    : 'a11y.selectedAll.other',
+            ).replace('{count}', String(available.length)),
+        );
     }
 
     /** Clear all selected concepts in this category */
@@ -769,6 +783,6 @@ export class CategoryChecklist extends ComponentBase {
             this.assertions.filter((a) => a.categoryId !== this.categoryId),
             { processEmpty: true, resetCorrections: true },
         );
-        announce(this.announcer, 'Cleared all selections');
+        announce(this.announcer, t('a11y.clearedAll'));
     }
 }

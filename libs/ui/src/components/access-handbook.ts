@@ -31,6 +31,7 @@ import {
     announceMatchCount,
     resolveReferenceSurfaceOverride,
 } from './browser-component-base';
+import { t } from '../i18n';
 import accessHandbookCss from './access-handbook.css?inline';
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -456,7 +457,10 @@ export class AccessHandbook extends ReadOnlyComponentBase {
             }
         }
 
-        announceMatchCount(this.announcer, totalVisible, query, 'rule');
+        announceMatchCount(this.announcer, totalVisible, query, {
+            singular: t('noun.rule.one'),
+            plural: t('noun.rule.other'),
+        });
     }
 
     private renderEntry(rule: AccessRuleDescription): HTMLElement {

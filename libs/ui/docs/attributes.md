@@ -227,14 +227,18 @@ The runtime stamps this on a field's host element for the page to read. Unlike
 the attributes above it is part of the supported surface: read it in CSS or
 script, never set it by hand.
 
-| Attribute                    | Audience | Values                                                                                                                                                                                                                                                                                                            |
-| ---------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `data-ezclassify-unverified` | page     | presence-only; stamped on a field's host element while the result it shows has not been verified for its current text, because the last check could not be completed (the runtime was unreachable, timed out or answered badly). Cleared when a check of the current text lands, and when the field is destroyed. |
+| Attribute                    | Audience | Values                                                                                                                                                                                                                                                                                                                               |
+| ---------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `data-ezclassify-unverified` | page     | presence-only; stamped on a field's host element while what it shows cannot be trusted as the page's value: the last check of its text could not be completed (the runtime was unreachable, timed out or answered badly), or the page does not hold the value it holds. Cleared when neither holds, and when the field is destroyed. |
 
 Each change fires `ezclassify:unverified-change` on the host, bubbling, with
 `detail: { unverified: boolean }`; destroying an unverified field fires it once
-with `unverified: false`. MarkingField, TagInput, MarkedInput and MarkedTextArea
-all report it, each on its own host.
+with `unverified: false`. Each field reports it on its own host, for two
+reasons. MarkingField, TagInput, MarkedInput and MarkedTextArea carry it while
+the check of their text could not be completed. Every field bound to a page
+marking carries it while the page does not hold the value it holds: those four
+and CategorySelector, SingleSelect, CategoryChecklist and DecisionFlow. It
+clears when neither holds.
 
 ### Enhancement status mark (runtime element, not an attribute)
 

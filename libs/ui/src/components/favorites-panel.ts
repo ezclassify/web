@@ -243,6 +243,8 @@ export class FavoritesPanel {
         preset: LabelPresetView;
         rendered: string;
     }> = [];
+    /** Whether the latest load of saved values failed. */
+    private _loadFailed = false;
     private managing = false;
 
     constructor(wrap: HTMLElement, host: FavoritesPanelHost) {
@@ -342,6 +344,7 @@ export class FavoritesPanel {
         const seq = ++this._openSeq;
 
         let entries: FavoriteEntry[];
+        let loadFailed: boolean;
         try {
             // No config at all (presets-only mount, see ensureMarkingFavorites)
             // means no user favorites to load: the panel still renders,
@@ -355,10 +358,13 @@ export class FavoritesPanel {
                       }),
                   )
                 : [];
+            loadFailed = false;
         } catch {
             entries = [];
+            loadFailed = true;
         }
         if (seq !== this._openSeq || this._destroyed) return null;
+        this._loadFailed = loadFailed;
 
         const processed = await Promise.all(
             entries.map(async (entry) => {
@@ -434,7 +440,13 @@ export class FavoritesPanel {
         refreshStatusMarkPopover(this.button);
         announce(
             this.announcer,
-            `${processed.length} favorite${processed.length === 1 ? '' : 's'} available`,
+            this._loadFailed
+                ? t('favorites.loadFailed')
+                : t(
+                      processed.length === 1
+                          ? 'favorites.available.one'
+                          : 'favorites.available.other',
+                  ).replace('{count}', String(processed.length)),
         );
     }
 
@@ -555,7 +567,7 @@ export class FavoritesPanel {
                     'aria-label',
                     t('favorites.removeEntry').replace(
                         '{marking}',
-                        entry.marking,
+                        () => entry.marking,
                     ),
                 );
                 remove.innerHTML =
@@ -595,17 +607,21 @@ export class FavoritesPanel {
                 row.dataset.presetId = preset.id;
                 this.addRow(row, () => {
                     if (rendered) this.applyAndClose(rendered);
+                    else announce(this.announcer, t('favorites.applyFailed'));
                 });
             }
         }
 
         // canPin always adds the pinned row first, so _rows is only empty
         // when canPin is false; the empty state needs no separate guard.
-        if (this._rows.length === 0) {
+        if (this._loadFailed || this._rows.length === 0) {
             const empty = document.createElement('div');
             empty.className = 'proto-dropdown-item ez-favorites-panel__empty';
             empty.setAttribute('role', 'status');
-            empty.textContent = t('favorites.empty');
+            // A failed load is not the same fact as nothing saved.
+            empty.textContent = t(
+                this._loadFailed ? 'favorites.loadFailed' : 'favorites.empty',
+            );
             this.panelItems.appendChild(empty);
         }
         const storage = this.host.config?.browserStorage;
@@ -1015,8 +1031,17 @@ export class FavoritesPanel {
                 }
             }
         } catch {
-            // Persistence failure: leave the panel open on its current
-            // (stale) list rather than pretending the save/remove landed.
+            // Persistence failure: leave the panel open on its current list
+            // rather than pretending the save or remove landed, and say so.
+            if (!this._destroyed)
+                announce(
+                    this.announcer,
+                    t(
+                        isFavorite
+                            ? 'favorites.removeFailed'
+                            : 'favorites.saveFailed',
+                    ),
+                );
             return;
         }
         if (this._destroyed) return;

@@ -44,6 +44,35 @@ describe('Guidebook', () => {
         expect(entries.length).toBeGreaterThan(0);
     });
 
+    it("announces a search result with the locale's noun for rules", async () => {
+        setLocale({
+            'noun.rule.one': 'règle',
+            'noun.rule.other': 'règles',
+            'search.matchCount.other': '{count} {items} trouvées',
+        });
+        try {
+            const ctx = openContext(
+                await connectDemoContext({ contextId: 'cedar-valley' }),
+            );
+            await guidebook.init(container, ctx);
+            await demoRuntimeSettled();
+            const search = container.querySelector<HTMLInputElement>(
+                '.ez-guidebook__search-input',
+            )!;
+            search.value = 'a';
+            search.dispatchEvent(new Event('input', { bubbles: true }));
+            await vi.waitFor(() =>
+                expect(
+                    [...document.querySelectorAll('[aria-live]')].some((el) =>
+                        /^\d+ règles trouvées$/.test(el.textContent ?? ''),
+                    ),
+                ).toBe(true),
+            );
+        } finally {
+            resetLocale();
+        }
+    });
+
     describe('reference-surface vocabulary', () => {
         it('keeps the generic aria-label when the guide declares no vocabulary (byte-identical default)', async () => {
             const ctx = openContext(

@@ -39,7 +39,10 @@ import {
 import { t } from '../i18n';
 import { locateTokenSpans, type TokenNode } from '../token-tree/token-tree';
 import { derivedAssertion } from '../assertion-identity';
-import type { CommitOutcome } from './composer/composer-controller';
+import {
+    commitSettled,
+    type CommitOutcome,
+} from './composer/composer-controller';
 import {
     COMPOSER_DISMISSED,
     accessibleLabel,
@@ -81,7 +84,7 @@ export class MarkingField extends ComposerFieldBase {
      */
     private _originalRows: string | null = null;
     /** The theme MutationObserver installed by {@link installThemeObserver}. */
-    private _themeObserver: MutationObserver | null = null;
+    private _themeObserver: ReturnType<typeof observeFieldTheme> = null;
     private stopObservingHostWidth: (() => void) | null = null;
 
     private boundFocus!: () => void;
@@ -563,6 +566,12 @@ export class MarkingField extends ComposerFieldBase {
         };
     }
 
+    protected override refreshFixStatus(): void {
+        super.refreshFixStatus();
+        if (this.chrome)
+            setStatusMarkFixes(this.chrome.status, this.fieldStatusChanges());
+    }
+
     protected render(): void {
         if (!this.engine || !this.scheme) return;
         // A commit or an external value change landed: a draft that matched
@@ -684,7 +693,7 @@ export class MarkingField extends ComposerFieldBase {
     private rest(outcome: CommitOutcome): void {
         if (this._destroyed || document.activeElement === this.host) return;
         this.hasFocus = false;
-        if (outcome === 'invalid') {
+        if (!commitSettled(outcome)) {
             this.showHost(true);
             return;
         }

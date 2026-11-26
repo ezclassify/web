@@ -11,6 +11,14 @@ import { InlineMarkingEditor } from './inline-marking-editor';
 import { EzClassifyUI } from '../ezclassify-ui';
 import { levelState } from '../store/page-rollup-harness';
 import { connectDemoContext } from '../../../../test-support/demo-runtime';
+import {
+    editMark,
+    markActions,
+    nextFrame,
+    openMarkActions,
+    pressKey,
+    sheetButton,
+} from '../../test-fixtures/phone-mark-control';
 
 /**
  * User interactions address the owned editor; form assertions use the original
@@ -749,7 +757,7 @@ describe('MarkedInput', () => {
         expect(edge()).toEqual(['3px', 'dashed', 'rgb(1, 2, 3)', '5px']);
     });
 
-    it('disconnects its theme MutationObserver on destroy (no observer leak)', async () => {
+    it('stops following its theme on destroy (no observer leak)', async () => {
         const engine = await createTestEngine();
         root.innerHTML = `
       <input type="text" id="field" data-ezclassify-controller="marked-input">
@@ -759,11 +767,11 @@ describe('MarkedInput', () => {
 
         const inputEl = editingField('field') as HTMLTextAreaElement;
         const comp = forms.components.get(nativeField(inputEl)) as unknown as {
-            _themeObserver: MutationObserver | null;
+            _themeObserver: { disconnect(): void } | null;
         };
         const observer = comp._themeObserver;
         // The theme observer must have been installed on mount.
-        expect(observer).toBeInstanceOf(MutationObserver);
+        expect(observer?.disconnect).toBeTypeOf('function');
         const disconnectSpy = vi.spyOn(observer!, 'disconnect');
 
         forms.destroy();
@@ -3175,5 +3183,114 @@ describe('MarkedInput when its text could not be checked', () => {
         field.destroy();
         await wait(50);
         expect(native.hasAttribute(UNVERIFIED)).toBe(false);
+    });
+});
+
+describe('MarkedInput on the phone layout: the painted mark is the control for its marking', () => {
+    async function mountPhone(value: string): Promise<{
+        mark: () => HTMLElement | null;
+        native: HTMLInputElement;
+        wrap: HTMLElement;
+    }> {
+        vi.stubGlobal('innerWidth', 390);
+        vi.stubGlobal('matchMedia', () => ({ matches: true }));
+        const engine = await createTestEngine();
+        root.innerHTML = `<label for="field">Title</label><input id="field" data-ezclassify-controller="marked-input" value="${value}"><button id="after">After</button>`;
+        const forms = new EzClassifyUI(asContext(engine as never), {});
+        activeForms.push(forms);
+        const mark = () =>
+            root.querySelector<HTMLElement>(
+                '.marked-input-chip[data-ez-phone-mark-action]',
+            );
+        await expect.poll(mark).not.toBeNull();
+        return {
+            mark,
+            native: document.getElementById('field') as HTMLInputElement,
+            wrap: root.querySelector<HTMLElement>('.marked-input-wrap')!,
+        };
+    }
+
+    afterEach(() => vi.unstubAllGlobals());
+
+    it('is named by the marking it shows and what it does, in the tab order', async () => {
+        const { mark } = await mountPhone('(U) Text');
+        expect(mark()!.tabIndex).toBe(0);
+        expect(mark()!.getAttribute('role')).toBe('button');
+        expect(mark()!.textContent).toBe('(U)');
+        expect(mark()!.getAttribute('aria-label')).toBe('(U), marking actions');
+    });
+
+    it('names a mark whose text holds replacement patterns by that text, as written', async () => {
+        const { mark } = await mountPhone("(U$&$'$1) Text");
+        await expect
+            .poll(() => mark()?.getAttribute('aria-label') ?? '')
+            .toMatch(/^\(U\$&\$'\$1\), marking actions/);
+    });
+
+    it('says what is wrong with an invalid mark, which has no tooltip here', async () => {
+        const { mark } = await mountPhone('(U/S) Text');
+        await expect
+            .poll(() => mark()?.getAttribute('aria-label') ?? '')
+            .toMatch(/^\(U\/S\), marking actions\. Invalid marking: \S/);
+    });
+
+    it.each(['Enter', ' '] as const)(
+        'opens its actions with %j, and Escape returns focus to the mark',
+        async (key) => {
+            const { mark } = await mountPhone('(U) Text');
+            const actions = openMarkActions(mark()!, key);
+            expect(actions.map((b) => b.textContent)).toEqual([
+                'Edit marking',
+                'Remove marking',
+            ]);
+            expect(document.activeElement).toBe(actions[0]);
+            expect(mark()!.getAttribute('aria-expanded')).toBe('true');
+
+            pressKey(actions[0]!, 'Escape');
+
+            expect(markActions()).toEqual([]);
+            expect(document.activeElement).toBe(mark());
+        },
+    );
+
+    it('closes its actions when focus moves on past them', async () => {
+        const { mark } = await mountPhone('(U) Text');
+        const [, remove] = openMarkActions(mark()!, 'Enter');
+        remove!.focus();
+        const after = document.getElementById('after')!;
+        after.focus();
+
+        expect(markActions()).toEqual([]);
+        expect(mark()!.getAttribute('aria-expanded')).toBe('false');
+        expect(document.activeElement).toBe(after);
+    });
+
+    it.each(['done', 'cancel'] as const)(
+        'Edit opens the sheet on the marking, and %s returns focus to the mark',
+        async (button) => {
+            const { mark, native } = await mountPhone('(U) Text');
+            const input = await editMark(mark()!);
+            expect(input.value).toBe('U');
+
+            sheetButton(button).click();
+            await expect
+                .poll(() => !!mark() && document.activeElement === mark())
+                .toBe(true);
+            await nextFrame();
+
+            expect(document.activeElement).toBe(mark());
+            expect(native.value).toBe('(U) Text');
+        },
+    );
+
+    it('Remove takes the marking out and leaves focus on the field', async () => {
+        const { mark, native, wrap } = await mountPhone('(U) Text');
+        const [, remove] = openMarkActions(mark()!, 'Enter');
+        remove!.click();
+        await expect.poll(() => native.value).toBe('Text');
+        await nextFrame();
+
+        expect(mark()).toBeNull();
+        expect(document.activeElement).toBe(wrap);
     });
 });

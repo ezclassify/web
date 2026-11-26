@@ -72,6 +72,7 @@ import {
     EMPTY_EZCLASSIFY_STATE,
     EMPTY_FACET_STATE,
     SOLE_BUCKET,
+    destroyedStores,
     facetStateEqual,
     reflectingNativeSeed,
     storeWarnings,
@@ -1846,6 +1847,7 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
     destroy(): void {
         if (this.destroyed) return;
         this.destroyed = true;
+        destroyedStores.add(this);
         // Nothing in flight has a reader any more, so drop the requests rather
         // than let a torn-down store keep an engine busy.
         for (const controller of this.publishAborts.values())

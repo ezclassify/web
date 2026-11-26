@@ -1,5 +1,6 @@
 /** Embedded Favorites behavior through the field's real tabbed branding tools. */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { resetLocale, setLocale } from '../i18n';
 import type { SchemePublicView } from '@ezclassify/types';
 import {
     ensureMarkingFavorites,
@@ -14,6 +15,13 @@ import { cleanupTooltipForRoot } from './tooltip-manager';
 
 function wait(ms = 20): Promise<void> {
     return new Promise((r) => setTimeout(r, ms));
+}
+
+/** What the page's live regions say now. */
+function spokenText(): string[] {
+    return [...document.querySelectorAll('[aria-live]')].map(
+        (region) => region.textContent ?? '',
+    );
 }
 
 function makeScheme(
@@ -346,6 +354,24 @@ describe('loads and races', () => {
         ).toBe('status');
         expect(pinned()).toBeNull();
     });
+    it('says the favorites could not be loaded, apart from having none', async () => {
+        const panel = mount(
+            makeHost({
+                config: { load: () => Promise.reject(new Error('Offline')) },
+            }),
+        );
+        await open(panel);
+        const status = document.querySelector('.ez-favorites-panel__empty');
+        expect(status?.textContent).toBe(
+            'Could not load your favorites. Try again.',
+        );
+        expect(document.body.textContent).not.toContain(
+            'No favorites saved yet',
+        );
+        expect(spokenText()).toContain(
+            'Could not load your favorites. Try again.',
+        );
+    });
     it('does not let a late mount load replace the newer open result', async () => {
         const mountLoad = deferred<FavoriteEntry[]>();
         const load = vi
@@ -573,6 +599,29 @@ describe('current marking and persistence', () => {
         await wait();
         expect(panel.isOpen()).toBe(true);
         expect(pinned()?.textContent).toBe('Save Current Marking');
+        expect(spokenText()).toContain(
+            'Could not save this favorite. Try again.',
+        );
+    });
+    it('says so when unsaving the current marking fails', async () => {
+        const panel = mount(
+            makeHost({
+                config: {
+                    load: () => [{ marking: 'A' }],
+                    save: vi.fn(),
+                    remove: () => Promise.reject(new Error('Offline')),
+                },
+                getCurrent: () => ({ rendered: 'A', valid: true }),
+            }),
+        );
+        await open(panel);
+        pinned()!.click();
+        await wait();
+        expect(panel.isOpen()).toBe(true);
+        expect(pinned()?.textContent).toBe('Unsave Current Marking');
+        expect(spokenText()).toContain(
+            'Could not remove this favorite. Try again.',
+        );
     });
     it('reloads a completed save even when a faster reopen read preceded the write', async () => {
         const write = deferred<void>();
@@ -632,7 +681,69 @@ describe('current marking and persistence', () => {
     });
 });
 
+describe('favorite names and counts', () => {
+    it('names a removal button for a marking with replacement patterns as written', async () => {
+        const tricky = "A$&B$'C";
+        const panel = mount(
+            makeHost({
+                config: {
+                    load: () => [{ marking: tricky }],
+                    remove: vi.fn(),
+                },
+            }),
+        );
+        await open(panel);
+        expect(
+            document
+                .querySelector('[data-favorite-remove]')
+                ?.getAttribute('aria-label'),
+        ).toBe(`Remove Favorite ${tricky}`);
+    });
+    it('announces how many favorites are available from the page locale', async () => {
+        setLocale({
+            'favorites.available.one': '{count} favori',
+            'favorites.available.other': '{count} favoris',
+        });
+        try {
+            const panel = mount(
+                makeHost({
+                    config: {
+                        load: () => [{ marking: 'A' }, { marking: 'B' }],
+                    },
+                }),
+            );
+            await open(panel);
+            await wait();
+            expect(spokenText()).toContain('2 favoris');
+        } finally {
+            resetLocale();
+        }
+    });
+});
+
 describe('presets and native rows', () => {
+    it('says so, instead of applying nothing, when a preset cannot be read', async () => {
+        const onApply = vi.fn();
+        const panel = mount(
+            makeHost({
+                config: undefined,
+                scheme: makeScheme({
+                    labelPresets: [{ id: 'a', label: 'Preset A' }],
+                }),
+                applyPreset: () => Promise.reject(new Error('Offline')),
+                onApply,
+            }),
+        );
+        await open(panel);
+        document
+            .querySelector<HTMLButtonElement>('[data-preset-id=a]')!
+            .click();
+        await wait();
+        expect(onApply).not.toHaveBeenCalled();
+        expect(spokenText()).toContain(
+            'Could not apply this favorite. Try again.',
+        );
+    });
     it('offers scoped scheme presets without a persistence provider', async () => {
         const onApply = vi.fn();
         const panel = mount(

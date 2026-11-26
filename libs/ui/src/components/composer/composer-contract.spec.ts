@@ -21,6 +21,7 @@ import {
     press,
     resultValue,
     rowFor,
+    rowLabels,
     rows,
     typeText,
     wait,
@@ -757,6 +758,484 @@ describe.each(['marked-input', 'marked-textarea'] as const)(
         });
     },
 );
+
+/**
+ * Text events the way a browser sends them for one edit: `beforeinput` while
+ * the selection is still the one the edit replaces, then the new value and
+ * `input`.
+ */
+function edit(
+    input: HTMLInputElement | HTMLTextAreaElement,
+    value: string,
+    inputType: string,
+    data: string | null = null,
+): void {
+    input.dispatchEvent(
+        new InputEvent('beforeinput', {
+            bubbles: true,
+            cancelable: true,
+            inputType,
+            data,
+        }),
+    );
+    input.value = value;
+    input.setSelectionRange(value.length, value.length);
+    input.dispatchEvent(
+        new InputEvent('input', { bubbles: true, inputType, data }),
+    );
+}
+
+describe.each(['marking', 'marked-input', 'marked-textarea'] as const)(
+    'the stored marking entered again in %s',
+    (kind) => {
+        /** Commit the draft and let the stored value settle. */
+        async function store(field: Field): Promise<void> {
+            await key(field, 'Enter');
+            await wait(120);
+        }
+
+        /** Open the stored marking for editing again, caret at its end. */
+        async function reopen(field: Field): Promise<void> {
+            if (kind === 'marking') {
+                field.input().focus();
+                press(field.input(), 'ArrowDown');
+                await wait();
+            } else {
+                field.host.focus();
+                textareaEditor(
+                    field.host as HTMLTextAreaElement,
+                ).setSelectionRange(0, 0);
+                press(document.activeElement as HTMLElement, 'Enter', {
+                    ctrlKey: true,
+                });
+                await wait(120);
+            }
+            expect(openSurface()).not.toBeNull();
+            const input = field.input();
+            input.setSelectionRange(input.value.length, input.value.length);
+        }
+
+        /** A field holding `SECRET//NOFORN` with the fixes that made it. */
+        async function corrected(): Promise<{ field: Field; stored: string }> {
+            const field = await mountField(kind);
+            await type(field, 'noforn/secret');
+            await store(field);
+            expect(field.stored()).toEqual(['NF', 'S']);
+            expect(await markedFixes()).toEqual(NOFORN_SECRET_FIXES);
+            await reopen(field);
+            return { field, stored: field.input().value };
+        }
+
+        /** What the host hears from here on: nothing when nothing is stored. */
+        function hostEvents(field: Field): string[] {
+            const heard: string[] = [];
+            for (const type of ['input', 'change'])
+                field.host.addEventListener(type, () => heard.push(type));
+            return heard;
+        }
+
+        const reentries: [
+            string,
+            (
+                input: HTMLInputElement | HTMLTextAreaElement,
+                text: string,
+            ) => void,
+        ][] = [
+            [
+                'typed over a selection of all of it',
+                (input, text) => {
+                    input.setSelectionRange(0, input.value.length);
+                    edit(input, text[0]!, 'insertText', text[0]!);
+                    edit(input, text, 'insertText', text.at(-1)!);
+                },
+            ],
+            [
+                'pasted over a selection of all of it',
+                (input, text) => {
+                    input.setSelectionRange(0, input.value.length);
+                    edit(input, text, 'insertFromPaste', text);
+                },
+            ],
+            [
+                // The order Chromium sent for an IME over a full selection
+                // that committed the stored text: compositionstart with the
+                // selection intact, two composing updates, compositionend.
+                'composed over a selection of all of it',
+                (input, text) => {
+                    input.setSelectionRange(0, input.value.length);
+                    input.dispatchEvent(
+                        new CompositionEvent('compositionstart', {
+                            bubbles: true,
+                            data: text,
+                        }),
+                    );
+                    for (let update = 0; update < 2; update++) {
+                        input.dispatchEvent(
+                            new InputEvent('beforeinput', {
+                                bubbles: true,
+                                cancelable: true,
+                                inputType: 'insertCompositionText',
+                                data: text,
+                                isComposing: true,
+                            }),
+                        );
+                        input.value = text;
+                        input.setSelectionRange(text.length, text.length);
+                        input.dispatchEvent(
+                            new InputEvent('input', {
+                                bubbles: true,
+                                inputType: 'insertCompositionText',
+                                data: text,
+                                isComposing: true,
+                            }),
+                        );
+                    }
+                    input.dispatchEvent(
+                        new CompositionEvent('compositionend', {
+                            bubbles: true,
+                            data: text,
+                        }),
+                    );
+                },
+            ],
+            [
+                'deleted and typed again',
+                (input, text) => {
+                    edit(input, '', 'deleteContentBackward');
+                    edit(input, text, 'insertText', text.at(-1)!);
+                },
+            ],
+        ];
+        for (const [how, enter] of reentries) {
+            it(`starts its fixes over and stores nothing when ${how}`, async () => {
+                const { field, stored } = await corrected();
+                enter(field.input(), stored);
+                await wait();
+                const heard = hostEvents(field);
+                await store(field);
+
+                expect(heard).toEqual([]);
+                expect(field.stored()).toEqual(['NF', 'S']);
+                expect(await markedFixes()).toEqual([]);
+            });
+        }
+
+        const unchanged: [
+            string,
+            (
+                input: HTMLInputElement | HTMLTextAreaElement,
+                text: string,
+            ) => void,
+        ][] = [
+            ['opened and left as it was', () => {}],
+            [
+                'typed into and deleted back',
+                (input, text) => {
+                    edit(input, `${text}X`, 'insertText', 'X');
+                    edit(input, text, 'deleteContentBackward');
+                },
+            ],
+            [
+                'typed into and undone back',
+                (input, text) => {
+                    edit(input, `${text}X`, 'insertText', 'X');
+                    edit(input, text, 'historyUndo');
+                },
+            ],
+            [
+                'typed over all of it and undone back',
+                (input, text) => {
+                    input.setSelectionRange(0, input.value.length);
+                    edit(input, 'S', 'insertText', 'S');
+                    edit(input, text, 'historyUndo');
+                },
+            ],
+            [
+                'given a composition that was canceled',
+                (input, text) => {
+                    input.dispatchEvent(
+                        new CompositionEvent('compositionstart', {
+                            bubbles: true,
+                            data: '',
+                        }),
+                    );
+                    input.value = `${text}x`;
+                    input.dispatchEvent(
+                        new InputEvent('input', {
+                            bubbles: true,
+                            inputType: 'insertCompositionText',
+                            data: 'x',
+                            isComposing: true,
+                        }),
+                    );
+                    input.value = text;
+                    input.dispatchEvent(
+                        new InputEvent('input', {
+                            bubbles: true,
+                            inputType: 'deleteCompositionText',
+                            isComposing: true,
+                        }),
+                    );
+                    input.dispatchEvent(
+                        new CompositionEvent('compositionend', {
+                            bubbles: true,
+                            data: '',
+                        }),
+                    );
+                },
+            ],
+        ];
+        for (const [how, change] of unchanged) {
+            it(`keeps its fixes and stores nothing when ${how}`, async () => {
+                const { field, stored } = await corrected();
+                change(field.input(), stored);
+                await wait();
+                const heard = hostEvents(field);
+                await store(field);
+
+                expect(heard).toEqual([]);
+                expect(field.stored()).toEqual(['NF', 'S']);
+                expect(await markedFixes()).toEqual(NOFORN_SECRET_FIXES);
+            });
+        }
+
+        it('starts its fixes over when a re-entry that was undone is redone', async () => {
+            const { field, stored } = await corrected();
+            const input = field.input();
+            edit(input, `${stored}X`, 'insertText', 'X');
+            input.setSelectionRange(0, input.value.length);
+            edit(input, stored, 'insertFromPaste', stored);
+            edit(input, `${stored}X`, 'historyUndo');
+            edit(input, stored, 'historyRedo');
+            await wait();
+            await store(field);
+
+            expect(field.stored()).toEqual(['NF', 'S']);
+            expect(await markedFixes()).toEqual([]);
+        });
+
+        if (kind === 'marking') {
+            it('keeps its fixes when Escape cancels a re-entry of the same text', async () => {
+                const { field, stored } = await corrected();
+                const input = field.input();
+                input.setSelectionRange(0, input.value.length);
+                edit(input, stored, 'insertFromPaste', stored);
+                await wait();
+                press(input, 'Escape');
+                press(input, 'Escape');
+                await leave(input);
+
+                expect(field.stored()).toEqual(['NF', 'S']);
+                expect(await markedFixes()).toEqual(NOFORN_SECRET_FIXES);
+            });
+        }
+
+        it('says nothing was discarded on Escape after an edit that changed nothing', async () => {
+            const { field, stored } = await corrected();
+            edit(field.input(), `${stored}X`, 'insertText', 'X');
+            edit(field.input(), stored, 'deleteContentBackward');
+            await wait();
+            const said = spoken();
+            press(field.input(), 'Escape');
+            press(field.input(), 'Escape');
+            await wait(100);
+
+            expect(said).not.toContain('Changes discarded');
+        });
+
+        if (kind !== 'marking') {
+            it('keeps its fixes when a concept is added to it in the editor', async () => {
+                const { field } = await corrected();
+                await type(field, 'SECRET//NOFORN/ORCON');
+                await store(field);
+
+                expect(field.stored()).toEqual(['NF', 'OC', 'S']);
+                expect(await markedFixes()).toEqual(NOFORN_SECRET_FIXES);
+            });
+        }
+    },
+);
+
+describe('MarkingField: a value set from outside under an edit that changed nothing', () => {
+    it('stays when the field is left', async () => {
+        const field = await mountField('marking');
+        await type(field, 'secret');
+        await key(field, 'Enter');
+        await wait(150);
+        expect(field.stored()).toEqual(['S']);
+        field.input().focus();
+        const stored = field.input().value;
+        edit(field.input(), `${stored}X`, 'insertText', 'X');
+        edit(field.input(), stored, 'deleteContentBackward');
+        await wait(100);
+        const component = forms!.components.get(field.host) as unknown as {
+            setValue(value: string): Promise<void>;
+        };
+        await component.setValue('UNCLASSIFIED');
+        await wait(150);
+        expect(field.input().value).toBe('UNCLASSIFIED');
+
+        await leave(field.input());
+
+        expect(field.stored()).toEqual(['U']);
+    });
+});
+
+const ACTION_FAILED = 'That change could not be applied. Try again.';
+
+/** Every message the page's live regions speak from here on. */
+function spoken(): string[] {
+    const said: string[] = [];
+    const observer = new MutationObserver((records) => {
+        for (const record of records) {
+            const region = (
+                record.target instanceof Element
+                    ? record.target
+                    : record.target.parentElement
+            )?.closest('[aria-live]');
+            const text = region?.textContent?.trim();
+            if (text) said.push(text);
+        }
+    });
+    observer.observe(document.body, {
+        subtree: true,
+        childList: true,
+        characterData: true,
+    });
+    return said;
+}
+
+/** The composer note under the field, when it shows. */
+function shownNote(): HTMLElement | null {
+    return (
+        [...document.querySelectorAll<HTMLElement>('.ez-composer-note')].find(
+            (note) => !note.hidden && note.isConnected,
+        ) ?? null
+    );
+}
+
+/** Unhandled rejections from here on, until `stop` is called. */
+function unhandled(): { reasons: unknown[]; stop(): void } {
+    const reasons: unknown[] = [];
+    const heard = (reason: unknown) => reasons.push(reason);
+    process.on('unhandledRejection', heard);
+    return { reasons, stop: () => process.off('unhandledRejection', heard) };
+}
+
+describe.each(KINDS)('a commit whose store fails in %s', (kind) => {
+    it('stores nothing, keeps the draft open with the reason, and says so on every try', async () => {
+        const field = await mountField(kind);
+        await type(field, 'secret');
+        await wait(100);
+        runtime.down = true;
+        const rejections = unhandled();
+        const said = spoken();
+
+        await key(field, 'Enter');
+        await wait(150);
+        await key(field, 'Enter');
+        await wait(150);
+        rejections.stop();
+
+        expect(rejections.reasons).toEqual([]);
+        expect(field.stored()).toEqual([]);
+        expect(openSurface()).not.toBeNull();
+        expect(field.input().value).toBe(
+            kind === 'tags' ? 'secret' : field.input().value,
+        );
+        expect(field.input().value.toLowerCase()).toContain('secret');
+        expect(shownNote()?.textContent).toBe(ACTION_FAILED);
+        expect(
+            field.input().getAttribute('aria-describedby')?.split(' '),
+        ).toContain(shownNote()?.id);
+        expect(said.filter((text) => text === ACTION_FAILED)).toHaveLength(2);
+
+        runtime.down = false;
+        await key(field, 'Enter');
+        await wait(150);
+        expect(field.stored()).toEqual(['S']);
+        expect(shownNote()).toBeNull();
+    });
+});
+
+describe.each(['tags', 'marking', 'marked-input'] as const)(
+    'a pick that cannot be applied in %s',
+    (kind) => {
+        it('keeps the search and the draft, says so, and the note goes with the list', async () => {
+            const field = await mountField(kind);
+            await type(
+                field,
+                kind === 'tags' ? 'sec' : `${field.input().value}sec`,
+            );
+            await wait(100);
+            const listed = rowLabels();
+            const draft = field.input().value;
+            runtime.down = true;
+            rowFor('SECRET')!.click();
+            await wait(150);
+
+            expect(shownNote()?.textContent).toBe(ACTION_FAILED);
+            expect(field.input().value).toBe(draft);
+            expect(rowLabels()).toEqual(listed);
+
+            runtime.down = false;
+            if (kind !== 'tags') {
+                // Back to the stored value, then leave: nothing is pending.
+                press(field.input(), 'Escape');
+                press(field.input(), 'Escape');
+                await wait();
+            } else typeText(field.input(), '');
+            await leave(field.input(), 400);
+            expect(field.stored()).toEqual([]);
+            expect(shownNote()).toBeNull();
+            expect(
+                field.input()?.getAttribute('aria-describedby') ?? '',
+            ).not.toMatch(/note/);
+        });
+
+        it('says nothing about a draft the user moved on to while it ran', async () => {
+            const field = await mountField(kind);
+            await type(
+                field,
+                kind === 'tags' ? 'sec' : `${field.input().value}sec`,
+            );
+            await wait(100);
+            runtime.down = true;
+            rowFor('SECRET')!.click();
+            // The pick's runtime call is out and will fail; before it does,
+            // the user types on.
+            for (let i = 0; i < 20; i++) await Promise.resolve();
+            runtime.down = false;
+            typeText(field.input(), 'nofo');
+            await wait(150);
+
+            expect(shownNote()?.textContent ?? '').not.toContain(ACTION_FAILED);
+        });
+    },
+);
+
+describe('TagInput: a tag removed from a value it could not read in full', () => {
+    it('says the removal did not happen when the value cannot be read again', async () => {
+        root.innerHTML = `<label for="f">Marking</label><input id="f" data-ezclassify-controller="tags" value="SECRET//NOFORN zzz">`;
+        forms = new EzClassifyUI(asContext((await createContext()) as never), {
+            root,
+        });
+        await wait(200);
+        const chip = () =>
+            [...root.querySelectorAll<HTMLElement>('.proto-tag')].find((c) =>
+                c.textContent?.includes('NOFORN'),
+            );
+        expect(chip()).toBeDefined();
+        runtime.down = true;
+        const said = spoken();
+        chip()!.querySelector<HTMLButtonElement>('.proto-tag-remove')!.click();
+        await wait(200);
+
+        expect(chip()).toBeDefined();
+        expect(shownNote()?.textContent).toContain(ACTION_FAILED);
+        expect(said).toContain(ACTION_FAILED);
+    });
+});
 
 it.each(['tags', 'marking', 'marked-input', 'marked-textarea'] as const)(
     '%s jumps categories without filtering or changing native or stored values',

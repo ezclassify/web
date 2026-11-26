@@ -87,10 +87,12 @@ import type { FavoritesPanelHost } from './favorites-panel';
 import { markingTarget } from './marking-target';
 import { hideTooltip } from './tooltip-manager';
 import {
+    focusFieldBox,
     showMarkingActions,
     usesPhoneMarkingActions,
 } from './marking-touch-actions';
 import markingTouchCss from './marking-touch-actions.css?inline';
+import { commitSettled } from './composer/composer-controller';
 
 /**
  * CSS class-name set a concrete field uses. Keeps the shared scaffolding (wrap,
@@ -233,7 +235,7 @@ export abstract class MarkedFieldBase<
      * every mounted field leaks a live observer (and its closure over the
      * detached DOM) for the page lifetime.
      */
-    protected _themeObserver: MutationObserver | null = null;
+    protected _themeObserver: ReturnType<typeof observeFieldTheme> = null;
     protected _explicitClose = false;
     protected _lastCloseTime = 0;
     /**
@@ -928,10 +930,13 @@ export abstract class MarkedFieldBase<
                 tooltips: this.options.tooltips,
                 tooltipConceptProperty: this.options.tooltipConceptProperty,
                 onBlurCommit: (outcome) => {
-                    if (outcome !== 'invalid' && this.picker === picker)
+                    if (commitSettled(outcome) && this.picker === picker)
                         finishBlur();
                 },
                 onCancel: (fromSheet) => this.escapeClosePicker(fromSheet),
+                onKept: () => {
+                    if (this.picker === picker) this.shareAgain();
+                },
                 onChange: (...args) => {
                     if (!this.discardStalePhoneMarking())
                         options.onChange?.(...args);
@@ -973,7 +978,7 @@ export abstract class MarkedFieldBase<
         return (
             this.picker === picker &&
             !this.discardStalePhoneMarking() &&
-            outcome !== 'invalid'
+            commitSettled(outcome)
         );
     }
 
@@ -1011,13 +1016,23 @@ export abstract class MarkedFieldBase<
     protected releaseUnverified(): void {
         this.fieldUnverified = false;
         this.editorUnverified = false;
+        this.setShareFailed(false);
+        this.publishUnverified();
+    }
+
+    protected override onUnverifiedChanged(): void {
         this.publishUnverified();
     }
 
     private publishUnverified(): void {
         const host = unverifiedHostOf(this.container, this.enhancedElement());
         if (host)
-            setUnverified(host, this.fieldUnverified || this.editorUnverified);
+            setUnverified(
+                host,
+                this.fieldUnverified ||
+                    this.editorUnverified ||
+                    this.valueNotShared,
+            );
     }
 
     protected destroyPicker(): void {
@@ -1174,10 +1189,13 @@ export abstract class MarkedFieldBase<
      */
     protected escapeClosePicker(fromSheet = false): void {
         const caretTarget = this.escapeCaretTarget();
+        const markStart = this.editedMarkStart();
         this.cancelPicker();
-        // Explicit sheet cancellation already parked the permanent visual box;
-        // keyboard idle Escape still returns to the ordinary text editor.
+        // Explicit sheet cancellation parks focus on the permanent visual box
+        // and then returns it to the mark; keyboard idle Escape still returns
+        // to the ordinary text editor.
         if (!fromSheet) this.host.focus();
+        else if (markStart !== null) this.returnFocusToMark(markStart);
         this.restoreCaretAfterEscape(caretTarget);
         this.afterClose();
     }
@@ -1199,6 +1217,9 @@ export abstract class MarkedFieldBase<
      * yet; subclasses interpret `null` as "use the live caret".
      */
     protected abstract captureCaretTarget(): number | null;
+
+    /** Where the mark the open editor edits starts, or null for a new one. */
+    protected abstract editedMarkStart(): number | null;
 
     /**
      * Place the caret after a host-level Escape close, using the pre-close
@@ -1308,12 +1329,15 @@ export abstract class MarkedFieldBase<
             valid: boolean;
             errors: readonly string[];
             warnings?: readonly string[];
+            /** The mark's text as the chip shows it. */
+            marking: string;
         },
         open?: (event: Event) => void,
         openAttentionOnDesktop = false,
         remove?: () => void,
     ) {
         const attention = this.segmentAttention(segment);
+        const phone = !!open && !!remove && usesPhoneMarkingActions(chip);
         chip.className = !segment.valid
             ? `${className} ${className}--invalid`
             : attention
@@ -1321,11 +1345,18 @@ export abstract class MarkedFieldBase<
               : className;
         if (open) {
             chip.classList.add('ez-marked-field-tap-target');
-            if (remove && usesPhoneMarkingActions(chip)) {
+            if (phone) {
                 chip.dataset.ezPhoneMarkAction = '';
                 chip.setAttribute('role', 'button');
                 chip.setAttribute('aria-expanded', 'false');
                 chip.tabIndex = 0;
+                // Named by what it shows first, so a spoken command naming the
+                // mark reaches it, then what it does and what is wrong with
+                // the mark: the phone shows no tooltip to say so.
+                chip.setAttribute(
+                    'aria-label',
+                    this.phoneMarkLabel(segment.marking, segment),
+                );
             }
             // On touch layouts the painted chip owns the tap. Let scrolling
             // cancel the click and keep the native editor from taking focus.
@@ -1357,7 +1388,7 @@ export abstract class MarkedFieldBase<
                 }
             });
         }
-        if (attention && open && openAttentionOnDesktop) {
+        if (attention && open && openAttentionOnDesktop && !phone) {
             chip.tabIndex = 0;
             chip.setAttribute('role', 'button');
             chip.setAttribute('aria-label', attention.label);
@@ -1377,6 +1408,87 @@ export abstract class MarkedFieldBase<
             () => ({ clearOf: this.wrap }),
         );
         return attention;
+    }
+
+    /** The accessible name of a mark that opens the phone's marking actions. */
+    private phoneMarkLabel(
+        marking: string,
+        segment: {
+            valid: boolean;
+            errors: readonly string[];
+            warnings?: readonly string[];
+        },
+    ): string {
+        const sentences = (messages: readonly string[]) =>
+            messages
+                .map((m) => m.trim())
+                .filter(Boolean)
+                .map((m) => (/[.!?]$/.test(m) ? m : `${m}.`))
+                .join(' ');
+        const shown = marking.trim();
+        if (!segment.valid && segment.errors.length)
+            return t('mark.actionsInvalidLabel')
+                .replace('{marking}', () => shown)
+                .replace('{messages}', () => sentences(segment.errors));
+        if (segment.valid && segment.warnings?.length)
+            return t('mark.actionsWarningLabel')
+                .replace('{marking}', () => shown)
+                .replace('{messages}', () => sentences(segment.warnings ?? []));
+        return t('mark.actionsLabel').replace('{marking}', () => shown);
+    }
+
+    /**
+     * Return focus to the mark the phone sheet was opened from once the sheet
+     * has closed (Done or Cancel), after the sheet parks focus on the field. A
+     * mark that is gone leaves focus on the field. Focus the user or the host
+     * moved elsewhere in the meantime stays where it is.
+     *
+     * @param start - Where the mark starts in the field's text
+     */
+    protected returnFocusToMark(start: number): void {
+        requestAnimationFrame(() => {
+            if (!this.wrap.isConnected) return;
+            const active = this.host.ownerDocument.activeElement;
+            if (
+                active &&
+                active !== this.host.ownerDocument.body &&
+                active !== this.wrap
+            )
+                return;
+            const mark = this.display.querySelector<HTMLElement>(
+                `[data-ez-phone-mark-action][data-start="${start}"]`,
+            );
+            if (mark) mark.focus({ preventScroll: true });
+            else if (active !== this.wrap) focusFieldBox(this.wrap);
+        });
+    }
+
+    /**
+     * Empty the display for a repaint. A painted mark that has focus is the
+     * phone's control for that marking, and repainting would drop its focus to
+     * the page: once the repaint is done, focus goes to the mark painted at the
+     * same place, or to the field when that mark is gone.
+     */
+    protected clearDisplay(): void {
+        const doc = this.host.ownerDocument;
+        const active = doc.activeElement;
+        const start =
+            active instanceof HTMLElement &&
+            this.display.contains(active) &&
+            active.dataset.ezPhoneMarkAction !== undefined
+                ? active.dataset.start
+                : undefined;
+        this.display.innerHTML = '';
+        if (start === undefined) return;
+        queueMicrotask(() => {
+            if (!this.wrap.isConnected) return;
+            if (doc.activeElement && doc.activeElement !== doc.body) return;
+            const mark = this.display.querySelector<HTMLElement>(
+                `[data-ez-phone-mark-action][data-start="${start}"]`,
+            );
+            if (mark) mark.focus({ preventScroll: true });
+            else focusFieldBox(this.wrap);
+        });
     }
 
     private closeTouchActions?: () => void;

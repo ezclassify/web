@@ -168,6 +168,20 @@ export interface ComposerPort {
     gated?(query: string, live: readonly Assertion[]): Promise<Suggestion[]>;
     /** The value the field currently stores. */
     committed(): ComposerCommitted;
+    /**
+     * The user entered the committed value again (the draft was emptied, or one
+     * input replaced all of it) and committed the same text. Nothing is stored,
+     * but what the field recorded about how its value came about (the fixes
+     * behind it) no longer describes it: the field starts that record over.
+     * Optional; a field without such a record ignores it.
+     */
+    reentered?(): void;
+    /**
+     * A commit stored nothing because the draft is the committed value. A field
+     * whose last publish of that value to the page was rejected sends it again
+     * here. Optional.
+     */
+    kept?(): void;
     /** Store a complete reading, or return false if its final write is refused. */
     store(
         reading: ComposerReading,
@@ -205,6 +219,9 @@ export interface ComposerPort {
 
 /** Whether the draft is the whole marking or an addition to a base set. */
 export type ComposerDraftShape = 'whole' | 'additive';
+
+/** How an input changed the draft's text, as the view saw it. */
+export type ComposerTextEdit = 'replace-all' | 'undo' | 'redo';
 
 /** What an accepted concept row does to the draft. */
 export type ComposerRowAction = 'add' | 'remove' | 'replace' | 'confirm';
@@ -302,6 +319,14 @@ export interface ComposerSnapshot {
      * text never looks like a checked one.
      */
     readonly unverified: boolean;
+    /**
+     * True after an action the user took (a pick, a fix, a removal, a commit)
+     * could not be applied because the runtime call it needed failed. The
+     * committed value is unchanged and the draft is kept, so the action can be
+     * tried again. Cleared by the next action that lands, the next edit, and
+     * once the draft is back at the committed value with the list closed.
+     */
+    readonly actionFailed: boolean;
     /** True while a request to read the current `text` is in flight. */
     readonly checking: boolean;
     readonly mode: 'ranked' | 'browse';
@@ -324,8 +349,18 @@ export interface ComposerSnapshot {
     readonly dirty: boolean;
 }
 
-/** Outcome of a commit. */
-export type CommitOutcome = 'stored' | 'unchanged' | 'invalid';
+/**
+ * Outcome of a commit. 'invalid': the draft does not read as a complete
+ * marking, so nothing was stored and the draft stays with the reason. 'failed':
+ * the draft was complete but the runtime call that stores it failed, so nothing
+ * was stored and the draft stays for another try.
+ */
+export type CommitOutcome = 'stored' | 'unchanged' | 'invalid' | 'failed';
+
+/** Whether a commit outcome ends the edit: the draft is the committed value. */
+export function commitSettled(outcome: CommitOutcome): boolean {
+    return outcome === 'stored' || outcome === 'unchanged';
+}
 
 /** Controller options. */
 export interface ComposerOptions {
@@ -511,6 +546,23 @@ export class ComposerController {
      * the edit may change what the rendering cannot show.
      */
     private structural = false;
+    /**
+     * A whole-marking draft was entered again since it was last reset to the
+     * committed value: the draft was emptied, or one input replaced all of it.
+     * Not a sign of a change (see isDirty, which compares text only); it tells
+     * a commit of the same text that the user stated the value anew, so what
+     * the field recorded about how the old value came about no longer applies
+     * (see ComposerPort.reentered).
+     */
+    private reentered = false;
+    /** An undo took a re-entry back; a redo onto the same text restores it. */
+    private undoneReentry = false;
+    /**
+     * Bumped when an action starts, the text changes, or the draft is reset, so
+     * a runtime call that fails after something newer happened says nothing
+     * about the draft it returns to.
+     */
+    private actionSeq = 0;
     /** Bumped whenever the committed value changes. */
     private committedVersion = 0;
     /** Bumped whenever an additive draft's edited base changes. */
@@ -568,6 +620,8 @@ export class ComposerController {
     private scope: string | null = null;
     private invalid = false;
     private problem: ComposerProblem | null = null;
+    /** See {@link ComposerSnapshot.actionFailed}. */
+    private actionFailed = false;
     private busy: Promise<unknown> = Promise.resolve();
     private readonly listeners = new Set<Listener>();
     private snapshotCache: ComposerSnapshot | null = null;
@@ -652,6 +706,10 @@ export class ComposerController {
     close(): void {
         if (!this._open) return;
         this._open = false;
+        // A failed action on a draft that is back at the committed value has
+        // nothing left to refer to once the list closes. A draft still
+        // holding an unstored change keeps it, so the user knows why.
+        if (!this.isDirty()) this.actionFailed = false;
         this.listed.clear();
         this.activeIndex = -1;
         this.navigated = false;
@@ -750,7 +808,11 @@ export class ComposerController {
 
     private resetToCommitted(): void {
         this.resets++;
+        this.actionSeq++;
         this.structural = false;
+        this.reentered = false;
+        this.undoneReentry = false;
+        this.actionFailed = false;
         // Any read still in flight was for the draft being thrown away.
         this.readSeq++;
         this.pendingRead = null;
@@ -790,11 +852,35 @@ export class ComposerController {
      * The input's text or caret changed. A text change clears any active row
      * the user picked and re-reads the draft; a caret move only re-targets the
      * token.
+     *
+     * @param edit - How the input changed the text, when the view knows:
+     *   'replace-all' for one input that replaced a selection covering all of
+     *   the text (typing or pasting over it, the same text included), 'undo'
+     *   and 'redo' for the platform's undo and redo
      */
-    input(text: string, caret: number): Promise<void> {
+    input(text: string, caret: number, edit?: ComposerTextEdit): Promise<void> {
         ({ text, caret } = this.attachSeparator(text, caret));
         const textChanged = text !== this.text;
         const caretMoved = caret !== this.caret;
+        if (this.shape === 'whole') {
+            const onBaseline = text.trim() === this.baselineText.trim();
+            if (edit === 'replace-all' || (textChanged && !text.trim())) {
+                this.reentered = true;
+                this.undoneReentry = false;
+            } else if (edit === 'undo' && onBaseline && this.reentered) {
+                // An undo that lands back on the committed text took the
+                // re-entry back with whatever else it undid; a redo that
+                // lands there again puts it back.
+                this.reentered = false;
+                this.undoneReentry = true;
+            } else if (edit === 'redo' && onBaseline && this.undoneReentry) {
+                this.reentered = true;
+                this.undoneReentry = false;
+            } else if (textChanged && edit !== 'undo' && edit !== 'redo') {
+                this.undoneReentry = false;
+            }
+        }
+        if (textChanged) this.actionSeq++;
         const previousQuery =
             !textChanged && caretMoved ? this.currentToken().query : '';
         this.text = text;
@@ -820,6 +906,7 @@ export class ComposerController {
         this.navigated = false;
         this.disarmed = false;
         this.showMore = false;
+        this.actionFailed = false;
         if (this.invalid) {
             this.invalid = false;
             this.problem = null;
@@ -848,12 +935,21 @@ export class ComposerController {
     /** Remove a chosen fact from the draft, carrying every unread fragment. */
     async remove(ref: FixConceptReference): Promise<void> {
         await this.settle();
+        const seq = this.beginAction();
         const reading =
             this.readingKey === this.readKey() ? this.reading : null;
-        if (!reading) return;
+        if (!reading) {
+            // The draft could not be read, so there is nothing to remove the
+            // concept from: the removal did not happen, and the user hears so.
+            if (this.isUnverified()) this.failAction(seq);
+            return;
+        }
         const stated = statedAssertions(reading.assertions);
-        this.browsing = true;
-        await this.rewrite(this.port.remove(stated, ref), reading.unmatched);
+        await this.rewrite(
+            this.port.remove(stated, ref),
+            reading.unmatched,
+            seq,
+        );
     }
 
     /**
@@ -936,6 +1032,27 @@ export class ComposerController {
         this.pendingRead = run;
         await run;
         if (this.pendingRead === run) this.pendingRead = null;
+    }
+
+    /**
+     * An action could not be applied because a runtime call failed: the draft
+     * and its reading stay as they were, and the field says so. Said on every
+     * failure, so a retry that fails again is heard again. A failure that lands
+     * after the draft moved on (an edit, a revert, a newer action) is dropped:
+     * it says nothing about the draft now on screen.
+     *
+     * @param seq - The {@link actionSeq} the action started at
+     */
+    private failAction(seq: number): void {
+        if (seq !== this.actionSeq) return;
+        this.actionFailed = true;
+        this.emit();
+        this.announceText(t('composer.actionFailed'));
+    }
+
+    /** Start an action; returns the sequence a failure must still match. */
+    private beginAction(): number {
+        return ++this.actionSeq;
     }
 
     /** Whether the last check failed and no reading describes the text. */
@@ -1579,6 +1696,7 @@ export class ComposerController {
             reading: this.reading,
             stale: this.readingKey !== this.readKey(),
             unverified: this.isUnverified(),
+            actionFailed: this.actionFailed,
             checking:
                 this.inFlight !== null &&
                 this.inFlight.seq === this.readSeq &&
@@ -1690,6 +1808,10 @@ export class ComposerController {
             this.announceText(t('a11y.composer.reverted'));
             return true;
         }
+        // The same text entered again changes nothing on screen, but Escape
+        // still cancels it: a later commit keeps the record of fixes.
+        this.reentered = false;
+        this.undoneReentry = false;
         return false;
     }
 
@@ -1763,22 +1885,25 @@ export class ComposerController {
         row: Extract<ComposerRow, { kind: 'fix' }>,
     ): Promise<boolean> {
         const assertions = fixAssertions(row.fix, this.liveAssertions());
-        // The whole value was replaced, not typed: nothing to search.
-        this.browsing = true;
+        const seq = this.beginAction();
         if (this.shape === 'additive') {
             // The fix stands for the whole value: it becomes the chips.
-            if (!(await this.rewrite(assertions, []))) return false;
+            if (!(await this.rewrite(assertions, [], seq))) return false;
         } else {
             let reading: ComposerReading;
             try {
                 reading = await this.port.render(assertions);
             } catch {
+                this.failAction(seq);
                 return false;
             }
+            if (seq !== this.actionSeq) return false;
             if (reading.refusal) {
                 this.refuseEdit(reading.refusal);
                 return false;
             }
+            // The whole value was replaced, not typed: nothing to search.
+            this.browsing = true;
             this.adoptReading(reading.rendered, reading);
         }
         this.announceText(row.label);
@@ -1799,6 +1924,7 @@ export class ComposerController {
         this.showMore = false;
         this.invalid = false;
         this.problem = null;
+        this.actionFailed = false;
         // A read still in flight belongs to an older draft.
         this.readSeq++;
         this.reading = reading;
@@ -1827,6 +1953,7 @@ export class ComposerController {
         const settled = token.query
             ? spliceToken(this.text, token, '', this.port.separators()).text
             : this.text;
+        const seq = this.beginAction();
         let baseline: ComposerReading;
         try {
             baseline = await this.port.read(
@@ -1834,19 +1961,18 @@ export class ComposerController {
                 this.currentBase(),
             );
         } catch {
+            this.failAction(seq);
             return;
         }
+        if (seq !== this.actionSeq) return;
         // Apply the edit to the value the engine returned.
         const stated = statedAssertions(baseline.assertions);
         const next =
             row.action === 'remove'
                 ? this.port.remove(stated, ref)
                 : this.port.add(stated, ref);
-        // The draft was rewritten, not typed: the list browses rather than
-        // search for the last word of the marking.
-        this.browsing = true;
         // Text the draft could not read stays, after the marking.
-        if (!(await this.rewrite(next, baseline.unmatched))) return;
+        if (!(await this.rewrite(next, baseline.unmatched, seq))) return;
         this.announceText(
             row.action === 'remove'
                 ? t('a11y.suggestionRemoved').replace('{label}', s.label)
@@ -1866,15 +1992,20 @@ export class ComposerController {
      * Write an assertion set back into the draft in the draft's own shape,
      * carrying every fragment the parser could not read.
      *
+     * @param seq - The {@link actionSeq} of the action doing the rewrite
      * @returns False when the draft stands as it was: the set could not be
-     *   written
+     *   written, or the draft moved on while it was
      */
     private async rewrite(
         assertions: Assertion[],
         leftovers: readonly ComposerFragment[],
+        seq: number,
     ): Promise<boolean> {
         const carried = leftovers.map((f) => f.text.trim()).filter(Boolean);
         if (this.shape === 'additive') {
+            // The draft was rewritten, not typed: the list browses rather
+            // than search for the last word of the marking.
+            this.browsing = true;
             this.base = assertions;
             this.baseEdited = true;
             this.baseVersion++;
@@ -1893,8 +2024,10 @@ export class ComposerController {
                 ? await this.port.write(assertions)
                 : await this.port.render(assertions);
         } catch {
+            this.failAction(seq);
             return false;
         }
+        if (seq !== this.actionSeq) return false;
         if (written.refusal) {
             this.refuseEdit(written.refusal);
             return false;
@@ -1902,6 +2035,7 @@ export class ComposerController {
         // Exactly the marking, then anything unread: no trailing separator
         // or space. Typing goes on from there as it would anywhere.
         const text = [written.rendered, ...carried].filter(Boolean).join(' ');
+        this.browsing = true;
         await this.replaceDraft(text, text.length);
         return true;
     }
@@ -1938,6 +2072,7 @@ export class ComposerController {
         this.showMore = false;
         this.invalid = false;
         this.problem = null;
+        this.actionFailed = false;
         const run = this.read();
         this.emit();
         await run;
@@ -1960,6 +2095,14 @@ export class ComposerController {
     private async commitNow(): Promise<CommitOutcome> {
         await this.settle();
         if (!this.isDirty()) {
+            // The user typed or pasted the committed value over itself: the
+            // same text, stated anew. Nothing is stored; the field starts its
+            // record of how the value came about over.
+            if (this.reentered) {
+                this.reentered = false;
+                this.port.reentered?.();
+            }
+            this.port.kept?.();
             // Nothing to store, but the text may still differ from what is
             // stored by its spacing (a pick leaves a separator after the
             // concept it added). The field's text after a commit is the stored
@@ -1968,9 +2111,10 @@ export class ComposerController {
             if (this.text !== settled) {
                 this.resetToCommitted();
                 this.emit();
-            } else if (this.invalid) {
+            } else if (this.invalid || this.actionFailed) {
                 this.invalid = false;
                 this.problem = null;
+                this.actionFailed = false;
                 this.emit();
             }
             return 'unchanged';
@@ -1998,9 +2142,20 @@ export class ComposerController {
         }
         const stored = this.text;
         const resets = this.resets;
-        const result = await this.port.store(reading, {
-            replaces: this.replacesCommitted(),
-        });
+        const seq = this.beginAction();
+        let result: void | false;
+        try {
+            result = await this.port.store(reading, {
+                replaces: this.replacesCommitted(),
+            });
+        } catch {
+            // Nothing was stored. A draft the user reverted during the store
+            // is the committed value again; any other stays, with the reason,
+            // so the user can try again.
+            if (this.resets !== resets) return 'unchanged';
+            this.failAction(seq);
+            return 'failed';
+        }
         if (result === false)
             return this.refuseCommit({
                 fragment: this.text.trim(),

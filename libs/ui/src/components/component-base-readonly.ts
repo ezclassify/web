@@ -892,8 +892,20 @@ export abstract class ReadOnlyComponentBase
      * One field's state is never another's, because each stamps its own host.
      */
     protected reportUnverified(failed: boolean): void {
+        this.checkFailed = failed;
+        this.onUnverifiedChanged();
+    }
+
+    /** Whether the field's last check of its text failed. */
+    private checkFailed = false;
+
+    /**
+     * The field is unverified while either cause holds: its last check failed,
+     * or its value could not be shared with the page (see setShareFailed).
+     */
+    protected override onUnverifiedChanged(): void {
         const host = unverifiedHostOf(this.container, this.enhancedInput);
-        if (host) setUnverified(host, failed);
+        if (host) setUnverified(host, this.checkFailed || this.valueNotShared);
     }
 
     /** Whether the field's last read of its own value failed. */

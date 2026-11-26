@@ -13,6 +13,14 @@ import { MarkedTextArea } from './marked-text-area';
 import { HiddenAssertionField } from './hidden-assertion-field';
 import { createAsyncMockEngine } from './async-engine-mock';
 import { connectDemoContext } from '../../../../test-support/demo-runtime';
+import {
+    editMark,
+    markActions,
+    nextFrame,
+    openMarkActions,
+    pressKey,
+    sheetButton,
+} from '../../test-fixtures/phone-mark-control';
 
 function wait(ms = 50): Promise<void> {
     return new Promise((r) => setTimeout(r, ms));
@@ -2336,5 +2344,118 @@ describe('MarkedTextArea when its text could not be checked', () => {
         field.destroy();
         await wait(50);
         expect(ta.hasAttribute(UNVERIFIED)).toBe(false);
+    });
+});
+
+describe('MarkedTextArea on the phone layout: each painted mark is the control for its marking', () => {
+    async function mountPhone(value: string): Promise<{
+        marks: () => HTMLElement[];
+        native: HTMLTextAreaElement;
+        wrap: HTMLElement;
+    }> {
+        vi.stubGlobal('innerWidth', 390);
+        vi.stubGlobal('matchMedia', () => ({ matches: true }));
+        root.innerHTML = `<label for="body">Body</label><textarea id="body" data-ezclassify-controller="marked-textarea"></textarea><button id="after">After</button>`;
+        const native = document.getElementById('body') as HTMLTextAreaElement;
+        native.value = value;
+        const forms = new EzClassifyUI(
+            asContext((await createTestEngine()) as never),
+            {},
+        );
+        activeForms.push(forms);
+        const marks = () => [
+            ...root.querySelectorAll<HTMLElement>(
+                '.marked-textarea-chip[data-ez-phone-mark-action]',
+            ),
+        ];
+        await expect.poll(() => marks().length).toBeGreaterThan(0);
+        return {
+            marks,
+            native,
+            wrap: root.querySelector<HTMLElement>('.marked-textarea-wrap')!,
+        };
+    }
+
+    afterEach(() => vi.unstubAllGlobals());
+
+    it('names each mark by the marking it shows and what it does, in text order', async () => {
+        const { marks } = await mountPhone('(U) First.\n(S) Second.');
+        await expect.poll(() => marks().length).toBe(2);
+        expect(marks().map((m) => m.tabIndex)).toEqual([0, 0]);
+        expect(marks().map((m) => m.getAttribute('aria-label'))).toEqual([
+            '(U), marking actions',
+            '(S), marking actions',
+        ]);
+    });
+
+    it('says what is wrong with an invalid mark, which has no tooltip here', async () => {
+        const { marks } = await mountPhone('(U/S) First.');
+        await expect
+            .poll(() => marks()[0]?.getAttribute('aria-label') ?? '')
+            .toMatch(/^\(U\/S\), marking actions\. Invalid marking: \S/);
+    });
+
+    it.each(['Enter', ' '] as const)(
+        'opens its actions with %j, and Escape returns focus to the mark',
+        async (key) => {
+            const { marks } = await mountPhone('(U) First.\n(S) Second.');
+            const second = () => marks()[1]!;
+            const actions = openMarkActions(second(), key);
+            expect(actions.map((b) => b.textContent)).toEqual([
+                'Edit marking',
+                'Remove marking',
+            ]);
+            expect(document.activeElement).toBe(actions[0]);
+
+            pressKey(actions[0]!, 'Escape');
+
+            expect(markActions()).toEqual([]);
+            expect(document.activeElement).toBe(second());
+        },
+    );
+
+    it('closes its actions when focus moves on past them', async () => {
+        const { marks } = await mountPhone('(U) First.');
+        const [, remove] = openMarkActions(marks()[0]!, 'Enter');
+        remove!.focus();
+        const after = document.getElementById('after')!;
+        after.focus();
+
+        expect(markActions()).toEqual([]);
+        expect(document.activeElement).toBe(after);
+    });
+
+    it.each(['done', 'cancel'] as const)(
+        'Edit opens the sheet on the marking, and %s returns focus to that mark',
+        async (button) => {
+            const { marks, native } = await mountPhone(
+                '(U) First.\n(S) Second.',
+            );
+            const input = await editMark(marks()[1]!);
+            expect(input.value).toBe('S');
+
+            sheetButton(button).click();
+            const second = () => marks().find((m) => m.dataset.start === '11');
+            await expect
+                .poll(() => !!second() && document.activeElement === second())
+                .toBe(true);
+            await nextFrame();
+
+            expect(document.activeElement).toBe(second());
+            expect(native.value).toBe('(U) First.\n(S) Second.');
+        },
+    );
+
+    it('Remove takes that marking out and leaves focus on the field', async () => {
+        const { marks, native, wrap } = await mountPhone(
+            '(U) First.\n(S) Second.',
+        );
+        const [, remove] = openMarkActions(marks()[1]!, 'Enter');
+        remove!.click();
+        await expect.poll(() => native.value).toBe('(U) First.\nSecond.');
+        await nextFrame();
+
+        expect(marks()).toHaveLength(1);
+        expect(document.activeElement).toBe(wrap);
     });
 });

@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { resetLocale, setLocale } from '../i18n';
 import { AccessHandbook } from './access-handbook';
 import type {
     AccessEngineAdapter,
@@ -327,6 +328,36 @@ describe('AccessHandbook', () => {
         );
         expect(visibleEntries).toHaveLength(1);
         expect(visibleEntries[0]?.textContent).toContain('Layer access rule');
+    });
+
+    it("announces a search result with the locale's noun for a rule", async () => {
+        setLocale({
+            'noun.rule.one': 'règle',
+            'noun.rule.other': 'règles',
+            'search.matchCount.one': '{count} {item} trouvée',
+        });
+        try {
+            await component.init(
+                container,
+                await makeContext([makeRule({ name: 'Base access rule' })]),
+                { expandAll: true },
+            );
+            await demoRuntimeSettled();
+            const searchInput = container.querySelector<HTMLInputElement>(
+                '.ez-access-handbook__search-input',
+            )!;
+            searchInput.value = 'base access';
+            searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+            await vi.waitFor(() =>
+                expect(
+                    [...document.querySelectorAll('[aria-live]')].map(
+                        (el) => el.textContent,
+                    ),
+                ).toContain('1 règle trouvée'),
+            );
+        } finally {
+            resetLocale();
+        }
     });
 
     it('rule entries are not tab stops (no tabIndex=0)', async () => {
