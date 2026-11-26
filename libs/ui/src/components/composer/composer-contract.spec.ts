@@ -857,6 +857,48 @@ describe.each(['marking', 'marked-input', 'marked-textarea'] as const)(
                 },
             ],
             [
+                // The order Chromium sent for an IME over a full selection
+                // that committed the stored text: compositionstart with the
+                // selection intact, two composing updates, compositionend.
+                'composed over a selection of all of it',
+                (input, text) => {
+                    input.setSelectionRange(0, input.value.length);
+                    input.dispatchEvent(
+                        new CompositionEvent('compositionstart', {
+                            bubbles: true,
+                            data: text,
+                        }),
+                    );
+                    for (let update = 0; update < 2; update++) {
+                        input.dispatchEvent(
+                            new InputEvent('beforeinput', {
+                                bubbles: true,
+                                cancelable: true,
+                                inputType: 'insertCompositionText',
+                                data: text,
+                                isComposing: true,
+                            }),
+                        );
+                        input.value = text;
+                        input.setSelectionRange(text.length, text.length);
+                        input.dispatchEvent(
+                            new InputEvent('input', {
+                                bubbles: true,
+                                inputType: 'insertCompositionText',
+                                data: text,
+                                isComposing: true,
+                            }),
+                        );
+                    }
+                    input.dispatchEvent(
+                        new CompositionEvent('compositionend', {
+                            bubbles: true,
+                            data: text,
+                        }),
+                    );
+                },
+            ],
+            [
                 'deleted and typed again',
                 (input, text) => {
                     edit(input, '', 'deleteContentBackward');
