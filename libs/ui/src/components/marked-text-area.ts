@@ -2400,7 +2400,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         if (this.toolsButton?.getAttribute('aria-expanded') !== 'true')
             hideTooltip(this.container);
         this.clearSegmentHover();
-        this.display.innerHTML = '';
+        this.clearDisplay();
 
         let cursor = 0;
 
@@ -2890,8 +2890,10 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                                 ? range.start
                                 : range.end
                             : this.textarea.selectionStart;
-                        if (fromSheet) this.leaveCaretAt(pos);
-                        else this.focusAt(pos);
+                        if (fromSheet) {
+                            this.leaveCaretAt(pos);
+                            if (range) this.returnFocusToMark(range.start);
+                        } else this.focusAt(pos);
                         await this.settleClosedEditor();
                         this.revealCaret();
                     });
@@ -3696,6 +3698,10 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
      * Caret target = end of the active marking, or the live caret when no
      * marking is active. Captured BEFORE close clears the active range.
      */
+    protected editedMarkStart(): number | null {
+        return this.activeRange?.start ?? null;
+    }
+
     protected captureCaretTarget(): number {
         return this.activeRange
             ? this.activeRange.end

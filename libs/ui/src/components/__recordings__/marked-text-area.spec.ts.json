@@ -512,6 +512,75 @@
             "method": "POST",
             "statusCode": 200
         },
+        "2a78cd097a0b21ad27e6d1dc83c8b690c4a2a591462256088eb2fc8e0820e063": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "marked-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "marked-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "limits": { "regionsFound": 2, "status": "complete" },
+                    "results": [
+                        {
+                            "end": 3,
+                            "inner": "U",
+                            "marking": "(U)",
+                            "result": {
+                                "appliedFixes": [],
+                                "assertions": [
+                                    {
+                                        "categoryId": "level",
+                                        "conceptId": "U",
+                                        "confidence": "certain",
+                                        "source": "parse"
+                                    }
+                                ],
+                                "assessment": {
+                                    "collapsed": [],
+                                    "conflicts": [],
+                                    "emitted": [
+                                        {
+                                            "categoryId": "level",
+                                            "conceptId": "U"
+                                        }
+                                    ],
+                                    "omitted": [],
+                                    "unrepresentable": []
+                                },
+                                "errors": [],
+                                "inputWasValid": true,
+                                "notices": [],
+                                "recognition": {
+                                    "inputFormat": "portion",
+                                    "status": "complete",
+                                    "surface": "marking",
+                                    "unmatched": []
+                                },
+                                "rendered": "U",
+                                "valid": true,
+                                "warnings": []
+                            },
+                            "role": "part",
+                            "start": 0,
+                            "type": "portion",
+                            "wrapped": true
+                        }
+                    ],
+                    "unread": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "2b5cb163bc910b7a60b197692cbb16c1aeb3cf2994279975a2311882de15fa08": {
             "body": [
                 {
@@ -584,6 +653,82 @@
                     "rendered": "U",
                     "renders": {},
                     "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "3205f3c1d519a9fb5c391fddcfc054d64c5f28a457e4703b0f7785b87f03f094": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "marked-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "marked-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "U",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [
+                            {
+                                "assertions": [
+                                    { "categoryId": "level", "conceptId": "S" },
+                                    { "categoryId": "level", "conceptId": "U" }
+                                ],
+                                "field": "level"
+                            }
+                        ],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "U" },
+                            { "categoryId": "level", "conceptId": "S" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [
+                        {
+                            "affectedConcepts": ["U", "S"],
+                            "categoryId": "level",
+                            "constraintId": "_single-category:level",
+                            "message": "Level allows one value; U and S were given."
+                        }
+                    ],
+                    "inputWasValid": false,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "portion",
+                        "status": "partial",
+                        "surface": "marking",
+                        "unmatched": []
+                    },
+                    "rendered": "U/S",
+                    "renders": {},
+                    "valid": false,
                     "warnings": []
                 }
             },
@@ -893,6 +1038,46 @@
             "method": "POST",
             "statusCode": 200
         },
+        "3dad61f4ed457adb6ac2503c5d0b193ab79cb20645c5d67c1a3386026a24f580": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "marked-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "marked-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [
+                            {
+                                "assertions": [
+                                    { "categoryId": "level", "conceptId": "S" },
+                                    { "categoryId": "level", "conceptId": "U" }
+                                ],
+                                "field": "level"
+                            }
+                        ],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "U" },
+                            { "categoryId": "level", "conceptId": "S" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "result": "U/S"
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "458aee0487d2ae5cb256b0f31d42b5943f51b81ea034ee1f678791b9c10fecf6": {
             "body": [
                 {
@@ -1163,6 +1348,151 @@
             "method": "GET",
             "statusCode": 200
         },
+        "59d3be88869d7d2ceb6235ba9d55666b312e60c0b68571abc5f134b8a1356aa9": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "marked-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "marked-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "U",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [
+                            {
+                                "assertions": [
+                                    { "categoryId": "level", "conceptId": "S" },
+                                    { "categoryId": "level", "conceptId": "U" }
+                                ],
+                                "field": "level"
+                            }
+                        ],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "U" },
+                            { "categoryId": "level", "conceptId": "S" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [
+                        {
+                            "affectedConcepts": ["U", "S"],
+                            "categoryId": "level",
+                            "constraintId": "_single-category:level",
+                            "message": "Level allows one value; U and S were given."
+                        }
+                    ],
+                    "inputWasValid": false,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "portion",
+                        "status": "partial",
+                        "surface": "marking",
+                        "unmatched": []
+                    },
+                    "rendered": "U/S",
+                    "renders": {},
+                    "valid": false,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "5e67ab20ff58d88984e429569a3711d1fa8b3bf51acee94d4efb5195d78cebb6": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "marked-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "marked-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "U",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [
+                            {
+                                "assertions": [
+                                    { "categoryId": "level", "conceptId": "S" },
+                                    { "categoryId": "level", "conceptId": "U" }
+                                ],
+                                "field": "level"
+                            }
+                        ],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "U" },
+                            { "categoryId": "level", "conceptId": "S" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [
+                        {
+                            "affectedConcepts": ["U", "S"],
+                            "categoryId": "level",
+                            "constraintId": "_single-category:level",
+                            "message": "Level allows one value; U and S were given."
+                        }
+                    ],
+                    "inputWasValid": false,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "U/S",
+                    "renders": {},
+                    "valid": false,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "5ecdc25489ee3dad9498ac32d4f1699f34cc22a0ad77fe9abe1909c4713f4c6e": {
             "body": {
                 "resolution": {
@@ -1280,6 +1610,88 @@
                         }
                     ],
                     "unread": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "618d3e09b342d7b5e217986122957fda358ef5ef691f56e3ab270e548c00a324": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "marked-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "marked-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "suggestions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "description": "Secret",
+                            "group": "Level",
+                            "label": "S",
+                            "name": "Secret",
+                            "order": 2,
+                            "selected": true,
+                            "views": { "default": "S" }
+                        }
+                    ],
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "625ddb2fb5b6dea5c0cdbe900e36ddcd68b82e14575896c80643695447ada41d": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "marked-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "marked-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "S" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "S",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
                 }
             },
             "headers": { "x-ezclassify-resolved-version": "1.0.0" },
@@ -2089,6 +2501,54 @@
                     "proposedFixes": [],
                     "rendered": "S",
                     "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "8597b5fd90ba9604c82f5b18919bd320645c9a5730781917f8bf0b01b11bb2b8": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "marked-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "marked-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        }
+                    ],
+                    "errors": [
+                        {
+                            "affectedConcepts": ["U", "S"],
+                            "constraintId": "_invalid_contributor",
+                            "message": "Contributor 1 did not produce a complete valid input outcome."
+                        },
+                        {
+                            "affectedConcepts": ["U", "S"],
+                            "categoryId": "level",
+                            "constraintId": "_single-category:level",
+                            "message": "Contributor 1: Level allows one value; U and S were given."
+                        }
+                    ],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "S",
+                    "valid": false,
                     "warnings": []
                 }
             },
@@ -3207,6 +3667,106 @@
             "method": "POST",
             "statusCode": 200
         },
+        "cb935924a8c77b42ae2fd2c40210eb625ba94142dff2f065eecd42094cea34d2": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "marked-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "marked-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "limits": { "regionsFound": 1, "status": "complete" },
+                    "results": [
+                        {
+                            "end": 5,
+                            "inner": "U/S",
+                            "marking": "(U/S)",
+                            "result": {
+                                "appliedFixes": [],
+                                "assertions": [
+                                    {
+                                        "categoryId": "level",
+                                        "conceptId": "U",
+                                        "confidence": "certain",
+                                        "source": "parse"
+                                    },
+                                    {
+                                        "categoryId": "level",
+                                        "conceptId": "S",
+                                        "confidence": "certain",
+                                        "source": "parse"
+                                    }
+                                ],
+                                "assessment": {
+                                    "collapsed": [],
+                                    "conflicts": [
+                                        {
+                                            "assertions": [
+                                                {
+                                                    "categoryId": "level",
+                                                    "conceptId": "S"
+                                                },
+                                                {
+                                                    "categoryId": "level",
+                                                    "conceptId": "U"
+                                                }
+                                            ],
+                                            "field": "level"
+                                        }
+                                    ],
+                                    "emitted": [
+                                        {
+                                            "categoryId": "level",
+                                            "conceptId": "U"
+                                        },
+                                        {
+                                            "categoryId": "level",
+                                            "conceptId": "S"
+                                        }
+                                    ],
+                                    "omitted": [],
+                                    "unrepresentable": []
+                                },
+                                "errors": [
+                                    {
+                                        "affectedConcepts": ["U", "S"],
+                                        "categoryId": "level",
+                                        "constraintId": "_single-category:level",
+                                        "message": "Level allows one value; U and S were given."
+                                    }
+                                ],
+                                "inputWasValid": false,
+                                "notices": [],
+                                "recognition": {
+                                    "inputFormat": "portion",
+                                    "status": "partial",
+                                    "surface": "marking",
+                                    "unmatched": []
+                                },
+                                "rendered": "U/S",
+                                "valid": false,
+                                "warnings": []
+                            },
+                            "role": "part",
+                            "start": 0,
+                            "type": "portion",
+                            "wrapped": true
+                        }
+                    ],
+                    "unread": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "ccea87df7f856a171e728f286ad394c4c56c845be1e85fe6943f4af74472fde1": {
             "body": {
                 "resolution": {
@@ -3458,6 +4018,75 @@
             "method": "POST",
             "statusCode": 200
         },
+        "dad7c831823b72967c0715ee403ada2fa0af1d4b243fca30c38889f0c50d0129": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "marked-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "marked-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "limits": { "regionsFound": 1, "status": "complete" },
+                    "results": [
+                        {
+                            "end": 3,
+                            "inner": "U",
+                            "marking": "(U)",
+                            "result": {
+                                "appliedFixes": [],
+                                "assertions": [
+                                    {
+                                        "categoryId": "level",
+                                        "conceptId": "U",
+                                        "confidence": "certain",
+                                        "source": "parse"
+                                    }
+                                ],
+                                "assessment": {
+                                    "collapsed": [],
+                                    "conflicts": [],
+                                    "emitted": [
+                                        {
+                                            "categoryId": "level",
+                                            "conceptId": "U"
+                                        }
+                                    ],
+                                    "omitted": [],
+                                    "unrepresentable": []
+                                },
+                                "errors": [],
+                                "inputWasValid": true,
+                                "notices": [],
+                                "recognition": {
+                                    "inputFormat": "portion",
+                                    "status": "complete",
+                                    "surface": "marking",
+                                    "unmatched": []
+                                },
+                                "rendered": "U",
+                                "valid": true,
+                                "warnings": []
+                            },
+                            "role": "part",
+                            "start": 0,
+                            "type": "portion",
+                            "wrapped": true
+                        }
+                    ],
+                    "unread": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "db01434c32bccf71331c12b8cd6ed060fd067c576474dab136ed71af024f230a": {
             "body": {
                 "resolution": {
@@ -3516,6 +4145,119 @@
             "body": [],
             "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
+            "statusCode": 200
+        },
+        "dca6bd988b8d71be3ec798588efb8e0f0d9036770fa92dfac8d4aff076510540": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "marked-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "marked-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "limits": { "regionsFound": 2, "status": "complete" },
+                    "results": [
+                        {
+                            "end": 3,
+                            "inner": "U",
+                            "marking": "(U)",
+                            "result": {
+                                "appliedFixes": [],
+                                "assertions": [
+                                    {
+                                        "categoryId": "level",
+                                        "conceptId": "U",
+                                        "confidence": "certain",
+                                        "source": "parse"
+                                    }
+                                ],
+                                "assessment": {
+                                    "collapsed": [],
+                                    "conflicts": [],
+                                    "emitted": [
+                                        {
+                                            "categoryId": "level",
+                                            "conceptId": "U"
+                                        }
+                                    ],
+                                    "omitted": [],
+                                    "unrepresentable": []
+                                },
+                                "errors": [],
+                                "inputWasValid": true,
+                                "notices": [],
+                                "recognition": {
+                                    "inputFormat": "portion",
+                                    "status": "complete",
+                                    "surface": "marking",
+                                    "unmatched": []
+                                },
+                                "rendered": "U",
+                                "valid": true,
+                                "warnings": []
+                            },
+                            "role": "part",
+                            "start": 0,
+                            "type": "portion",
+                            "wrapped": true
+                        },
+                        {
+                            "end": 14,
+                            "inner": "S",
+                            "marking": "(S)",
+                            "result": {
+                                "appliedFixes": [],
+                                "assertions": [
+                                    {
+                                        "categoryId": "level",
+                                        "conceptId": "S",
+                                        "confidence": "certain",
+                                        "source": "parse"
+                                    }
+                                ],
+                                "assessment": {
+                                    "collapsed": [],
+                                    "conflicts": [],
+                                    "emitted": [
+                                        {
+                                            "categoryId": "level",
+                                            "conceptId": "S"
+                                        }
+                                    ],
+                                    "omitted": [],
+                                    "unrepresentable": []
+                                },
+                                "errors": [],
+                                "inputWasValid": true,
+                                "notices": [],
+                                "recognition": {
+                                    "inputFormat": "portion",
+                                    "status": "complete",
+                                    "surface": "marking",
+                                    "unmatched": []
+                                },
+                                "rendered": "S",
+                                "valid": true,
+                                "warnings": []
+                            },
+                            "role": "part",
+                            "start": 11,
+                            "type": "portion",
+                            "wrapped": true
+                        }
+                    ],
+                    "unread": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
             "statusCode": 200
         },
         "e070dec6e78862435e7c23c92a6e4a93a9667377aed0b78b533966687028c314": {

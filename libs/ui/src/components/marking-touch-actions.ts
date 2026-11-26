@@ -118,6 +118,27 @@ export function removeMarkingText(
     return value.slice(0, start) + value.slice(after);
 }
 
+/**
+ * Focus a field's box, which is not a text input, so the on-screen keyboard
+ * stays down. A box with no tab stop of its own borrows one until it loses
+ * focus again.
+ *
+ * @param box - The field's permanent box
+ */
+export function focusFieldBox(box: HTMLElement): void {
+    const borrowed = !box.hasAttribute('tabindex');
+    if (borrowed) box.tabIndex = -1;
+    box.focus({ preventScroll: true });
+    if (!borrowed) return;
+    if (box.ownerDocument.activeElement !== box) {
+        box.removeAttribute('tabindex');
+        return;
+    }
+    box.addEventListener('blur', () => box.removeAttribute('tabindex'), {
+        once: true,
+    });
+}
+
 export function showMarkingActions(
     owner: HTMLElement,
     chip: HTMLElement,
@@ -133,10 +154,21 @@ export function showMarkingActions(
     popup.setAttribute('role', 'group');
     popup.setAttribute('aria-label', t('mark.touchActions'));
     const listeners = new AbortController();
+    /**
+     * Take the actions down. Focus inside them goes back to the mark when they
+     * close under it (Escape, a scroll), so it never falls to the page; an
+     * action that moved focus elsewhere (the sheet Edit opens) keeps it.
+     */
     const close = () => {
+        if (listeners.signal.aborted) return;
+        const returnToChip = popup.contains(doc.activeElement);
         listeners.abort();
         chip.setAttribute('aria-expanded', 'false');
         popup.remove();
+        if (!returnToChip) return;
+        // A mark the action removed leaves focus on the field it was in.
+        if (chip.isConnected) chip.focus({ preventScroll: true });
+        else focusFieldBox(owner);
     };
     for (const [label, action] of [
         [t('mark.editMarking'), edit],
@@ -175,9 +207,21 @@ export function showMarkingActions(
         (event) => {
             if (event.key !== 'Escape') return;
             event.preventDefault();
-            const returnToChip = popup.contains(doc.activeElement);
             close();
-            if (returnToChip) chip.focus({ preventScroll: true });
+        },
+        { signal },
+    );
+    // Focus that moves out of the actions (Tab past them, a press on another
+    // control) closes them; the page switching windows does not.
+    popup.addEventListener(
+        'focusout',
+        (event) => {
+            const next = event.relatedTarget;
+            if (next instanceof Node && popup.contains(next)) return;
+            if (!next && !doc.hasFocus()) return;
+            listeners.abort();
+            chip.setAttribute('aria-expanded', 'false');
+            popup.remove();
         },
         { signal },
     );

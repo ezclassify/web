@@ -1170,7 +1170,7 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
         const hasSelection = selStart >= 0 && selStart !== selEnd;
 
         this.clearSegmentHover();
-        this.display.innerHTML = '';
+        this.clearDisplay();
 
         // Append a text run, wrapping any part inside the active selection in
         // a highlight span (same shape as MarkedTextArea.renderDisplay).
@@ -1245,6 +1245,7 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
                         valid: this.valid,
                         errors: this.errors,
                         warnings: this.warnings,
+                        marking: mark,
                     },
                     () => {
                         if (!this.picker && this.canChangeMarking(v))
@@ -1420,7 +1421,8 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
                 onChange: () => this.onPickerChange(),
                 onExit: (_direction, fromSheet) => {
                     if (!this.finishPicker()) return;
-                    if (!fromSheet) this.input.focus();
+                    if (fromSheet) this.returnFocusToMark(0);
+                    else this.input.focus();
                     const afterMark =
                         this.markEnd +
                         (this.input.value[this.markEnd] === ' ' ? 1 : 0);
@@ -1668,6 +1670,10 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
     }
 
     /** Caret target just past the marking (one space accounted for). */
+    protected editedMarkStart(): number | null {
+        return 0;
+    }
+
     protected captureCaretTarget(): number {
         if (this.picker && usesPhoneMarkingActions(this.input))
             return this.markEnd;

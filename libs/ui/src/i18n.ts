@@ -88,6 +88,11 @@ export const defaultLocale = {
     'mark.touchActions': 'Marking actions',
     'mark.editMarking': 'Edit marking',
     'mark.removeMarking': 'Remove marking',
+    'mark.actionsLabel': '{marking}, marking actions',
+    'mark.actionsInvalidLabel':
+        '{marking}, marking actions. Invalid marking: {messages}',
+    'mark.actionsWarningLabel':
+        '{marking}, marking actions. Marking has a warning: {messages}',
     'mark.removeExplicitly': 'Use Remove marking to remove this marking.',
 
     'dualPane.available': 'Available',
