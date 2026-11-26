@@ -91,6 +91,7 @@ import {
     usesPhoneMarkingActions,
 } from './marking-touch-actions';
 import markingTouchCss from './marking-touch-actions.css?inline';
+import { commitSettled } from './composer/composer-controller';
 
 /**
  * CSS class-name set a concrete field uses. Keeps the shared scaffolding (wrap,
@@ -928,7 +929,7 @@ export abstract class MarkedFieldBase<
                 tooltips: this.options.tooltips,
                 tooltipConceptProperty: this.options.tooltipConceptProperty,
                 onBlurCommit: (outcome) => {
-                    if (outcome !== 'invalid' && this.picker === picker)
+                    if (commitSettled(outcome) && this.picker === picker)
                         finishBlur();
                 },
                 onCancel: (fromSheet) => this.escapeClosePicker(fromSheet),
@@ -973,7 +974,7 @@ export abstract class MarkedFieldBase<
         return (
             this.picker === picker &&
             !this.discardStalePhoneMarking() &&
-            outcome !== 'invalid'
+            commitSettled(outcome)
         );
     }
 

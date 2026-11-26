@@ -3161,6 +3161,14 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                 }
             }
         }
+        // A marking the user entered again starts its record of fixes over.
+        const range = this.activeRange;
+        if (range && this.picker?.reentered()) {
+            const entryId = this.segments.find(
+                (segment) => segment.start === range.start,
+            )?.entryId;
+            if (entryId) this.appliedFixHistories.get(entryId)?.clear();
+        }
         if (reading && this.activeRange)
             this.stageMarkReading(
                 this.activeRange.start,

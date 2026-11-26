@@ -1527,7 +1527,9 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
         if (this.picker) {
             // Commit path: fixes the engine applied inside the editor belong
             // to the committed value, so they join the field's mark record.
-            // (Escape-cancel never reaches here and discards them.)
+            // (Escape-cancel never reaches here and discards them.) A value
+            // the user entered again starts the record over.
+            if (this.picker.reentered()) this.appliedFixHistory.clear();
             this.recordMarkFixes(
                 this.picker.getAssertions(),
                 this.picker.getAppliedFixes(),

@@ -128,6 +128,7 @@ export const defaultLocale = {
     'composer.readFailed': 'This could not be read just now. Try again.',
     'composer.unverified':
         'This text could not be checked. The result shown may be out of date.',
+    'composer.actionFailed': 'That change could not be applied. Try again.',
     'composer.didYouMean': 'Did you mean {label}?',
     'composer.needs': 'Needs',
     'composer.categories': 'Category',

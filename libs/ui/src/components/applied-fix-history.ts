@@ -26,6 +26,18 @@ export class AppliedFixHistory {
         this.fixes.clear();
     }
 
+    /** A copy of the record, to put back with {@link restore}. */
+    snapshot(): { held: readonly Assertion[]; fixes: Change[] } {
+        return { held: this.held, fixes: this.values() };
+    }
+
+    /** Put back a record taken with {@link snapshot}. */
+    restore(saved: { held: readonly Assertion[]; fixes: Change[] }): void {
+        this.clear();
+        this.held = saved.held;
+        this.append(saved.fixes);
+    }
+
     values(): Change[] {
         return [...this.fixes.values()];
     }
