@@ -84,7 +84,7 @@ export class MarkingField extends ComposerFieldBase {
      */
     private _originalRows: string | null = null;
     /** The theme MutationObserver installed by {@link installThemeObserver}. */
-    private _themeObserver: MutationObserver | null = null;
+    private _themeObserver: ReturnType<typeof observeFieldTheme> = null;
     private stopObservingHostWidth: (() => void) | null = null;
 
     private boundFocus!: () => void;

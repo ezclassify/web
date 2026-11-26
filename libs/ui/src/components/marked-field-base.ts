@@ -235,7 +235,7 @@ export abstract class MarkedFieldBase<
      * every mounted field leaks a live observer (and its closure over the
      * detached DOM) for the page lifetime.
      */
-    protected _themeObserver: MutationObserver | null = null;
+    protected _themeObserver: ReturnType<typeof observeFieldTheme> = null;
     protected _explicitClose = false;
     protected _lastCloseTime = 0;
     /**

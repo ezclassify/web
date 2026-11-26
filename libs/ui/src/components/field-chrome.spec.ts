@@ -57,6 +57,35 @@ it.each(['ancestor', 'shadow host'])(
     },
 );
 
+it('refreshes field snapshots when the page color scheme flips, and stops on disconnect', () => {
+    const listeners = new Set<() => void>();
+    const queries: string[] = [];
+    vi.stubGlobal('matchMedia', (query: string) => {
+        queries.push(query);
+        return {
+            matches: false,
+            addEventListener: (_type: string, listener: () => void) =>
+                listeners.add(listener),
+            removeEventListener: (_type: string, listener: () => void) =>
+                listeners.delete(listener),
+        };
+    });
+    try {
+        const field = document.createElement('textarea');
+        document.body.append(field);
+        const sync = vi.fn();
+        const observer = observeFieldTheme(field, sync);
+        expect(queries).toEqual(['(prefers-color-scheme: dark)']);
+        for (const listener of listeners) listener();
+        expect(sync).toHaveBeenCalledTimes(1);
+        observer?.disconnect();
+        expect(listeners.size).toBe(0);
+        field.remove();
+    } finally {
+        vi.unstubAllGlobals();
+    }
+});
+
 /** A ResizeObserver stand-in whose callbacks the test fires. */
 class FakeResizeObserver {
     static live = new Set<FakeResizeObserver>();

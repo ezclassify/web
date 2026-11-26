@@ -569,13 +569,21 @@ export function mirrorHostFrame(
     };
 }
 
-/** Refresh computed field snapshots when a host changes its theme scope. */
+/**
+ * Refresh computed field snapshots when a host changes its theme scope: an
+ * attribute on the host or any ancestor, or the page's `prefers-color-scheme`
+ * flipping, which a host stylesheet can answer with no attribute change at
+ * all.
+ *
+ * @returns A handle whose `disconnect` stops following the theme, or null where
+ *   there is no MutationObserver
+ */
 export function observeFieldTheme(
     host: HTMLElement,
     sync: () => void,
     container?: HTMLElement,
     observeHostStyle = false,
-): MutationObserver | null {
+): { disconnect(): void } | null {
     if (typeof MutationObserver === 'undefined') return null;
     const observer = new MutationObserver(sync);
     if (container && !container.contains(host)) {
@@ -606,5 +614,15 @@ export function observeFieldTheme(
                 : null);
         if (ancestor) observer.observe(ancestor, { attributes: true });
     }
-    return observer;
+    const scheme = host.ownerDocument.defaultView?.matchMedia?.(
+        '(prefers-color-scheme: dark)',
+    );
+    const onSchemeChange = () => sync();
+    scheme?.addEventListener('change', onSchemeChange);
+    return {
+        disconnect: () => {
+            observer.disconnect();
+            scheme?.removeEventListener('change', onSchemeChange);
+        },
+    };
 }
