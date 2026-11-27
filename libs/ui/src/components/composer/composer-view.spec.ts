@@ -204,6 +204,7 @@ describe('the result row', () => {
             if (down) throw new Error('network down');
             return read(text, base);
         };
+        const spoken = vi.spyOn(view, 'announce');
         await type('SECRET noforn');
         const row = openSurface()!.querySelector(
             '.ez-composer__result',
@@ -221,19 +222,21 @@ describe('the result row', () => {
         // The open list covers the note, so the result row says it too.
         expect(row.textContent).toContain('could not be checked');
         // Politely announced, once, with the words, however many keystrokes
-        // fail after it.
-        const spoken = vi.spyOn(view, 'announce');
-        await type('SECRET noforn x');
-        await type('SECRET noforn xy');
-        expect(
+        // fail after it. The words are checked as announced: the reading
+        // summary that follows a pause in typing speaks in the same region.
+        const couldNotCheck = () =>
             spoken.mock.calls.filter(([text]) =>
                 /could not be checked/.test(text),
-            ),
-        ).toHaveLength(0);
+            );
+        expect(couldNotCheck()).toEqual([
+            [
+                'This text could not be checked. The result shown may be out of date.',
+            ],
+        ]);
+        await type('SECRET noforn x');
+        await type('SECRET noforn xy');
+        expect(couldNotCheck()).toHaveLength(1);
         expect(view.announcer.getAttribute('aria-live')).toBe('polite');
-        expect(view.announcer.textContent).toBe(
-            'This text could not be checked. The result shown may be out of date.',
-        );
         down = false;
         await type('SECRET noforn ');
         expect(view.note.hidden).toBe(true);

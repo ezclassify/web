@@ -251,15 +251,17 @@ describe('CategorySelector', () => {
                     (region) => region.textContent ?? '',
                 );
             button.click();
-            await new Promise((resolve) => setTimeout(resolve, 50));
-            expect(said().join(' ')).toMatch(/Gewählt: \S/);
+            await vi.waitFor(() =>
+                expect(said().join(' ')).toMatch(/Gewählt: \S/),
+            );
             container
                 .querySelector<HTMLButtonElement>(
                     `.category-selector-btn[data-concept-id="${name}"]`,
                 )!
                 .click();
-            await new Promise((resolve) => setTimeout(resolve, 50));
-            expect(said().join(' ')).toMatch(/Abgewählt: \S/);
+            await vi.waitFor(() =>
+                expect(said().join(' ')).toMatch(/Abgewählt: \S/),
+            );
         } finally {
             resetLocale();
         }
@@ -284,12 +286,13 @@ describe('CategorySelector', () => {
                     '.category-selector-btn[data-category-id="f2"]',
                 )!
                 .click();
-            await new Promise((resolve) => setTimeout(resolve, 50));
-            expect(
-                [...container.querySelectorAll('[aria-live]')]
-                    .map((region) => region.textContent ?? '')
-                    .join(' '),
-            ).toContain(`Chosen ${tricky}`);
+            await vi.waitFor(() =>
+                expect(
+                    [...container.querySelectorAll('[aria-live]')]
+                        .map((region) => region.textContent ?? '')
+                        .join(' '),
+                ).toContain(`Chosen ${tricky}`),
+            );
         } finally {
             resetLocale();
         }
@@ -842,13 +845,16 @@ describe('CategorySelector', () => {
                         );
                     actions()[0].click();
                     await vi.waitFor(() => expect(publish).toHaveBeenCalled());
-                    await new Promise((resolve) => setTimeout(resolve, 50));
-                    const said = [
-                        ...container.querySelectorAll('[aria-live]'),
-                    ].map((region) => region.textContent ?? '');
-                    expect(said).toContain(
-                        'That change could not be applied. Try again.',
+                    const spoken = () =>
+                        [...container.querySelectorAll('[aria-live]')].map(
+                            (region) => region.textContent ?? '',
+                        );
+                    await vi.waitFor(() =>
+                        expect(spoken()).toContain(
+                            'That change could not be applied. Try again.',
+                        ),
                     );
+                    const said = spoken();
                     expect(said.join(' ')).not.toContain('runtime.example');
                     expect(
                         actions().map((button) => button.textContent),

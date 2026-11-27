@@ -3100,6 +3100,7 @@ describe('MarkedInput when its text could not be checked', () => {
         // holds the words.
         field.setValue('(U) quarterly report!');
         await wait(150);
+        await nextFrame();
         const spoken = () =>
             [...root.querySelectorAll('[aria-live="polite"]')].filter((el) =>
                 el.textContent?.includes(NOTE),

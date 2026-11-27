@@ -1083,18 +1083,29 @@ describe('MarkingField: a value set from outside under an edit that changed noth
 
 const ACTION_FAILED = 'That change could not be applied. Try again.';
 
-/** Every message the page's live regions speak from here on. */
+/**
+ * Every message the page's live regions speak from here on, one entry per
+ * message written. Each is read from the node that carried it, not from the
+ * region afterward: two messages written in one frame would otherwise both read
+ * as the later one.
+ */
 function spoken(): string[] {
     const said: string[] = [];
+    const inLiveRegion = (node: Node | null): boolean =>
+        !!(node instanceof Element ? node : node?.parentElement)?.closest(
+            '[aria-live]',
+        );
     const observer = new MutationObserver((records) => {
         for (const record of records) {
-            const region = (
-                record.target instanceof Element
-                    ? record.target
-                    : record.target.parentElement
-            )?.closest('[aria-live]');
-            const text = region?.textContent?.trim();
-            if (text) said.push(text);
+            if (!inLiveRegion(record.target)) continue;
+            const written =
+                record.type === 'characterData'
+                    ? [record.target]
+                    : [...record.addedNodes];
+            for (const node of written) {
+                const text = node.textContent?.trim();
+                if (text) said.push(text);
+            }
         }
     });
     observer.observe(document.body, {

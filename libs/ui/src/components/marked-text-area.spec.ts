@@ -2293,6 +2293,7 @@ describe('MarkedTextArea when its text could not be checked', () => {
         edit(ta, '(S) One paragraph.');
         await waitFor(() => ta.hasAttribute(UNVERIFIED), 1500);
         await wait(100);
+        await nextFrame();
         expect(notice(container).hidden).toBe(false);
         expect(notice(container).textContent).toContain(NOTE);
         expect(notice(container).textContent).not.toContain('503');
@@ -2305,6 +2306,7 @@ describe('MarkedTextArea when its text could not be checked', () => {
         edit(ta, '(S) One paragraph.');
         await waitFor(() => !ta.hasAttribute(UNVERIFIED), 1500);
         await wait(100);
+        await nextFrame();
         expect(notice(container).hidden).toBe(true);
         expect(live(container).textContent).toBe('');
         expect(heard).toEqual([true, false]);
