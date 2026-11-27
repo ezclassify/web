@@ -13,8 +13,14 @@ import {
 import { ensureStatusMark } from './status-mark';
 import { cleanupTooltipForRoot } from './tooltip-manager';
 
-function wait(ms = 20): Promise<void> {
-    return new Promise((r) => setTimeout(r, ms));
+/**
+ * Let pending loads settle, then one animation frame. Screen reader
+ * announcements are written in a frame callback, which a bare timer can beat on
+ * a loaded machine; frame callbacks run in order, so ours follows theirs.
+ */
+async function wait(ms = 20): Promise<void> {
+    await new Promise((r) => setTimeout(r, ms));
+    await new Promise((r) => requestAnimationFrame(r));
 }
 
 /** What the page's live regions say now. */

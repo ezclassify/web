@@ -6,9 +6,14 @@
  * way. Excluded from the library build (`*-harness.ts`).
  */
 
-/** Resolve after `ms` milliseconds. */
-export function wait(ms = 60): Promise<void> {
-    return new Promise((r) => setTimeout(r, ms));
+/**
+ * Resolve after `ms` milliseconds and one animation frame. Live-region
+ * announcements are written in a frame callback, which a bare timer can beat on
+ * a loaded machine; frame callbacks run in order, so ours follows theirs.
+ */
+export async function wait(ms = 60): Promise<void> {
+    await new Promise((r) => setTimeout(r, ms));
+    await new Promise((r) => requestAnimationFrame(r));
 }
 
 /** The open composer surface, or null when none is open. */
