@@ -76,13 +76,13 @@
         "rxjs": ">=7.0.0"
     },
     "devDependencies": {
-        "@angular/common": "20.3.34",
-        "@angular/compiler": "20.3.34",
+        "@angular/common": "20.3.35",
+        "@angular/compiler": "20.3.35",
         "@angular/compiler-cli": "20.3.34",
-        "@angular/core": "20.3.34",
-        "@angular/forms": "20.3.34",
+        "@angular/core": "20.3.35",
+        "@angular/forms": "20.3.35",
         "@angular/language-service": "20.3.34",
-        "@angular/platform-browser": "20.3.34",
+        "@angular/platform-browser": "20.3.35",
         "@angular/router": "20.3.34",
         "@ezclassify/types": "^1.0.0-0",
         "@ezclassify/ui": "^1.0.0-0",
