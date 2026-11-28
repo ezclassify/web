@@ -9,11 +9,11 @@
         "typecheck": "tsc -p hosts/react --noEmit && ngc -p hosts/angular/tsconfig.app.json --noEmit && tsc -p tsconfig.json --noEmit"
     },
     "dependencies": {
-        "@angular/common": "22.2.2",
-        "@angular/compiler": "22.2.2",
-        "@angular/core": "22.2.2",
-        "@angular/forms": "22.2.2",
-        "@angular/platform-browser": "22.2.2",
+        "@angular/common": "20.3.35",
+        "@angular/compiler": "20.3.35",
+        "@angular/core": "20.3.35",
+        "@angular/forms": "20.3.35",
+        "@angular/platform-browser": "20.3.35",
         "@ezclassify/angular": "^1.0.0-0",
         "@ezclassify/react": "^1.0.0-0",
         "@ezclassify/rest-client": "^1.0.0-0",
