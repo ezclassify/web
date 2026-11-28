@@ -32,7 +32,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           path: web
           persist-credentials: false
@@ -44,14 +44,14 @@ jobs:
             echo "${name//-/_}=$(tr -d '[:space:]' < "web/test-support/${name}.pin")" >> "$GITHUB_OUTPUT"
           done
 
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: ezclassify/community-content
           ref: ${{ steps.pin.outputs.community_content }}
           path: community-content
           persist-credentials: false
 
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: ezclassify/runtime
           ref: ${{ steps.pin.outputs.runtime }}
@@ -59,7 +59,7 @@ jobs:
           token: ${{ secrets.EZ_REPOS_READ_TOKEN }}
           persist-credentials: false
 
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: ezclassify/orchestration
           ref: ${{ steps.pin.outputs.orchestration }}
@@ -67,7 +67,7 @@ jobs:
           token: ${{ secrets.EZ_REPOS_READ_TOKEN }}
           persist-credentials: false
 
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: ezclassify/enterprise-content
           ref: ${{ steps.pin.outputs.enterprise_content }}
@@ -115,7 +115,7 @@ jobs:
 
       - name: Upload what was recorded
         if: ${{ failure() }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: recordings
           path: web/**/__recordings__/*.json
