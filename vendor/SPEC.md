@@ -40,7 +40,7 @@ the reference contract.
 | `specSourceUrl`           | https://github.com/ezclassify/contracts/tree/134f4b20481afceaeec9f7ef271fcaef53938954/libs/openapi/openapi.yaml             |
 | `targetRepo`              | `web`          |
 | `releaseDateUtc`          | `2026-11-25T22:13:19.000Z`          |
-| `generatorScript@`        | `871e39346e9f`      |
+| `generatorScript@`        | `25b26389979b`      |
 
 `abiVersion` is the wire interface version the server reports on `/v1/health`. It is fixed at `v1`.
 

@@ -2,7 +2,7 @@
   "openapiVersion": "1.0.0-dev.30",
   "openapiSha256": "563e44e7d33425d2d8063c5da1efa3159269916775f7af2cc9ce7cf4cb8cccec",
   "specBundleSha256": "96cfbc93f4c6f8fc6e17eda559211cb50f3d6f8175ad1b67704b6523022917a5",
-  "specDigest": "9db6766a383c4745658819ef858c78041351c0bf0425e4b46e45f0d6c193aecf",
+  "specDigest": "320482d0b164ff0ca1a254f35243fbe586057692db38458471b881c5d203a6cd",
   "contractsSha": "134f4b20481afceaeec9f7ef271fcaef53938954",
   "sourcePackages": {
     "@ezclassify/openapi": "1.0.0-dev.30",
